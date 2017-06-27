@@ -1,6 +1,7 @@
-# Processing data sources for sustainable food systems project
+﻿# Processing data sources for sustainable food systems project
 # Implemented by: H. Achicanoy, P. Alvarez & L. Lamotte
 # CIAT, 2017
+#andres mendez
 
 # R options
 g <- gc(reset = T); rm(list = ls()); options(warn = -1); options(scipen = 999)
