@@ -1,4 +1,8 @@
-if(!require(raster)){install.packages('raster'); library(raster)} else {library(raster)}
+#SUM OF HARVESTED AREA IN BEANS CROPS (Landraces)
+#By Andres camilo Mendez and Harold Achicanoy
+
+
+suppressMessages(if(!require(raster)){install.packages('raster'); library(raster)} else {library(raster)})
 suppressMessages(if(!require(rgdal)){install.packages('rgdal'); library(rgdal)} else {library(rgdal)})
 suppressMessages(if(!require(maptools)){install.packages('maptools'); library(maptools)} else {library(maptools)})
 suppressMessages(if(!require(dplyr)){install.packages('dplyr'); library(dplyr)} else {library(dplyr)})
@@ -11,9 +15,10 @@ suppressMessages(if(!require(XML)){install.packages('XML'); library(XML)} else {
 suppressMessages(if(!require(plspm)){install.packages('plspm'); library(plspm)} else {library(plspm)})
 suppressMessages(if(!require(reshape)){install.packages('reshape'); library(reshape)} else {library(reshape)})
 suppressMessages(if(!require(ncdf4)){install.packages('ncdf4'); library(ncdf4)} else {library(ncdf4)})
-if(!require(compiler)){install.packages('compiler'); library(compiler)} else {library(compiler)}
-if(!require(scales)){install.packages("scales");library(scales)}else{library(scales)}
-if(!require(readxl)){install.packages("readxl"):library(readxl)}else{library(readxl)}
+suppressMessages(if(!require(compiler)){install.packages('compiler'); library(compiler)} else {library(compiler)})
+suppressMessages(if(!require(scales)){install.packages("scales");library(scales)}else{library(scales)})
+suppressMessages(if(!require(readxl)){install.packages("readxl"):library(readxl)}else{library(readxl)})
+suppressMessages(if(!require(rgeos)){install.packages("rgeos"):library(rgeos)}else{library(rgeos)})
 
 if(Sys.info()[1]=="Windows"){setwd("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/Input_data")}
 if(Sys.info()[1]=="Linux"){setwd("/mnt/workspace_cluster_9/gap_analysis_landraces/Input_data")}
@@ -26,14 +31,16 @@ countries <- rgdal::readOGR(dsn = "./world_shape", layer='all_countries')
 countries$NAME <- iconv(countries$NAME, from = "UTF-8", to = "latin1")
 
 
-#import raster
-access<-raster('./Raster/spam2005v2r0_harvested-area_bean_total.nc')
+#import raster from Mapspam  harvested area data, filtered by landraces
+access <- raster::raster('./Mapspam_raster/spam2005v2r0_harvested-area_bean_total.nc')
+
+
+#Import a second raster from EarthStat  harvested area
+access2 <- raster('./bean_HarvAreaYield2000_NetCDF/bean_AreaYieldProduction.nc',level=5)
+
 
 #import  world country's cooridanates from .xlm file
 coordenadas<- read_excel("./coordinates_countries_world/coordenadas_paises_mundo.xlsx", sheet = "Sheet1")
-
-
-
 
 #set in a vector  the names of all countries
 countryList <- countries@data$NAME
@@ -53,7 +60,7 @@ values <- country_data[!is.na(country_data[])]
 
 country_data <- data.frame(ISO3 = countries@data$ISO3[which(countries@data$NAME == countryList[i])], Country = countryList[i], Suma = sum(na.omit(values))) 
 
-cat(paste("Country: ", countryList[i], "done " , "suma ",sum(na.omit(values)), " \n" ,sep = ""))
+cat(paste("Country: ", countryList[i], ": done " , "suma ",sum(na.omit(values)), " \n" ,sep = ""))
 rm(values, country)
 
 return(country_data)
@@ -71,6 +78,8 @@ is.compile <- function(func){
 }
 is.compile(calc_suma)
 
+#calculate the sum of harvested area in beans crops for MAPSPAM data.nc
+
 f<-list()
 for(i in 1:length(countryList)){f[[i]]<-calc_suma(rObject=access,i=i)}
 
@@ -79,6 +88,31 @@ rm(f)
 df2<-data.frame(ISO3=countries@data$ISO3,subregion=countries@data$SUBREGION)
 
 areaT_cultivada<-merge(df,df2,by="ISO3")
+rm(df);rm(df2)
+
+#calculate the sum of harvested area in beans crops for EARTHSTAT data.nc
+
+f<-list()
+for(i in 1:length(countryList)){f[[i]]<-calc_suma(rObject=access2,i=i)}
+f<-do.call(rbind,f)
+f<-f[,-which(names(f)=="Country")]
+
+#combine the sums of harvested area for both information sources (mapspam and eartstat)
+
+areaT_cultivada<-merge(areaT_cultivada,f,by="ISO3")
+rm(f)
+names(areaT_cultivada)[c(3,5)]<-c("sum_mapspam","sum_earthstat")
+
+#calculate the difference between both sums of harvested area, and plot histogram of that difference
+
+delta<- abs(areaT_cultivada$sum_mapspam- areaT_cultivada$sum_earthstat)
+delta<-delta[which(delta!=0)]
+hist(delta,main="Difference between area's sums",xlab="Diferrence")
+summary(delta)
+
+View(areaT_cultivada)
+
+##########----------TO BUILD EXPERT'S SURVEY IN  R SHINY----------------------##################
 
 ### select the regions of central america, caribbean, south america, eastern africa and south africa
 cod_reg<-c(29,13,5,14,18)
@@ -89,10 +123,12 @@ regiones<- areaT_cultivada %>% mutate(.,selec=ifelse(eval(cond),1,0))
 
 reg_subset<-regiones %>% filter(selec==1)
 names(reg_subset)
-names(coordenadas)[4]<-"Country"
 
 
 #build the data set with countries selected
+coordenadas<-countries@data[,c(5,10,11)]
+names(coordenadas)[1]<- "Country"
+
 survey<-merge(reg_subset,coordenadas,by="Country")
 
 #add the names of regions to data set
