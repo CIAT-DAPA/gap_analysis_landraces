@@ -66,9 +66,29 @@ body <- dashboardBody(
               
                
                
-           )
-    ))
+           ) 
+    )) 
+    
+    ,
+    box(    
+      
+      
+      leafletOutput("mymap2", height = 500)
+      
+    ) 
+    
+    
+   , box(    
+      
+      
+      leafletOutput("mymap3", height = 500)
+      
+    ) 
+   
   )
+  
+  
+ 
 )
 
 dashboardPage(
