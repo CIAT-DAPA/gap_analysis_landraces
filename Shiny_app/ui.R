@@ -84,7 +84,25 @@ body <- dashboardBody(
       leafletOutput("mymap3", height = 500)
       
     ) 
-   
+  ,box(
+    
+    leafletOutput("mymap4", height = 500), actionButton('save_poly',"Save_polygon")
+    
+    
+  ),box(
+    
+    
+    leafletOutput("mymap5", height = 500),actionButton('done',"Done")
+    
+  ),box(
+    
+    
+    plotOutput("plots",height = 300)
+    
+  )
+  
+  
+  
   )
   
   

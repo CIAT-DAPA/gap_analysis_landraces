@@ -19,6 +19,7 @@ suppressMessages(if(!require(compiler)){install.packages('compiler'); library(co
 suppressMessages(if(!require(scales)){install.packages("scales");library(scales)}else{library(scales)})
 suppressMessages(if(!require(readxl)){install.packages("readxl"):library(readxl)}else{library(readxl)})
 suppressMessages(if(!require(rgeos)){install.packages("rgeos"):library(rgeos)}else{library(rgeos)})
+suppressMessages(if(!require(rmapshaper)){install.packages("rmapshaper"):library(rmapshaper)}else{library(rmapshaper)})
 
 if(Sys.info()[1]=="Windows"){setwd("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/Input_data")}
 if(Sys.info()[1]=="Linux"){setwd("/mnt/workspace_cluster_9/gap_analysis_landraces/Input_data")}
@@ -27,7 +28,9 @@ if(Sys.info()[1]=="Linux"){setwd("/mnt/workspace_cluster_9/gap_analysis_landrace
 #import shape files
 ogrInfo("./world_shape", "all_countries")
 countries <- rgdal::readOGR(dsn = "./world_shape", layer='all_countries')
+countries2<-ms_simplify(countries, keep = 0.1)
 
+system.time( plot(countries2) )
 countries$NAME <- iconv(countries$NAME, from = "UTF-8", to = "latin1")
 
 
