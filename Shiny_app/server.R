@@ -19,11 +19,28 @@ suppressMessages(if(!require(readr)){install.packages("readr");library(readr)}el
 suppressMessages(if(!require(rmapshaper)){install.packages("rmapshaper");library(rmapshaper)}else{library(rmapshaper)})
 suppressMessages( if (!require(geojsonio)) { install.packages("geojsonio");library(geojsonio)}else{library(geojsonio)})
 suppressMessages( if (!require(rleafmap)) { install.packages("rleafmap");library(rleafmap)}else{library(rleafmap)})
-suppressMessages( if (!require(mapedit)) { devtools::install_github("r-spatial/mapedit");library(mapedit)}else{library(mapedit)})
-suppressMessages( if (!require(mapview)) { devtools::install_github("r-spatial/mapview@develop");library(mapview)}else{library(mapview)})
 suppressMessages( if (!require(leaflet.extras)) { devtools::install_github('bhaskarvk/leaflet.extras',force=TRUE);library(leaflet.extras)}else{library(leaflet.extras)})
 suppressMessages(if(!require(sf)){install.packages("sf");library(sf)}else{library(sf)})
+suppressMessages(if(!require(digest)){install.packages("digest");library(digest)}else{library(digest)})
+suppressMessages(if(!require(rdrop2)){install.packages("rdrop2");library(rdrop2)}else{library(rdrop2)})
+
 # Define server logic required to draw map whit leaflet options
+outputDir <- getwd()
+
+saveData <- function(data) {
+  
+  # Create a unique file name
+  fileName <- sprintf("%s_%s.shp", as.integer(Sys.time()), digest::digest(data))
+  # Write the file to the local system
+
+ st_write(  x = (data),dsn="fileName")
+}
+
+
+
+
+
+
 
 
 function(input, output,session) {
@@ -180,7 +197,7 @@ function(input, output,session) {
  #save<-eventReactive(input$save_poly,{ geojson_write(mapita, file = "C:/Users/acmendez/Downloads/hola.txt") })
   
 ####FIVE PROPOSAL----------------------------------------
- 
+ #Create the lefletmap object and add drawToolbar to edit maps
 output$mymap5<-renderLeaflet({
  leaflet("mymap5") %>%
    addProviderTiles(providers$Stamen.TonerLite, #map type or map theme. -default($Stame.TonerLite)
@@ -197,6 +214,7 @@ output$mymap5<-renderLeaflet({
  
 })
 
+ #create a reactives list to store drawn objects in environmental obrserver (critical step)
 featurelist <- reactiveValues(
   drawn = list(),
   edited_all = list(),
@@ -206,16 +224,21 @@ featurelist <- reactiveValues(
 
 
 recorder <- list()
+#set the names of objects where polygons coordinates are stored 
 
 EVT_DRAW <- "mymap5_draw_new_feature"
 EVT_EDIT <- "mymap5_draw_edited_features"
 EVT_DELETE <- "mymap5_draw_deleted_features"
 
+
+#call the objects whit the input[[]] function in a observer environment
+#this function store the drawn polygons in the reactives lists
 observeEvent(input[[EVT_DRAW]], {
   featurelist$drawn <- c(featurelist$drawn, list(input[[EVT_DRAW]]))
   featurelist$finished <- c(featurelist$finished, list(input[[EVT_DRAW]]))
  
 })
+#this function store edited polygons
 observeEvent(input[[EVT_EDIT]], {
   edited <- input[[EVT_EDIT]]
   # find the edited features and update drawn
@@ -233,6 +256,7 @@ observeEvent(input[[EVT_EDIT]], {
   
 })
 
+#this function estore the objects deleted
 observeEvent(input[[EVT_DELETE]], {
   deleted <- input[[EVT_DELETE]]
   # find the deleted features and update finished
@@ -267,7 +291,7 @@ combine_list_of_sf <- function(sf_list) {
   
   sf::st_sf(
     props,
-    geometry = sf::st_sfc(
+    geometry <- sf::st_sfc(
       unlist(lapply(sf_list, function(x) sf::st_geometry(x)), recursive=FALSE)
     ),
     crs = sf::st_crs(4326)
@@ -332,7 +356,10 @@ st_as_sfc.geo_list = function(x, ...) {
 
 #####3 END FUNCTIONS THAT ALLOW CONVERT TO SPATIAL OBJECTS
 
-returnlist <- eventReactive(input$done,{
+#when the buttom "done" is clicked this function
+#Create a list containing the objectes drawn, edited and delted  from the leaflet.drawn map
+
+returnlist <- reactive({
   
   workinglist <- list(
     drawn = featurelist$drawn,
@@ -341,7 +368,7 @@ returnlist <- eventReactive(input$done,{
     finished = featurelist$finished
   )
 
-  # convert to simple features
+  # convert the lists to simple features files througth functions created above
   
   workinglist <- lapply(
     workinglist,
@@ -375,19 +402,59 @@ returnlist <- eventReactive(input$done,{
   
   
   return(workinglist)
+  
 })
 
+countriesf <- rgdal::readOGR(dsn = "C:/Users/acmendez/Documents/GitHub/gap_analysis_landraces/Shiny_app", layer='changos')
+plot(countriesf)
 
-
-
-
-
+observeEvent(input$done,{
   
+  question<-"first_quest_files"
+  
+  if(!dir.exists(paste(getwd(),"/",question,sep=""))){dir.create(paste(getwd(),"/",question,sep=""))}
  
+   date<-unclass(as.POSIXlt(Sys.time()))
+  fileName <- paste("drawn_polygons_quest_1", ".",date$year,"-",date$mon+1,"-",date$mday,"-",date$hour,"_",date$min,".shp",sep="",collapse = "")
+
+ 
+ filePath <- file.path(paste(getwd(),"/",question,sep=""), fileName)
+ 
+  st_write(st_as_sf(countries),filePath) 
+  
+
+  })
+  
+drop_create(path = "foobar")
+drop_dir()
+ drop_create()
+ 
+ 
+ drop_auth()
+
+ drop_acc() %>% 
+   select(uid, display_name, email_verified, quota_info.quota)
+
+ token <- drop_auth()
+ saveRDS(token, "droptoken.rds")  
+ token <- readRDS("droptoken.rds")
+ # Then pass the token to each drop_ function
+ drop_acc(dtoken = token)
+ 
+ fds<-data.frame(1:200,rnorm(200,0,1),rbinom(200,34,0.5))
+ drop_create("carpeta_prueba")
+ fileshare<-file.path(tempdir(), "prueba_upload.csv")
+ write.csv(fds,file = fileshare,dec=",",sep="\t")
+ drop_upload(fileshare, dest= "carpeta_prueba" )
+ 
+
+ 
+  
+
  output$plots<-renderPlot({
    
   
-  
+ # print(is(returnlist()$finished))
    plot(returnlist()$finished,col="red")
         
         })
@@ -396,9 +463,9 @@ returnlist <- eventReactive(input$done,{
  #hacer seguimiento a que esty haciendo
 output$text <- renderDataTable({ 
 
-  names(returnlist())
-
-
+  #input$done
+  #loadData()
+  is(returnlist()$finished)
 #input$mymap4_drawnItems_created
 #as.data.frame(ver()[[1]])
 #as.data.frame(unlist(polygons()))
@@ -411,11 +478,4 @@ output$text <- renderDataTable({
 
 
 
-#re<-(c(59.06250 , 61.60640  , 9.84375 , 25.79989, 132.18750 ,-21.94305, 175.78125,  67.06743  ,59.06250  ,61.60640))
-#longs<-re[c(1,3,5,7,9)]
-#lats<-re[c(2,4,6,8,10)]
 
-#plot(countries)
-#plot(longs,lats,type="p",col="red")
-
-#plot(re,type="l")

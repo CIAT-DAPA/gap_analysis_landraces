@@ -28,6 +28,7 @@ if(Sys.info()[1]=="Linux"){setwd("/mnt/workspace_cluster_9/gap_analysis_landrace
 #import shape files
 ogrInfo("./world_shape", "all_countries")
 countries <- rgdal::readOGR(dsn = "./world_shape", layer='all_countries')
+#Simplify shapefile make them more lightweight
 countries2<-ms_simplify(countries, keep = 0.1)
 
 system.time( plot(countries2) )
@@ -141,8 +142,15 @@ survey[which(survey$subregion==29), 5]<-"Caribbean"
 survey[which(survey$subregion==13), 5]<-"Central America"
 survey[which(survey$subregion==5), 5]<-"South America"
 
-survey
+save(survey,file = "survey.RData")
 
+##### DEPLOY SHINY APP ####3
+
+rsconnect::setAccountInfo(name='andres159ciat',
+                          token='B3CE4384B0DD472723F849715F715622',
+                          secret='m9uT8tEICjyRtuQFverAQFauis9onxcKGlq3gQMk')
+
+rsconnect::deployApp('C:/Users/acmendez/Documents/GitHub/gap_analysis_landraces/selected_proposal')
 
 
 
