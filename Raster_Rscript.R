@@ -31,9 +31,17 @@ countries <- rgdal::readOGR(dsn = "./world_shape", layer='all_countries')
 #Simplify shapefile make them more lightweight
 countries2<-ms_simplify(countries, keep = 0.1)
 
+st_write(st_as_sf(countries2),"//dapadfs/Workspace_cluster_9/gap_analysis_landraces/Input_data/world_shape_simplified/all_countries_simplified.shp")
+
 system.time( plot(countries2) )
 countries$NAME <- iconv(countries$NAME, from = "UTF-8", to = "latin1")
 
+env <- environment() 
+  ls(env)
+  unlist(lapply(ls(env), function(x) {
+    object.size(get(x, envir = env, inherits = FALSE))
+  }))
+object.size(get(ls()[1]))
 
 #import raster from Mapspam  harvested area data, filtered by landraces
 access <- raster::raster('./Mapspam_raster/spam2005v2r0_harvested-area_bean_total.nc')
