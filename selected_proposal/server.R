@@ -30,7 +30,6 @@ suppressMessages(if(!require(rgdal)){install.packages('rgdal'); library(rgdal)} 
 suppressMessages(if(!require(dplyr)){install.packages('dplyr'); library(dplyr)} else {library(dplyr)})
 
 
-
 # Define server logic required to draw map whit leaflet option
 
 
@@ -46,32 +45,40 @@ countries2<-readOGR(dsn="world_shape_simplified",layer="all_countries_simplified
 
 token <- readRDS("droptoken.rds")
 
-saveData_1<-function(data,nombre,n.quest,n.clicks){
+saveData_1<-function(data,nombre,n.quest,n.clicks,crop,texto){
   
   if(length(data)!= 0){
  
   if(n.clicks>=2){
-   if(drop_exists(paste("survey","_",nombre,"/",n.quest,sep=""),dtoken=token)){ drop_delete(paste("survey","_",nombre,"/",n.quest,sep=""),dtoken=token)}
+   if(drop_exists(paste("survey","_",nombre,"_",crop,"/",n.quest,sep=""),dtoken=token)){ drop_delete(paste("survey","_",nombre,"_",crop,"/",n.quest,sep=""),dtoken=token)}
 
   }
   
   token <- readRDS("droptoken.rds")
   
-  if(!drop_exists(paste("survey","_",nombre,sep=""),dtoken=token)){drop_create(paste("survey","_",nombre,sep=""),dtoken = token)}
+  if(!drop_exists(paste("survey","_",nombre,"_",crop,sep=""),dtoken=token)){drop_create(paste("survey","_",nombre,"_",crop,sep=""),dtoken = token)}
   
-  if(!drop_exists(paste("survey","_",nombre,"/",n.quest,sep=""),dtoken=token)){drop_create(paste("survey","_",nombre,"/",n.quest,sep=""))}
+  if(!drop_exists(paste("survey","_",nombre,"_",crop,"/",n.quest,sep=""),dtoken=token)){drop_create(paste("survey","_",nombre,"_",crop,"/",n.quest,sep=""))}
   
-  create<-file.path(tempdir(),paste("shapefiles","_",nombre,sep=""))
+  create<-file.path(tempdir(),paste("shapefiles","_",nombre,"_",crop,sep=""))
  
  if(!dir.exists(create)){ dir.create(create,showWarnings = TRUE)} 
   
-  date<-unclass(as.POSIXlt(Sys.time()))
-  fileName <- paste("drawn_polygons_",n.quest,"_",nombre, "_",date$year,"-",date$mon+1,"-",date$mday,"-",date$hour,"_",date$min,"_",round(date$sec,2),".shp",sep="",collapse = "")
-
-
+  
+  fileName <- paste("dp",n.quest,"_",crop,"_",nombre,".shp",sep="",collapse = "")
+  
+  nameText<-paste("dp",n.quest,"_",crop,"_",nombre,"_comments",".txt",sep="",collapse = "")
+  
+  
+  
    filePath <- file.path(create,fileName)
   
-   
+   filecon<-file(file.path(create,nameText))
+   writeLines(texto,filecon)
+  close(filecon)
+  
+  
+  
   st_write((data),filePath)
   
   
@@ -80,7 +87,7 @@ saveData_1<-function(data,nombre,n.quest,n.clicks){
   drop_acc(dtoken = token)    
   for(i in 1:length(files)){
     
-    drop_upload(file.path(create,files[i]), dest = paste("survey","_",nombre,"/",n.quest,sep=""),dtoken=token) 
+    drop_upload(file.path(create,files[i]), dest = paste("survey","_",nombre,"_",crop,"/",n.quest,sep=""),dtoken=token) 
     
     
   }
@@ -96,12 +103,12 @@ saveData_1<-function(data,nombre,n.quest,n.clicks){
 
 
 
-savePlots<-function(data,nombre,countries=countries2,col="red",n.quest){
+savePlots<-function(data,nombre,countries=countries2,col="red",n.quest,crop){
 
   
-  create<-file.path(tempdir(),paste("plots","_",nombre,sep=""))
+  create<-file.path(tempdir(),paste("plots","_",nombre,"_",crop,sep=""))
   if(!dir.exists(create)){dir.create(create,showWarnings = TRUE)}
-  fileName<-paste("plot_",nombre,"_",gsub(" ","",n.quest),".png",sep="")
+  fileName<-paste("plot_",nombre,"_",crop,"_",gsub(" ","",n.quest),".png",sep="")
   
   png(file.path(create,fileName))
   plot(countries)
@@ -112,7 +119,7 @@ savePlots<-function(data,nombre,countries=countries2,col="red",n.quest){
   files<-list.files(create)
 
   for(i in 1:length(files)){
-    drop_upload(file.path(create,files[i]),dest= paste("survey","_",nombre,sep=""),dtoken=token)
+    drop_upload(file.path(create,files[i]),dest= paste("survey","_",nombre,"_",crop,sep=""),dtoken=token)
     
   }
   unlink(create, recursive=TRUE)
@@ -125,19 +132,24 @@ function(input, output,session) {
   
   
   
+  extendShinyjs(text = jscode, functions = c("closeWindow"))
 
  
   
   observeEvent(input$keep,{
    
-     if(nchar(input$nombre)!=0){
+     if(input$crop!="NULL" && nchar(input$nombre)!=0 ){
     updateTabsetPanel(session, "tabset1",
                       selected = "1. Cultivars")
     
     }else{showModal(modalDialog(
       title = "Oops something went wrong:",
-      h3("You forgot to write a name"),footer = modalButton("OK"),easyClose = TRUE
+      h3("May be you forgot to select a crop variety or  write a name"),footer = modalButton("OK"),easyClose = TRUE
     ))}
+    
+    
+    
+    
   })
   
   
@@ -145,7 +157,7 @@ function(input, output,session) {
  #Create the lefletmap object and add drawToolbar to edit maps
 output$mymap5<-renderLeaflet({
  leaflet("mymap5") %>%
-   addProviderTiles(providers$Stamen.TonerLite, #map type or map theme. -default($Stame.TonerLite)
+   addProviderTiles(providers$Esri.WorldGrayCanvas, #map type or map theme. -default($Stame.TonerLite)
                     options = providerTileOptions(noWrap = TRUE) 
                     
    )%>% addDrawToolbar(
@@ -363,7 +375,7 @@ observeEvent(input$done,{
 
  
  
-  saveData_1(returnlist()$finished,gsub(" ", "", input$nombre),gsub(" ", "",input$tabset1),(input$done))
+  saveData_1(returnlist()$finished,gsub(" ", "", input$nombre),gsub(" ", "",input$tabset1),(input$done), gsub(" ", "",input$crop),input$txt1)
   
  
    if(length(returnlist()$finished)!=0){
@@ -411,7 +423,7 @@ output$text <- renderDataTable({
 
 output$mymap6<-renderLeaflet({
   leaflet("mymap6") %>%
-    addProviderTiles(providers$Stamen.TonerLite, #map type or map theme. -default($Stame.TonerLite)
+    addProviderTiles(providers$Esri.WorldGrayCanvas, #map type or map theme. -default($Stame.TonerLite)
                      options = providerTileOptions(noWrap = TRUE) 
                      
     )%>% addDrawToolbar(
@@ -542,7 +554,7 @@ returnlist2 <- reactive({
 observeEvent(input$done2,{
   
   
-  saveData_1(returnlist2()$finished,gsub(" ", "", input$nombre),gsub(" ", "", input$tabset1),(input$done2))
+  saveData_1(returnlist2()$finished,gsub(" ", "", input$nombre),gsub(" ", "", input$tabset1),(input$done2), gsub(" ", "",input$crop),input$txt2)
   
   if(length(returnlist2()$finished)!=0){
     updateButton(session, "done2",label = "Stored",style = "success")}
@@ -570,7 +582,7 @@ output$mymap7<-renderLeaflet({
   if(length(returnlist2()$finished)!=0){
   
    leaflet("mymap7") %>%
-    addProviderTiles(providers$Stamen.TonerLite, #map type or map theme. -default($Stamen.TonerLite)
+    addProviderTiles(providers$Esri.WorldGrayCanvas, #map type or map theme. -default($Stamen.TonerLite)
                      options = providerTileOptions(noWrap = TRUE) 
                      
     )%>% addPolygons(data=returnlist2()$finished,color = "darkgray", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
@@ -592,7 +604,7 @@ output$mymap7<-renderLeaflet({
       editOptions = editToolbarOptions(selectedPathOptions = selectedPathOptions()))  %>% setView(10,10,zoom=2)
  
   }else{leaflet("mymap7") %>%
-      addProviderTiles(providers$Stamen.TonerLite, #map type or map theme. -default($Stamen.TonerLite)
+      addProviderTiles(providers$Esri.WorldGrayCanvas, #map type or map theme. -default($Stamen.TonerLite)
                        options = providerTileOptions(noWrap = TRUE) 
                        
       )%>% 
@@ -724,7 +736,7 @@ returnlist3 <- reactive({
 observeEvent(input$done3,{
   
   
-  saveData_1(returnlist3()$finished,gsub(" ", "", input$nombre),gsub(" ", "", input$tabset1),(input$done3))
+  saveData_1(returnlist3()$finished,gsub(" ", "", input$nombre),gsub(" ", "", input$tabset1),(input$done3), gsub(" ", "",input$crop),input$txt3)
   if(length(returnlist3()$finished)!=0){
     updateButton(session, "done3",label = "Stored",style = "success")
     updateTabsetPanel(session, "tabset1",
@@ -752,25 +764,64 @@ output$plot3<-renderPlot({
  ####--------##########-----------######
  ###_________#########____________######
 
-
 output$mymap8<-renderLeaflet({
-  leaflet("mymap8") %>%
-    addProviderTiles(providers$Stamen.TonerLite, #map type or map theme. -default($Stamen.TonerLite)
-                     options = providerTileOptions(noWrap = TRUE) 
-                     
-    )%>% addDrawToolbar(
-      targetGroup= NULL,
-      polylineOptions = FALSE,
+
+  if(length(returnlist2()$finished)!=0){
+    
+    leaflet("mymap8") %>%
+      addProviderTiles(providers$Esri.WorldGrayCanvas, #map type or map theme. -default($Stamen.TonerLite)
+                       options = providerTileOptions(noWrap = TRUE) 
+                       
+      )%>% addPolygons(data=returnlist2()$finished,color = "darkgray", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
+                        opacity = 0.5, fillOpacity = 0.1,
+                        fillColor = colorQuantile("Blues", domain=NULL))    %>% 
       
-      polygonOptions = drawPolygonOptions(repeatMode = TRUE,shapeOptions = drawShapeOptions(color = "green", weight = 1, opacity = 1,
-                                                                                            fill = TRUE, fillColor = "green", fillOpacity = 0.4)),
-      circleOptions = FALSE,
-      rectangleOptions = drawRectangleOptions(repeatMode=TRUE,shapeOptions = drawShapeOptions(color = "green", weight = 1, opacity = 1,
+      addDrawToolbar(
+        targetGroup= NULL,
+        polylineOptions = FALSE,
+        
+        polygonOptions = drawPolygonOptions(repeatMode = TRUE,shapeOptions = drawShapeOptions(color = "green", weight = 1, opacity = 1,
                                                                                               fill = TRUE, fillColor = "green", fillOpacity = 0.4)),
-      markerOptions = FALSE,
-      editOptions = editToolbarOptions(selectedPathOptions = selectedPathOptions()))  %>% setView(10,10,zoom=2)
+        circleOptions = FALSE,
+        rectangleOptions = drawRectangleOptions(repeatMode=TRUE,shapeOptions = drawShapeOptions(color = "green", weight = 1, opacity = 1,
+                                                                                                fill = TRUE, fillColor = "green", fillOpacity = 0.4)),
+        markerOptions = FALSE,
+        editOptions = editToolbarOptions(selectedPathOptions = selectedPathOptions()))  %>% setView(10,10,zoom=2)
+    
   
+  
+}else{
+  
+  
+    leaflet("mymap8") %>%
+      addProviderTiles(providers$Esri.WorldGrayCanvas, #map type or map theme. -default($Stamen.TonerLite)
+                       options = providerTileOptions(noWrap = TRUE) 
+                       
+      )%>% addDrawToolbar(
+        targetGroup= NULL,
+        polylineOptions = FALSE,
+        
+        polygonOptions = drawPolygonOptions(repeatMode = TRUE,shapeOptions = drawShapeOptions(color = "green", weight = 1, opacity = 1,
+                                                                                              fill = TRUE, fillColor = "green", fillOpacity = 0.4)),
+        circleOptions = FALSE,
+        rectangleOptions = drawRectangleOptions(repeatMode=TRUE,shapeOptions = drawShapeOptions(color = "green", weight = 1, opacity = 1,
+                                                                                                fill = TRUE, fillColor = "green", fillOpacity = 0.4)),
+        markerOptions = FALSE,
+        editOptions = editToolbarOptions(selectedPathOptions = selectedPathOptions()))  %>% setView(10,10,zoom=2)
+    
+
+  
+  
+  
+}
+
 })
+
+
+
+
+
+
 
 featurelist4 <- reactiveValues(
   drawn = list(),
@@ -886,7 +937,7 @@ returnlist4 <- reactive({
 observeEvent(input$done4,{
   
   
-  saveData_1(returnlist4()$finished,gsub(" ", "", input$nombre),gsub(" ", "", input$tabset1),(input$done4))
+  saveData_1(returnlist4()$finished,gsub(" ", "", input$nombre),gsub(" ", "", input$tabset1),(input$done4), gsub(" ", "",input$crop),input$txt4)
   if(length(returnlist4()$finished)!=0){
     updateButton(session, "done4",label = "Stored",style = "success")
     updateTabsetPanel(session, "tabset1",
@@ -899,22 +950,22 @@ observeEvent(input$done4,{
 observeEvent(input$close,{
   
   
-  if(length(returnlist()$finished)!=0) savePlots(returnlist()$finished,gsub(" ","",input$nombre),countries2,col="blue",n.quest=1)
-  if(length(returnlist2()$finished)!=0)savePlots(returnlist2()$finished,gsub(" ","",input$nombre),countries2,col="red",n.quest=2)
-  if(length(returnlist3()$finished)!=0) savePlots(returnlist3()$finished,gsub(" ","",input$nombre),countries2,col="green",n.quest=3)
-  if(length(returnlist4()$finished)!=0)savePlots(returnlist4()$finished,gsub(" ","",input$nombre),countries2,col="orange",n.quest=4)
+  if(length(returnlist()$finished)!=0) savePlots(returnlist()$finished,gsub(" ","",input$nombre),countries2,col="blue",n.quest=1,gsub(" ", "",input$crop))
+  if(length(returnlist2()$finished)!=0)savePlots(returnlist2()$finished,gsub(" ","",input$nombre),countries2,col="red",n.quest=2,gsub(" ", "",input$crop))
+  if(length(returnlist3()$finished)!=0) savePlots(returnlist3()$finished,gsub(" ","",input$nombre),countries2,col="green",n.quest=3,gsub(" ", "",input$crop))
+  if(length(returnlist4()$finished)!=0)savePlots(returnlist4()$finished,gsub(" ","",input$nombre),countries2,col="orange",n.quest=4,gsub(" ", "",input$crop))
   
   
   
   
-  Sys.sleep(9)
+  Sys.sleep(2)
  showModal(modalDialog(
    title = "Important message:",
-   h3("Thank you very much for your time!"),h3("Your work has already been saved"),footer = NULL,easyClose = TRUE
+   h3("Thank you very much for your time!"),h3("Your work has already been saved, now you can close the app."),footer = NULL,easyClose = TRUE
  ))
- 
-
- session$close()
+ Sys.sleep(4)
+js$closeWindow()
+session$close()
 
 })
 
