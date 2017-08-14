@@ -132,13 +132,13 @@ function(input, output,session) {
   
   
   
-  extendShinyjs(text = jscode, functions = c("closeWindow"))
+  
 
  
   
   observeEvent(input$keep,{
    
-     if(input$crop!="NULL" && nchar(input$nombre)!=0 ){
+     if(input$crop!="-- Please select crop --" && nchar(input$nombre)!=0 ){
     updateTabsetPanel(session, "tabset1",
                       selected = "1. Cultivars")
     

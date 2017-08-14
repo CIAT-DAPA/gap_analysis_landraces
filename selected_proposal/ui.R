@@ -76,24 +76,34 @@ body <- dashboardBody(
       title = tagList(shiny::icon("bug"), "Questions"),
       # The id lets us use input$tabset1 on the server to find the current tab
       id = "tabset1",width = "10px", height = "250px",
-      tabPanel("Introduction",tags$html( tags$body(h1(HTML("<b>Introduction</b>")),
-                                                   p("Here is a little introduction created by julian"),
-                                                   h2(HTML("<b>How to conduct the survey</b> ")),
-                                                   p(style="align=justify","Below you will find a short tutorial to handle drawing and editing tools of the polygons."),
-                                                   h3(HTML("<b> 1.Selec the crop variety from the drop down list and type your full name, finally press the save button to advance. </b>")),
+      tabPanel("Introduction",tags$html( tags$body(h1(HTML("<b>How to complete our survey</b> ")),
+
+                                                   #p(style="align=justify","Below you will find a short tutorial to handle drawing and editing tools of the polygons."),
+                                                   h3(HTML("<b> 1. Selec your crop from the drop down list and type your full name. Press the save button to advance. </b>")),
                                                   
                                                    div(style="text-align:center",img(src="name_and_croptype.gif",width="800px", height="400px",aling="left")),
-                                                   h3(HTML("<b>2. work area of the questions</b>")),
-                                                   h3(HTML("<p align=justify>As you can see the environment of first (or all) question  has three objects the first one is a map in which you must draw the polygons,
-                                                      the second object is the statement of the questions and the third object is a text box where you can put notes or comments.</p>")),
+                                                  
+                                                   h3(HTML("<b>2. Questions</b>")),
+                                                   h3(HTML("<p align=justify> This survey has four pages of questions, related to the current distribution of modern crop cultivars, of landraces, 
+                                                           of gaps in germplasm collections for landraces, and of areas that are already well represented in genebanks. On each page, please draw your 
+                                                           best understanding of the requested information, and add any notes or comments helpful in interpretation.</p> ")),
                                                    
-                                                   
-                                                   h3(HTML("<b> 3. Drawing tools. </b>")),
-                                                   h3(" , 
-                                                      on this map you will find a bar tools located at top left."),
+                                                   h3(HTML("<b>2. Drawing tools</b>")),
+                                                   h3(HTML("<p align=justify>On  each map the tools are located at top left. You can zoom in the map with + or - buttons in the  draw toolbar or you can use the mouse wheel. </p>")),
                                                    div(style="text-align:center",img(src="maps_tools.PNG",width="800px", height="400px",aling="left")),
-                                                   h3(HTML("<p align=justify>You can zoom in the map with + or - buttons in the  draw toolbar or you can use the mouse wheel.</P>")),
-                                                   h3("The draw polygons tool allows you d")
+
+                                                   h3(HTML("<p align=justify>Please draw a shape, being sure to complete the shape by reconnecting to the starting point. 
+                                                           </P>")),
+                                                   div(style="text-align:center",img(src="drawing_polygon.gif",width="800px", height="400px",aling="left")),
+                                                   
+                                                   h3(HTML("<p align=justify>  You can undo your work as needed. Save your work when you are done.       </p>")),
+                                                   
+                                                   div(style="text-align:center",img(src="edit_polygon.gif",width="800px", height="400px",aling="left")),
+                                                   
+                                                   h3(HTML("<b> 4. Final revision </b>")),
+                                                   h3(HTML("<p align=justify> On the final page of the survey, you have the opportunity to review your work before finalizing.
+                                                           Feel free to return to any section needing further editing </p>")),
+                                                   div(style="text-align:center",img(src="review_polygon.gif",width="800px", height="400px",aling="left"))
                                                    
                                                    
                                        
@@ -106,16 +116,20 @@ body <- dashboardBody(
                
                ),
       
-      tabPanel("Crops variety and expert name",selectInput("crop","Select crop variety:",c("NULL" ,"Potato" ,       "Barley"  ,      "Banana"  ,      "Rice"  ,        "Chickpea" ,     "Common bean" ,  "Wheat (bread)" ,"Wheat (durum)" ,"Cassava"   ,    "Maize" ,       
+      tabPanel("Crops and expert name",selectInput("crop","Select crop variety:",c("-- Please select crop --" ,"Potato" ,       "Barley"  ,      "Banana"  ,      "Rice"  ,        "Chickpea" ,     "Common bean" ,  "Wheat (bread)" ,"Wheat (durum)" ,"Cassava"   ,    "Maize" ,       
                                                                        "Yam" ,          "Grass pea" ,    "Lentil"  ,      "Sweet potato" , "Sorghum" ,      "Groundnut" ,    "Cowpea"    ,    "Pea"    ,       "Faba bean"   ,  "Pigeonpea" ,   
-                                                                        "Finger millet", "Pearl millet" , "Forages"   ),selected = NULL),textInput('nombre',"Please type your full name"),bsButton("keep",label = " Continue",size = "large",block=F,style="primary",icon("hand-o-right")),bsTooltip(id = "keep", title = "Save name", placement = "right", trigger = "hover")),
+                                                                        "Finger millet", "Pearl millet" , "Forages"   ),selected = NULL),textInput('nombre',"Please type your full name"),bsButton("keep",label = " Save",size = "large",block=F,style="primary",icon("hand-o-right")),bsTooltip(id = "keep", title = "Save name", placement = "right", trigger = "hover")),
       tabPanel("1. Cultivars",box(background ="black",solidHeader = TRUE,width = 8,leafletOutput("mymap5",height = 500,width = "100%")
                                   
                                   
                                   )
-      , box(solidHeader = TRUE,width = 4, tagList(div( tags$h3(HTML("<b>1. High yielding cultivars</b>"))),
-                                                       tags$h4(HTML("<p align=justify> Draw one or more polygons (of any size) over all areas where only modern varieities (no landraces) of the crop are cultivated.</p>")),
-                                                       textAreaInput("txt1","Write a note or comment:",height = "200px")
+      , box(solidHeader = F,width = 4, tagList(div( tags$h3(HTML("<b>1. High yielding cultivars</b>"))),
+                                                       tags$h5(HTML("<p align=justify> Draw one or more polygons (of any size) over all areas where only modern varieties 
+                                                                    (no landraces) of the crop are cultivated. <br/> Landrace is a complicated term. Here we define a landrace as having two essential features: 
+                                                                    <br/> <br/> A). Being tied to a place (undergoing natural selection in a place for a significant period of time). <br/> <br/>
+                                                                   B). Farmer reproduced (farmers save the seed/propagules and replant the landrace,
+                                                                    rather than purchasing from the formal seed sector).</p>")),
+                                                       textAreaInput("txt1","Write a note or comment:",height = "150px")
                                                   ,div(style="float:middle",bsButton("done", size="large",label = "Save", block = F, style="primary",icon("cloud-download")),
                                                        bsTooltip(id = "done", title = "Save your work", placement = "right", trigger = "hover"))
                                                   ,busyIndicator(text = "Saving data in progress..",img = "http://www.cameronbarnes.com/images/loading.gif", wait=200)
@@ -129,8 +143,11 @@ body <- dashboardBody(
              ), box(solidHeader = TRUE,width = 4, tagList(div( tags$h3(HTML("<b>2. Landraces</b>"))),
                      
                 
-                       tags$h4(HTML("<p align=justify>Draw one or more polygons (of any size) over all areas where landraces of the crop are likely to still be cultivated</p>")),
-                       textAreaInput("txt2","Write a note or comment:",height = "200px")
+                       tags$h5(HTML("<p align=justify>Draw one or more polygons (of any size) over all areas where landraces of the crop are likely to still be cultivated. <br/> Landrace is a complicated term. Here we define a landrace as having two essential features: 
+                                                                    <br/> <br/> A). Being tied to a place (undergoing natural selection in a place for a significant period of time). <br/> <br/>
+                                                                   B). Farmer reproduced (farmers save the seed/propagules and replant the landrace,
+                                                                    rather than purchasing from the formal seed sector).</p></p>")),
+                       textAreaInput("txt2","Write a note or comment:",height = "150px")
                        ,div(style="float:center",bsButton("done2",size="large" ,label = "Save", block = F, style="primary",icon("cloud-download")),
                             bsTooltip(id = "done2", title = "Save your work", placement = "right", trigger = "hover"))
                        ,busyIndicator(text = "Saving data in progress..",img = "http://www.cameronbarnes.com/images/loading.gif", wait=200)
@@ -150,7 +167,7 @@ body <- dashboardBody(
                                                
                                                
                                                tags$h4(HTML("<p align=justify>Draw one or more polygons (of any size) over all areas where you would prioritize collecting trips for landraces of the crop, in order to improve their representation in publicly available genebanks</p>")),
-                                               textAreaInput("txt3","Write a note or comment:",height = "200px")                                                      
+                                               textAreaInput("txt3","Write a note or comment:",height = "150px")                                                      
                                                ,div(style="float:middle",bsButton("done3",size="large", label = "Save", block = F, style="primary",icon("cloud-download")),
                                                     bsTooltip(id = "done3", title = "Save your work", placement = "right", trigger = "hover"))
                                                ,busyIndicator(text = "Saving data in progress..",img = "http://www.cameronbarnes.com/images/loading.gif", wait=200)
@@ -164,7 +181,7 @@ body <- dashboardBody(
                       box(solidHeader = TRUE,width = 4, tagList(div( tags$h3(HTML("<b>4. Areas sufficiently represented</b>"))),
                                                                                                                      
                                                                 tags$h4(HTML("<p align=justify>Draw one or more polygons (of any size) over all areas where landraces of the crop have already been sufficiently collected and where germplasm is conserved in publicly available genebanks</p>")),
-                                                                textAreaInput("txt4","Write a note or comment:",height = "200px")
+                                                                textAreaInput("txt4","Write a note or comment:",height = "150px")
                                                                 ,div(style="float:middle",bsButton("done4",size="large" ,label = "Save", block = F, style="primary",icon("cloud-download")),
                                                                      bsTooltip(id = "done4", title = "Save your work", placement = "right", trigger = "hover"))                                                     
                                                                 ,busyIndicator(text = "Saving data in progress..",img = "http://www.cameronbarnes.com/images/loading.gif", wait=200)
