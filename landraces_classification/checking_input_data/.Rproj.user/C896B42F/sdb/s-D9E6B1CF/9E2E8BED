@@ -1,0 +1,29 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1502886921685.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "9E2E8BED",
+    "lastKnownWriteTime" : 7308604914264011873,
+    "last_content_update" : 1502886921685,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "54157D65",
+        "caption" : "genotypic_climate_cmplt",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=genotypic_climate_cmplt&cache_key=54157D65",
+        "displayedObservations" : 16415,
+        "environment" : "",
+        "object" : "genotypic_climate_cmplt",
+        "preview" : 0,
+        "totalObservations" : 16415,
+        "variables" : 18
+    },
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}
