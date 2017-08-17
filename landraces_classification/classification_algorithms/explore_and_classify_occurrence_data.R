@@ -193,6 +193,4 @@ text(tsne$Y, labels=train$label, col=colors[train$label])
 
 # Stepwise Discriminant analysis
 
-
 # Canonical Discriminant analysis
-
