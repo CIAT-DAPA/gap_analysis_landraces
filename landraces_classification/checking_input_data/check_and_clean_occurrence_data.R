@@ -1,9 +1,14 @@
-# Check and clean Genesys coordinates
+# Check and clean occurrence data
 # H. Achicanoy
 # CIAT, 2017
 
 # R options
 options(warn = -1); options(scipen = 999); g <- gc(reset = T); rm(list = ls())
+
+OSys <- Sys.info(); OSys <- OSys[names(OSys)=="sysname"]
+if(OSys == "Linux"){ root <- "/mnt/workspace_cluster_9" } else {
+  if(OSys == "Windows"){ root <- "//dapadfs/Workspace_cluster_9" }
+}; rm(OSys)
 
 # Load packages
 suppressMessages(library(tidyverse))
@@ -28,10 +33,10 @@ suppressMessages(library(gtools))
 ## =================================================================================================================== ##
 
 # Occurrence data all
-coll <- read.csv("D:/ToBackup/climate_and_crop_modelling/cwr-landraces/Input_data/genesys_bean_occ_data_all/coll.csv")
-core <- read.csv("D:/ToBackup/climate_and_crop_modelling/cwr-landraces/Input_data/genesys_bean_occ_data_all/core.csv")
-geo <- read.csv("D:/ToBackup/climate_and_crop_modelling/cwr-landraces/Input_data/genesys_bean_occ_data_all/geo.csv")
-names <- read.csv("D:/ToBackup/climate_and_crop_modelling/cwr-landraces/Input_data/genesys_bean_occ_data_all/names.csv")
+coll  <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_all/coll.csv"))
+core  <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_all/core.csv"))
+geo   <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_all/geo.csv"))
+names <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_all/names.csv"))
 
 names$genesysId <- as.integer(as.character(names$genesysId))
 
@@ -50,15 +55,11 @@ names_core_wout_g <- names_core_wout_g[-which(!is.na(match(names_core_wout_g$nam
 rownames(names_core_wout_g) <- 1:nrow(names_core_wout_g)
 
 
-# dim(unique(names_core_wout_g[,c("genesysId", "name", "aliasType")]))
-# View(unique(names_core_wout_g[,c("genesysId", "name")]))
-
-
 # Occurrence data landraces
-coll <- read.csv("D:/ToBackup/climate_and_crop_modelling/cwr-landraces/Input_data/genesys_bean_occ_data_landraces/coll.csv")
-core <- read.csv("D:/ToBackup/climate_and_crop_modelling/cwr-landraces/Input_data/genesys_bean_occ_data_landraces/core.csv")
-geo <- read.csv("D:/ToBackup/climate_and_crop_modelling/cwr-landraces/Input_data/genesys_bean_occ_data_landraces/geo.csv")
-names <- read.csv("D:/ToBackup/climate_and_crop_modelling/cwr-landraces/Input_data/genesys_bean_occ_data_landraces/names.csv")
+coll  <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_landraces/coll.csv"))
+core  <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_landraces/core.csv"))
+geo   <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_landraces/geo.csv"))
+names <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_landraces/names.csv"))
 
 names$genesysId <- as.integer(as.character(names$genesysId))
 
@@ -66,7 +67,7 @@ names$genesysId <- as.integer(as.character(names$genesysId))
 ## CIAT database
 ## =================================================================================================================== ##
 
-ciat <- read.csv("D:/ToBackup/climate_and_crop_modelling/cwr-landraces/Input_data/CIAT_occ_data_all/coordinates_ciatcsv.csv")
+ciat <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_ciat_data/Bean/BEAN-GRP-CIAT.csv"))
 nrow(ciat) # 37987
 
 sum(ciat$Type.of.material == "Landrace", na.rm = T) # 27644
@@ -77,7 +78,7 @@ sum(ciat$Type.of.material == "Landrace" & !is.na(ciat$Common.names), na.rm = T) 
 # plot(ciat$`Longitude (decimal)`, ciat$`Latitude (decimal)`, pch = 20)
 
 # load shapefiles
-shp_wld <- rgdal::readOGR(dsn = "D:/ToBackup/climate_and_crop_modelling/cwr-landraces/Input_data/GAUL_2014/gaul_2014", layer = "G2014_2013_1")
+shp_wld <- rgdal::readOGR(dsn = paste0(root, "/gap_analysis_landraces/Input_data/_maps/Global_administrative_unit_layers/gaul_2014"), layer = "G2014_2013_1")
 # plot(shp_wld)
 # points(ciat$`Longitude (decimal)`, ciat$`Latitude (decimal)`, pch = 20)
 
@@ -100,7 +101,7 @@ sum(ciat$`Type of material` == "Landrace" & ciat$Wrong.coordinates == 1, na.rm =
 # points(ciat$`Longitude (decimal)`[ciat$`Type of material` == "Landrace" & ciat$Wrong.coordinates == 1], ciat$`Latitude (decimal)`[ciat$`Type of material` == "Landrace" & ciat$Wrong.coordinates == 1], pch = 20, col = 4, cex = 4)
 
 ciat_landraces <- ciat %>% filter(`Type of material` == "Landrace")
-mapspam <- raster::brick("D:/ToBackup/climate_and_crop_modelling/cwr-landraces/Input_data/SPAM_data/spam2005v2r0_harvested-area_bean_total.nc", lvar = 4)
+mapspam <- raster::brick(paste0(root, "/gap_analysis_landraces/Input_data/_crop_areas/MapSPAM/Bean/spam2005v2r0_harvested-area_bean_total.nc"), lvar = 4)
 mapspam <- mapspam[[1]]
 # plot(mapspam)
 
