@@ -1,9 +1,14 @@
-# Genetic analysis
+# Explore and classify occurrence data
 # H. Achicanoy
 # CIAT, 2017
 
 # R options
 options(warn = -1); options(scipen = 999); g <- gc(reset = T); rm(list = ls())
+
+OSys <- Sys.info(); OSys <- OSys[names(OSys)=="sysname"]
+if(OSys == "Linux"){ root <- "/mnt/workspace_cluster_9" } else {
+  if(OSys == "Windows"){ root <- "//dapadfs/Workspace_cluster_9" }
+}; rm(OSys)
 
 # Load packages
 suppressMessages(library(tidyverse))
@@ -30,7 +35,7 @@ suppressMessages(library(randomForest))
 ## Blair's study
 ## =================================================================================================================== ##
 
-phenotypic_data <- read_excel(path = "D:/ToBackup/climate_and_crop_modelling/cwr-landraces/Input_data/Blair_et_al_2009_races_subgroups_phenotypic.xlsx", sheet = 2)
+phenotypic_data <- read_excel(path = paste0(root, "/gap_analysis_landraces/Input_data/_phenotypic_data/Bean/Blair_et_al_2009_races_subgroups_phenotypic.xlsx"), sheet = 2)
 
 par(mfrow = c(1,3))
 phenotypic_data %>% select(Meso.total, Andean.total) %>% cor(method = "pearson", use = "complete.obs") %>% corrplot.mixed()
@@ -47,6 +52,7 @@ par(mfrow = c(1,3))
 phenotypic_data %>% select(D_J.total, G, M.total, NG.total, P.total) %>% cor(method = "pearson", use = "complete.obs") %>% corrplot.mixed()
 phenotypic_data %>% select(D_J.total, G, M.total, NG.total, P.total) %>% cor(method = "spearman", use = "complete.obs") %>% corrplot.mixed()
 phenotypic_data %>% select(D_J.total, G, M.total, NG.total, P.total) %>% cor(method = "kendall", use = "complete.obs") %>% corrplot.mixed()
+rm(phenotypic_data)
 
 ## =================================================================================================================== ##
 ## CIAT + USDA information with climate data
@@ -62,13 +68,13 @@ phenotypic_data %>% select(D_J.total, G, M.total, NG.total, P.total) %>% cor(met
 # 2. Habito crecimiento, dias a floracion
 # 3. Color semilla, patron, brillo
 
-genotypic_climate <- read.csv("D:/ToBackup/climate_and_crop_modelling/cwr-landraces/Input_data/genotypic_climate.csv")
+genotypic_climate <- readRDS(paste0(root, "/gap_analysis_landraces/Results/_occurrences_datasets/ciat_usda_climate.RDS"))
 genotypic_climate %>% glimpse
 genotypic_climate_cmplt <- genotypic_climate[complete.cases(genotypic_climate),]
 genotypic_climate_cmplt <- unique(genotypic_climate_cmplt); rownames(genotypic_climate_cmplt) <- 1:nrow(genotypic_climate_cmplt)
 
 # Descriptive analysis: quantitative variables
-genotypic_climate_cmplt %>% dplyr::select(Elevation, Longitude, Latitude, Seed.weight, wc2.0_bio_30s_01:wc2.0_bio_30s_18) %>%
+genotypic_climate_cmplt %>% dplyr::select(Elevation, Longitude, Latitude, Seed.weight, bio_1:bio_19) %>%
   gather(Variable, Value) %>% ggplot(aes(x = Value, fill = Variable, alpha = .6)) +
   geom_histogram() +
   facet_wrap(~ Variable, scales = "free") +
@@ -80,7 +86,7 @@ genotypic_climate_cmplt %>% dplyr::select(Elevation, Longitude, Latitude, Seed.w
   theme(axis.title.x = element_text(size = 13, face = 'bold'),
         axis.title.y = element_text(size = 13, face = 'bold'),
         axis.text = element_text(size = 12))
-genotypic_climate_cmplt %>% dplyr::select(Elevation, Longitude, Latitude, Seed.weight, wc2.0_bio_30s_01:wc2.0_bio_30s_18) %>%
+genotypic_climate_cmplt %>% dplyr::select(Elevation, Longitude, Latitude, Seed.weight, bio_1:bio_19) %>%
   psych::describe() %>% select(mean, sd, median, min, max, range)
 
 # Descriptive analysis: qualitative variables
@@ -105,12 +111,13 @@ fqTable %>% ggplot(aes(x =  reorder(Category, Percentage), y = Percentage*100)) 
 
 # Identify multivariate outliers
 
-# Calculate Mahalanobis Distance with height and weight distributions
-m_dist <- mahalanobis(genotypic_climate_cmplt %>% dplyr::select(Elevation, Latitude, Seed.weight, wc2.0_bio_30s_01:wc2.0_bio_30s_18),
-                      colMeans(genotypic_climate_cmplt %>% dplyr::select(Elevation, Latitude, Seed.weight, wc2.0_bio_30s_01:wc2.0_bio_30s_18)),
-                      cov(genotypic_climate_cmplt %>% dplyr::select(Elevation, Latitude, Seed.weight, wc2.0_bio_30s_01:wc2.0_bio_30s_18)))
 
-pca.res <- genotypic_climate_cmplt %>% dplyr::select(Elevation, Latitude, Seed.weight, wc2.0_bio_30s_01:wc2.0_bio_30s_18) %>%
+# Calculate Mahalanobis Distance with height and weight distributions
+m_dist <- mahalanobis(genotypic_climate_cmplt %>% dplyr::select(Elevation, Latitude, Seed.weight, bio_1:bio_19),
+                      colMeans(genotypic_climate_cmplt %>% dplyr::select(Elevation, Latitude, Seed.weight, bio_1:bio_19)),
+                      cov(genotypic_climate_cmplt %>% dplyr::select(Elevation, Latitude, Seed.weight, bio_1:bio_19)))
+
+pca.res <- genotypic_climate_cmplt %>% dplyr::select(Elevation, Latitude, Seed.weight, bio_1:bio_19) %>%
   FactoMineR::PCA(X = ., scale.unit = T, graph = T)
 
 test <- data.frame(pca.res$ind$coord[,1:2], m_dist)

@@ -215,7 +215,7 @@ climate_data <- climate_data %>% as.data.frame()
 climate_data$Accession <- ciat_usda$Accession[row_id]; rm(row_id, grep2)
 
 genotypic_climate <- inner_join(x = ciat_usda, y = climate_data, by = "Accession")
-write.csv(genotypic_climate, paste0(root, "/gap_analysis_landraces/Results/_occurrences_datasets/ciat_usda_climate.RDS"), row.names = F)
+saveRDS(genotypic_climate, paste0(root, "/gap_analysis_landraces/Results/_occurrences_datasets/ciat_usda_climate.RDS"))
 ###################################################################################
 
 ## =================================================================================================================== ##
