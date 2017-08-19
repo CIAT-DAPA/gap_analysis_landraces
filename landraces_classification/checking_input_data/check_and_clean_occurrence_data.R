@@ -32,36 +32,36 @@ suppressMessages(library(gtools))
 ## Genesys database
 ## =================================================================================================================== ##
 
-# Occurrence data all
-coll  <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_all/coll.csv"))
-core  <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_all/core.csv"))
-geo   <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_all/geo.csv"))
-names <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_all/names.csv"))
-
-names$genesysId <- as.integer(as.character(names$genesysId))
-
-# CORE + GEO
-core_geo <- left_join(x = core, y = geo, by = "genesysId")
-sum(!is.na(core_geo$longitude & core_geo$latitude))
-
-# NAMES + CORE
-names_core <- left_join(x = names, y = core, by = "genesysId")
-names_core_wout_g <- names_core[-grep(pattern = "^G[0-9]*", names_core$name),]
-names_core_wout_g <- names_core_wout_g[-grep(pattern = "^G-[0-9]*", names_core_wout_g$name),]
-names_core_wout_g <- names_core_wout_g[-grep(pattern = "^G [0-9]*", names_core_wout_g$name),]
-names_core_wout_g <- names_core_wout_g[-grep(pattern = "^PI [0-9]*", names_core_wout_g$name),]
-names_core_wout_g <- names_core_wout_g[-grep(pattern = "^W6 [0-9]*", names_core_wout_g$name),]
-names_core_wout_g <- names_core_wout_g[-which(!is.na(match(names_core_wout_g$name, coll$collNumb))),]
-rownames(names_core_wout_g) <- 1:nrow(names_core_wout_g)
-
-
-# Occurrence data landraces
-coll  <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_landraces/coll.csv"))
-core  <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_landraces/core.csv"))
-geo   <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_landraces/geo.csv"))
-names <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_landraces/names.csv"))
-
-names$genesysId <- as.integer(as.character(names$genesysId))
+# # Occurrence data all
+# coll  <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_all/coll.csv"))
+# core  <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_all/core.csv"))
+# geo   <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_all/geo.csv"))
+# names <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_all/names.csv"))
+# 
+# names$genesysId <- as.integer(as.character(names$genesysId))
+# 
+# # CORE + GEO
+# core_geo <- left_join(x = core, y = geo, by = "genesysId")
+# sum(!is.na(core_geo$longitude & core_geo$latitude))
+# 
+# # NAMES + CORE
+# names_core <- left_join(x = names, y = core, by = "genesysId")
+# names_core_wout_g <- names_core[-grep(pattern = "^G[0-9]*", names_core$name),]
+# names_core_wout_g <- names_core_wout_g[-grep(pattern = "^G-[0-9]*", names_core_wout_g$name),]
+# names_core_wout_g <- names_core_wout_g[-grep(pattern = "^G [0-9]*", names_core_wout_g$name),]
+# names_core_wout_g <- names_core_wout_g[-grep(pattern = "^PI [0-9]*", names_core_wout_g$name),]
+# names_core_wout_g <- names_core_wout_g[-grep(pattern = "^W6 [0-9]*", names_core_wout_g$name),]
+# names_core_wout_g <- names_core_wout_g[-which(!is.na(match(names_core_wout_g$name, coll$collNumb))),]
+# rownames(names_core_wout_g) <- 1:nrow(names_core_wout_g)
+# 
+# 
+# # Occurrence data landraces
+# coll  <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_landraces/coll.csv"))
+# core  <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_landraces/core.csv"))
+# geo   <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_landraces/geo.csv"))
+# names <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_landraces/names.csv"))
+# 
+# names$genesysId <- as.integer(as.character(names$genesysId))
 
 ## =================================================================================================================== ##
 ## CIAT database
@@ -72,181 +72,48 @@ nrow(ciat) # 37987
 
 sum(ciat$Type.of.material == "Landrace", na.rm = T) # 27644
 sum(!is.na(ciat$Common.names), na.rm = T) # 37987
-sum(ciat$Type.of.material == "Landrace" & !is.na(ciat$Common.names), na.rm = T) # 17345
+sum(ciat$Type.of.material == "Landrace" & !is.na(ciat$Common.names), na.rm = T) # 27644
 
-# just coordinates
-# plot(ciat$`Longitude (decimal)`, ciat$`Latitude (decimal)`, pch = 20)
-
-# load shapefiles
+# load world shapefile
 shp_wld <- rgdal::readOGR(dsn = paste0(root, "/gap_analysis_landraces/Input_data/_maps/Global_administrative_unit_layers/gaul_2014"), layer = "G2014_2013_1")
-# plot(shp_wld)
-# points(ciat$`Longitude (decimal)`, ciat$`Latitude (decimal)`, pch = 20)
 
 # let just accessions with coordinates
-ciat <- ciat[which(!is.na(ciat$`Longitude (decimal)`) & !is.na(ciat$`Latitude (decimal)`)),]
+ciat <- ciat[which(!is.na(ciat$Longitude) & !is.na(ciat$Latitude)),]
 rownames(ciat) <- 1:nrow(ciat)
 nrow(ciat) # 22032
 
 # Identify wrong coordinates
-over_res <- sp::over(SpatialPoints(coords = data.frame(lon = ciat$`Longitude (decimal)`, lat = ciat$`Latitude (decimal)`), proj4string = CRS(projargs = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")), as(shp_wld, "SpatialPolygons"))
-ciat$Wrong.coordinates <- as.numeric(is.na(over_res))
-# points(ciat$`Longitude (decimal)`[ciat$Wrong.coordinates == 1], ciat$`Latitude (decimal)`[ciat$Wrong.coordinates == 1], pch = 20, col = 2)
+over_res <- sp::over(SpatialPoints(coords = data.frame(lon = ciat$Longitude, lat = ciat$Latitude), proj4string = CRS(projargs = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")), as(shp_wld, "SpatialPolygons"))
+ciat$Wrong.coordinates <- as.numeric(is.na(over_res)); rm(over_res)
 sum(ciat$Wrong.coordinates) # 153
 
 # All records of landraces
-sum(ciat$`Type of material` == "Landrace", na.rm = T) # 18474
+sum(ciat$Type.of.material == "Landrace", na.rm = T) # 18474
 
 # Records of landraces
-sum(ciat$`Type of material` == "Landrace" & ciat$Wrong.coordinates == 1, na.rm = T) # 142
-# points(ciat$`Longitude (decimal)`[ciat$`Type of material` == "Landrace" & ciat$Wrong.coordinates == 1], ciat$`Latitude (decimal)`[ciat$`Type of material` == "Landrace" & ciat$Wrong.coordinates == 1], pch = 20, col = 4, cex = 4)
+sum(ciat$Type.of.material == "Landrace" & ciat$Wrong.coordinates == 1, na.rm = T) # 142
 
-ciat_landraces <- ciat %>% filter(`Type of material` == "Landrace")
+ciat_landraces <- ciat %>% filter(Type.of.material == "Landrace"); rm(ciat)
 mapspam <- raster::brick(paste0(root, "/gap_analysis_landraces/Input_data/_crop_areas/MapSPAM/Bean/spam2005v2r0_harvested-area_bean_total.nc"), lvar = 4)
 mapspam <- mapspam[[1]]
-# plot(mapspam)
 
-# levelplot(x = mapspam[[1]], par.settings = RdBuTheme)
-# hist(na.omit(mapspam[[1]][]))
-
-pal <- colorNumeric(c("#0C2C84", "#41B6C4", "#FFFFCC"), values(mapspam),
-                    na.color = "transparent")
-
+pal <- colorNumeric(c("#0C2C84", "#41B6C4", "#FFFFCC"), values(mapspam), na.color = "transparent")
 m <- leaflet() %>% addTiles() %>%
   addRasterImage(mapspam, colors = pal, opacity = 0.8) %>%
   addLegend(pal = pal, values = values(mapspam),
             title = "MapSPAM harvested area") %>%
-  addCircles(~`Longitude (decimal)`, ~`Latitude (decimal)`, weight = 3, radius = 40, 
+  addCircles(~Longitude, ~Latitude, weight = 3, radius = 40, 
              color = "#ffa500", stroke = TRUE, fillOpacity = 0.8, data = ciat_landraces) # popup = ct$type, 
-# %>% addMarkers(~`Longitude (decimal)`, ~`Latitude (decimal)`, label = ~as.character(`Common names`), data = ciat_landraces)
-saveWidget(m, file =" m.html")
-
-
-plot(mapspam)
-points(ciat_landraces$`Longitude (decimal)`, ciat_landraces$`Latitude (decimal)`, pch = 20, col = "blue", cex = 0.3)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# set in a vector  the names of all countries
-countryList <- unique(as.character(shp_wld@data$ADM0_NAME))
-
-# discard antarctica's country
-countryList <- countryList[which(countryList!="Antarctica")]
-
-# calculate sum of harvested area
-calc_suma <- function(rObject ,i){
-  
-  country <- shp_wld[shp_wld@data$ADM0_NAME== countryList[i],]
-  country_data <- raster::crop(rObject, extent(country)) # cut raster by conutries shape's
-  
-  country_data <- raster::mask(x = country_data, mask = country) #create a new raster from the cropped shape  
-  
-  values <- sum(!is.na(sp::over(SpatialPoints(coords = unique(data.frame(lon = ciat_landraces$`Longitude (decimal)`,
-                                                       lat = ciat_landraces$`Latitude (decimal)`)),
-                                   proj4string = CRS(projargs = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")),
-                     as(country, "SpatialPolygons"))), na.rm = T)
-  values2 <- sum(country_data[], na.rm = T)
-  
-  country_data <- data.frame(ADM0_CODE = shp_wld@data$ADM0_CODE[which(shp_wld@data$ADM0_NAME == countryList[i])], Country = countryList[i], Count = sum(na.omit(values)), Harvested.area = values2)
-  cat(paste0("Country: ", countryList[i], " done!\n"))
-  return(country_data)
-
-}
-
-calc_suma <- cmpfun(calc_suma) #convert in a compilable function
-
-
-is.compile <- function(func){
-  # this function lets us know if a function has been byte-coded or not
-  # If you have a better idea for how to do this - please let me know...
-  if(class(func) != "function") stop("You need to enter a function")
-  last_2_lines <- tail(capture.output(func),2)
-  any(grepl("bytecode:", last_2_lines)) # returns TRUE if it finds the text "bytecode:" in any of the last two lines of the function's print
-}
-is.compile(calc_suma)
-
-f <- list()
-for(i in 1:length(countryList)){f[[i]] <- calc_suma(rObject = mapspam[[1]], i = i)}
-df <- do.call(rbind, f)
-df <- unique(df); rownames(df) <- 1:nrow(df)
-rm(f, i)
-
-df$Count <- (df$Count - min(df$Count, na.rm = T))/(max(df$Count, na.rm = T) - min(df$Count, na.rm = T))
-df$Harvested.area <- (df$Harvested.area - min(df$Harvested.area, na.rm = T))/(max(df$Harvested.area, na.rm = T) - min(df$Harvested.area, na.rm = T))
-
-highchart() %>% 
-  hc_title(text = "Scatter chart with number of coordinates and median harvested area by country") %>% 
-  hc_add_series_scatter(x = df$Count, y = df$Harvested.area, color = df$Harvested.area, label = df$Country)
-
-plot_ly(df, x = df$Count, y = df$Harvested.area, 
-        text = paste(df$Country),
-        mode = "markers", color = df$Harvested.area, size = df$Count)
-
-df[which(df$Count > 0), c("Country", "Count", "Harvested.area")] %>% gather(key = Variable, value = Value, -Country) %>%
-  ggplot(aes(x = reorder(Country, Value), y = Value, fill = Variable)) +
-  geom_bar(stat = "identity", position = position_dodge()) +
-  scale_fill_brewer(palette = "Paired") + theme_minimal() +
-  xlab("Country") + ylab("Standarized value") + theme(axis.text.x = element_text(angle = 90))
-
-rownames(df) <- df$Country
+# %>% addMarkers(~Longitude, ~Latitude, label = ~as.character(Common_names), data = ciat_landraces)
+# saveWidget(m, file =" m.html")
 
 # Seed luster = Seed brightness
-
-# EarthStat
-
-earthstat <- raster::brick("D:/ToBackup/climate_and_crop_modelling/cwr-landraces/Input_data/EarthStat_data/bean_HarvAreaYield2000_NetCDF/bean_AreaYieldProduction.nc", lvar = 4)
-earthstat <- earthstat[[5]]
-
-f <- list()
-for(i in 1:length(countryList)){f[[i]] <- calc_suma(rObject = earthstat, i = i)}
-df2 <- do.call(rbind, f)
-df2 <- unique(df2); rownames(df2) <- 1:nrow(df2)
-rm(f, i)
-
-df2$Count <- (df2$Count - min(df2$Count, na.rm = T))/(max(df2$Count, na.rm = T) - min(df2$Count, na.rm = T))
-df2$Harvested.area <- (df2$Harvested.area - min(df2$Harvested.area, na.rm = T))/(max(df2$Harvested.area, na.rm = T) - min(df2$Harvested.area, na.rm = T))
-
-highchart() %>% 
-  hc_title(text = "Scatter chart with number of coordinates and total harvested area by country") %>% 
-  hc_add_series_scatter(x = df2$Count, y = df2$Harvested.area, color = df2$Harvested.area, label = df2$Country)
-
-plot_ly(df2, x = df2$Count, y = df2$Harvested.area, 
-        text = paste(df2$Country),
-        mode = "markers", color = df2$Harvested.area, size = df2$Count)
-
-df2[which(df2$Count > 0), c("Country", "Count", "Harvested.area")] %>% gather(key = Variable, value = Value, -Country) %>%
-  ggplot(aes(x = reorder(Country, Value), y = Value, fill = Variable)) +
-  geom_bar(stat = "identity", position = position_dodge()) +
-  scale_fill_brewer(palette = "Paired") + theme_minimal() +
-  coord_flip() + xlab("Country") + ylab("Standarized value")
-
-rownames(df2) <- df2$Country
 
 ## =================================================================================================================== ##
 ## GRIN database
 ## =================================================================================================================== ##
 
-filename <- "D:/ToBackup/climate_and_crop_modelling/cwr-landraces/Input_data/GRIN_occ_data_landraces/GRIN_GLOBAL_BEAN_LAND.xlsx"
+filename <- paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_usda_data/Bean/GRIN_GLOBAL_BEAN_LAND.xlsx")
 sheet_names <- excel_sheets(filename)
 
 GRIN <- lapply(sheet_names, function(x){
@@ -303,33 +170,42 @@ GRIN$SOURCE_CRTRAITS$Seed.shape[grep(pattern = "Reniform or kidney type", x = GR
 GRIN$SOURCE_CRTRAITS$Seed.brightness[grep(pattern = "Brilliant or shiny", x = GRIN$SOURCE_CRTRAITS$Seed.brightness)] <- "Bright"
 GRIN$SOURCE_CRTRAITS$Seed.brightness[grep(pattern = "Opaque or dull", x = GRIN$SOURCE_CRTRAITS$Seed.brightness)] <- "Opaque"
 
-ciat2 <- ciat %>% select(Accession.number, Altitude..masl., Longitude..decimal., Latitude..decimal., Growth.habit, Seed.color, Seed.shape, Seed.brightness, X100.seed.weight..g.)
-names(ciat2)[c(1:4, ncol(ciat2))] <- c("Accession", "Elevation", "Longitude", "Latitude", "Seed.weight")
-ciat2 <- ciat2 %>% separate(Seed.color, into = c("Seed.color", "Seed.color2", "Seed.color3"), sep = ",") 
+ciat_landraces2 <- ciat_landraces %>% select(Accession, Altitude, Longitude, Latitude, Growth.habit, Seed.color, Seed.shape, Seed.brightness, Seed.weight)
+ciat_landraces2 <- ciat_landraces2 %>% separate(Seed.color, into = c("Seed.color", "Seed.color2", "Seed.color3"), sep = ",") 
 
-ciat2$Seed.color[grep(pattern = "Blanco ", x = ciat2$Seed.color)] <- "White"
-ciat2$Seed.color[grep(pattern = "Crema ", x = ciat2$Seed.color)] <- "Cream"
-ciat2$Seed.color[grep(pattern = "Morado ", x = ciat2$Seed.color)] <- "Purple"
-ciat2$Seed.color[grep(pattern = "Rosaso", x = ciat2$Seed.color)] <- "Pink"
+ciat_landraces2$Seed.color[grep(pattern = "Blanco ", x = ciat_landraces2$Seed.color)] <- "White"
+ciat_landraces2$Seed.color[grep(pattern = "Crema ", x = ciat_landraces2$Seed.color)] <- "Cream"
+ciat_landraces2$Seed.color[grep(pattern = "Morado ", x = ciat_landraces2$Seed.color)] <- "Purple"
+ciat_landraces2$Seed.color[grep(pattern = "Rosaso", x = ciat_landraces2$Seed.color)] <- "Pink"
 
-ciat2 <- ciat2 %>% select(Accession, Elevation, Longitude, Latitude, Growth.habit, Seed.color, Seed.shape, Seed.brightness, Seed.weight)
-ciat2$Owner <- "CIAT"
+names(ciat_landraces2)[2] <- "Elevation"
+
+ciat_landraces2 <- ciat_landraces2 %>% select(Accession, Elevation, Longitude, Latitude, Growth.habit, Seed.color, Seed.shape, Seed.brightness, Seed.weight)
+ciat_landraces2$Owner <- "CIAT"
 GRIN$SOURCE_CRTRAITS$Owner <- "USDA"
 
-ciat_usda <- rbind(ciat2, GRIN$SOURCE_CRTRAITS)
-if(!file.exists("ciat_usda_all.RDS")){
-  saveRDS(object = ciat_usda, file = "ciat_usda_all.RDS")
+ciat_usda <- rbind(ciat_landraces2, GRIN$SOURCE_CRTRAITS)
+if(!file.exists(paste0(root, "/gap_analysis_landraces/Results/_occurrences_datasets/ciat_usda_all.RDS"))){
+  saveRDS(object = ciat_usda, file = paste0(root, "/gap_analysis_landraces/Results/_occurrences_datasets/ciat_usda_all.RDS"))
 } else {
-  ciat_usda <- readRDS("ciat_usda_all.RDS")
+  ciat_usda <- readRDS(paste0(root, "/gap_analysis_landraces/Results/_occurrences_datasets/ciat_usda_all.RDS"))
 }
 
+###################################################################################
 # Extract climate information on Linux servers
+###################################################################################
 bioList <- list.files("/mnt/data_cluster_4/observed/gridded_products/worldclim/Global_30s_v2", full.names = T)
 bioList <- bioList[grep(pattern = "bio", x = bioList)]
 bioList <- bioList[grep(pattern = "tif", x = bioList)] %>% mixedsort
 grep2 <- Vectorize(FUN = grep, vectorize.args = "pattern")
-bioList <- bioList[grep2(pattern = c("bio_30s_01", "bio_30s_05", "bio_30s_07", "bio_30s_09", "bio_30s_10", "bio_30s_14", "bio_30s_17", "bio_30s_18"), x = bioList, fixed = F)]
+# bioList <- bioList[grep2(pattern = c("bio_30s_01", "bio_30s_05", "bio_30s_07", "bio_30s_09", "bio_30s_10", "bio_30s_14", "bio_30s_17", "bio_30s_18"), x = bioList, fixed = F)]
 bioList <- raster::stack(bioList)
+
+if(!file.exists(paste0(root, "/gap_analysis_landraces/Results/_occurrences_datasets/ciat_usda_all.RDS"))){
+  saveRDS(object = ciat_usda, file = paste0(root, "/gap_analysis_landraces/Results/_occurrences_datasets/ciat_usda_all.RDS"))
+} else {
+  ciat_usda <- readRDS(paste0(root, "/gap_analysis_landraces/Results/_occurrences_datasets/ciat_usda_all.RDS"))
+}
 
 climate_data <- raster::extract(x = bioList, y = ciat_usda[,c("Longitude", "Latitude")] %>% as.data.frame %>% na.omit)
 row_id <- rownames(ciat_usda[,c("Longitude", "Latitude")] %>% as.data.frame %>% na.omit)
@@ -339,14 +215,96 @@ climate_data <- climate_data %>% as.data.frame()
 climate_data$Accession <- ciat_usda$Accession[row_id]; rm(row_id, grep2)
 
 genotypic_climate <- inner_join(x = ciat_usda, y = climate_data, by = "Accession")
-write.csv(genotypic_climate, "genotypic_climate.csv", row.names = F)
+write.csv(genotypic_climate, paste0(root, "/gap_analysis_landraces/Results/_occurrences_datasets/ciat_usda_climate.RDS"), row.names = F)
+###################################################################################
 
-# PCA
-# MFA
-# Stepwise Discriminant analysis
-# Canonical Discriminant analysis
+## =================================================================================================================== ##
+## Obtain statistics from MapSPAM and EarthStat
+## =================================================================================================================== ##
 
-# Fisher transformation para variables categóricas
-# 1 componente: tamaño semilla muy util para discriminar
-# 2. Habito crecimiento, dias a floracion
-# 3. Color semilla, patron, brillo
+# Set in a vector  the names of all countries
+countryList <- unique(as.character(shp_wld@data$ADM0_NAME))
+countryList <- countryList[which(countryList!="Antarctica")] # Discard antarctica's country
+
+# Calculate sum of harvested area
+calc_suma <- function(rObject ,i){
+  
+  country <- shp_wld[shp_wld@data$ADM0_NAME== countryList[i],]
+  country_data <- raster::crop(rObject, extent(country)) # cut raster by conutries shape's
+  
+  country_data <- raster::mask(x = country_data, mask = country) #create a new raster from the cropped shape  
+  
+  values <- sum(!is.na(sp::over(SpatialPoints(coords = unique(data.frame(lon = ciat_landraces$Longitude,
+                                                       lat = ciat_landraces$Latitude)),
+                                   proj4string = CRS(projargs = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")),
+                     as(country, "SpatialPolygons"))), na.rm = T)
+  values2 <- sum(country_data[], na.rm = T)
+  
+  country_data <- data.frame(ADM0_CODE = shp_wld@data$ADM0_CODE[which(shp_wld@data$ADM0_NAME == countryList[i])], Country = countryList[i], Count = sum(na.omit(values)), Harvested.area = values2)
+  cat(paste0("Country: ", countryList[i], " done!\n"))
+  return(country_data)
+
+}
+calc_suma <- cmpfun(calc_suma) # Compilate this function
+is.compile <- function(func){
+  # This function lets us know if a function has been byte-coded or not
+  # If you have a better idea for how to do this - please let me know...
+  if(class(func) != "function") stop("You need to enter a function")
+  last_2_lines <- tail(capture.output(func),2)
+  any(grepl("bytecode:", last_2_lines)) # returns TRUE if it finds the text "bytecode:" in any of the last two lines of the function's print
+} # Verify if it's compilated
+is.compile(calc_suma); rm(is.compile)
+
+## MapSPAM process
+f <- list()
+for(i in 1:length(countryList)){f[[i]] <- calc_suma(rObject = mapspam[[1]], i = i)}
+df <- do.call(rbind, f)
+df <- unique(df); rownames(df) <- 1:nrow(df)
+rm(f, i)
+df$Count <- (df$Count - min(df$Count, na.rm = T))/(max(df$Count, na.rm = T) - min(df$Count, na.rm = T))
+df$Harvested.area <- (df$Harvested.area - min(df$Harvested.area, na.rm = T))/(max(df$Harvested.area, na.rm = T) - min(df$Harvested.area, na.rm = T))
+
+highchart() %>% 
+  hc_title(text = "Scatter chart with number of coordinates and total harvested area by country") %>% 
+  hc_add_series_scatter(x = df$Count, y = df$Harvested.area, color = df$Harvested.area, label = df$Country)
+
+plot_ly(df, x = df$Count, y = df$Harvested.area, 
+        text = paste(df$Country),
+        mode = "markers", color = df$Harvested.area, size = df$Count)
+
+df[which(df$Count > 0), c("Country", "Count", "Harvested.area")] %>% gather(key = Variable, value = Value, -Country) %>%
+  ggplot(aes(x = reorder(Country, Value), y = Value, fill = Variable)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  scale_fill_brewer(palette = "Paired") + theme_minimal() +
+  xlab("Country") + ylab("Standarized value") + theme(axis.text.x = element_text(angle = 90))
+
+rownames(df) <- df$Country
+
+## EarthStat
+earthstat <- raster::brick(paste0(root, "/gap_analysis_landraces/Input_data/_crop_areas/EarthStat/Bean/bean_AreaYieldProduction.nc"), lvar = 4)
+earthstat <- earthstat[[5]]
+
+f <- list()
+for(i in 1:length(countryList)){f[[i]] <- calc_suma(rObject = earthstat, i = i)}
+df2 <- do.call(rbind, f)
+df2 <- unique(df2); rownames(df2) <- 1:nrow(df2)
+rm(f, i)
+
+df2$Count <- (df2$Count - min(df2$Count, na.rm = T))/(max(df2$Count, na.rm = T) - min(df2$Count, na.rm = T))
+df2$Harvested.area <- (df2$Harvested.area - min(df2$Harvested.area, na.rm = T))/(max(df2$Harvested.area, na.rm = T) - min(df2$Harvested.area, na.rm = T))
+
+highchart() %>% 
+  hc_title(text = "Scatter chart with number of coordinates and total harvested area by country") %>% 
+  hc_add_series_scatter(x = df2$Count, y = df2$Harvested.area, color = df2$Harvested.area, label = df2$Country)
+
+plot_ly(df2, x = df2$Count, y = df2$Harvested.area, 
+        text = paste(df2$Country),
+        mode = "markers", color = df2$Harvested.area, size = df2$Count)
+
+df2[which(df2$Count > 0), c("Country", "Count", "Harvested.area")] %>% gather(key = Variable, value = Value, -Country) %>%
+  ggplot(aes(x = reorder(Country, Value), y = Value, fill = Variable)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  scale_fill_brewer(palette = "Paired") + theme_minimal() +
+  coord_flip() + xlab("Country") + ylab("Standarized value")
+
+rownames(df2) <- df2$Country

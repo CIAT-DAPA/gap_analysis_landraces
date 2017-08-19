@@ -52,6 +52,16 @@ phenotypic_data %>% select(D_J.total, G, M.total, NG.total, P.total) %>% cor(met
 ## CIAT + USDA information with climate data
 ## =================================================================================================================== ##
 
+# PCA
+# MFA
+# Stepwise Discriminant analysis
+# Canonical Discriminant analysis
+
+# Fisher transformation para variables categóricas
+# 1 componente: tamaño semilla muy util para discriminar
+# 2. Habito crecimiento, dias a floracion
+# 3. Color semilla, patron, brillo
+
 genotypic_climate <- read.csv("D:/ToBackup/climate_and_crop_modelling/cwr-landraces/Input_data/genotypic_climate.csv")
 genotypic_climate %>% glimpse
 genotypic_climate_cmplt <- genotypic_climate[complete.cases(genotypic_climate),]
