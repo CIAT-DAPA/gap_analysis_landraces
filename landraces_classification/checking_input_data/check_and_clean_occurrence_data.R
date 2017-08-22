@@ -33,10 +33,10 @@ suppressMessages(library(gtools))
 ## =================================================================================================================== ##
 
 # # Occurrence data all
-# coll  <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_all/coll.csv"))
-# core  <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_all/core.csv"))
-# geo   <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_all/geo.csv"))
-# names <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_all/names.csv"))
+# coll  <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_genesys_data/Bean/_all/coll.csv"))
+# core  <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_genesys_data/Bean/_all/core.csv"))
+# geo   <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_genesys_data/Bean/_all/geo.csv"))
+# names <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_genesys_data/Bean/_all/names.csv"))
 # 
 # names$genesysId <- as.integer(as.character(names$genesysId))
 # 
@@ -56,10 +56,10 @@ suppressMessages(library(gtools))
 # 
 # 
 # # Occurrence data landraces
-# coll  <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_landraces/coll.csv"))
-# core  <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_landraces/core.csv"))
-# geo   <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_landraces/geo.csv"))
-# names <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_genesys_data/Bean/_landraces/names.csv"))
+# coll  <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_genesys_data/Bean/_landraces/coll.csv"))
+# core  <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_genesys_data/Bean/_landraces/core.csv"))
+# geo   <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_genesys_data/Bean/_landraces/geo.csv"))
+# names <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_genesys_data/Bean/_landraces/names.csv"))
 # 
 # names$genesysId <- as.integer(as.character(names$genesysId))
 
@@ -67,7 +67,7 @@ suppressMessages(library(gtools))
 ## CIAT database
 ## =================================================================================================================== ##
 
-ciat <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_ciat_data/Bean/BEAN-GRP-CIAT.csv"))
+ciat <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/BEAN-GRP-CIAT.csv"))
 nrow(ciat) # 37987
 
 sum(ciat$Type.of.material == "Landrace", na.rm = T) # 27644
@@ -109,11 +109,43 @@ m <- leaflet() %>% addTiles() %>%
 
 # Seed luster = Seed brightness
 
+ciat_landraces3 <- ciat_landraces %>% dplyr::select(Accession, Common.names, Synonyms, Altitude, Longitude, Latitude, Growth.habit, Seed.color, Seed.shape, Seed.brightness, Seed.weight, Protein)
+ciat_landraces3 <- ciat_landraces3 %>% tidyr::separate(Seed.color, into = c("Seed.color", "Seed.color2", "Seed.color3"), sep = ",") 
+
+ciat_landraces3$Seed.color[grep(pattern = "Blanco ", x = ciat_landraces3$Seed.color)] <- "White"
+ciat_landraces3$Seed.color[grep(pattern = "Crema ", x = ciat_landraces3$Seed.color)] <- "Cream"
+ciat_landraces3$Seed.color[grep(pattern = "Morado ", x = ciat_landraces3$Seed.color)] <- "Purple"
+ciat_landraces3$Seed.color[grep(pattern = "Rosaso", x = ciat_landraces3$Seed.color)] <- "Pink"
+
+names(ciat_landraces3)[4] <- "Elevation"
+
+ciat_landraces3 <- ciat_landraces3 %>% dplyr::select(Accession, Common.names, Synonyms, Elevation, Longitude, Latitude, Growth.habit, Seed.color, Seed.shape, Seed.brightness, Seed.weight, Protein)
+
+###################################################################################
+# Extract climate information on Linux servers
+###################################################################################
+bioList <- list.files("/mnt/data_cluster_4/observed/gridded_products/worldclim/Global_30s_v2", full.names = T)
+bioList <- bioList[grep(pattern = "bio", x = bioList)]
+bioList <- bioList[grep(pattern = "tif", x = bioList)] %>% mixedsort
+grep2 <- Vectorize(FUN = grep, vectorize.args = "pattern")
+bioList <- raster::stack(bioList)
+
+climate_data <- raster::extract(x = bioList, y = ciat_landraces3[,c("Longitude", "Latitude")] %>% as.data.frame %>% na.omit)
+row_id <- rownames(ciat_landraces3[,c("Longitude", "Latitude")] %>% as.data.frame %>% na.omit)
+row_id <- row_id %>% as.character() %>% as.numeric()
+
+climate_data <- climate_data %>% as.data.frame()
+climate_data$Accession <- ciat_landraces3$Accession[row_id]; rm(row_id, grep2)
+
+genotypic_climate <- inner_join(x = ciat_landraces3, y = climate_data, by = "Accession")
+saveRDS(genotypic_climate, paste0(root, "/gap_analysis_landraces/Results/_occurrences_datasets/ciat_climate.RDS"))
+rm(bioList, climate_data, ciat_landraces3)
+
 ## =================================================================================================================== ##
 ## GRIN database
 ## =================================================================================================================== ##
 
-filename <- paste0(root, "/gap_analysis_landraces/Input_data/_ocurrence_data/_usda_data/Bean/GRIN_GLOBAL_BEAN_LAND.xlsx")
+filename <- paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_usda_data/Bean/GRIN_GLOBAL_BEAN_LAND.xlsx")
 sheet_names <- excel_sheets(filename)
 
 GRIN <- lapply(sheet_names, function(x){

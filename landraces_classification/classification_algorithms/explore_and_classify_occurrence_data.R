@@ -55,7 +55,7 @@ phenotypic_data %>% select(D_J.total, G, M.total, NG.total, P.total) %>% cor(met
 rm(phenotypic_data)
 
 ## =================================================================================================================== ##
-## CIAT + USDA information with climate data
+## CIAT + USDA information with climate data (without phaseolin data and race/genepool classification)
 ## =================================================================================================================== ##
 
 # PCA
@@ -87,7 +87,7 @@ genotypic_climate_cmplt %>% dplyr::select(Elevation, Longitude, Latitude, Seed.w
         axis.title.y = element_text(size = 13, face = 'bold'),
         axis.text = element_text(size = 12))
 genotypic_climate_cmplt %>% dplyr::select(Elevation, Longitude, Latitude, Seed.weight, bio_1:bio_19) %>%
-  psych::describe() %>% select(mean, sd, median, min, max, range)
+  psych::describe() %>% select(mean, sd, median, min, max, range) # %>% mutate(cv = sd/mean * 100)
 
 # Descriptive analysis: qualitative variables
 fqTable <- genotypic_climate_cmplt %>% dplyr::select(Growth.habit, Seed.color, Seed.shape, Seed.brightness, Owner) %>%
@@ -211,3 +211,51 @@ text(tsne$Y, labels=train$label, col=colors[train$label])
 # Stepwise Discriminant analysis
 
 # Canonical Discriminant analysis
+
+
+## =================================================================================================================== ##
+## CIAT information with climate data (with phaseolin data and race/genepool classification)
+## =================================================================================================================== ##
+
+genotypic_climate <- readRDS(paste0(root, "/gap_analysis_landraces/Results/_occurrences_datasets/ciat_climate.RDS"))
+genotypic_climate %>% glimpse
+genotypic_climate_cmplt <- genotypic_climate[complete.cases(genotypic_climate),]
+genotypic_climate_cmplt <- unique(genotypic_climate_cmplt); rownames(genotypic_climate_cmplt) <- 1:nrow(genotypic_climate_cmplt)
+
+# Descriptive analysis: quantitative variables
+genotypic_climate_cmplt %>% dplyr::select(Elevation, Longitude, Latitude, Seed.weight, bio_1:bio_19) %>%
+  gather(Variable, Value) %>% ggplot(aes(x = Value, fill = Variable, alpha = .6)) +
+  geom_histogram() +
+  facet_wrap(~ Variable, scales = "free") +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  theme(legend.title = element_text(face = "bold")) +
+  guides(alpha = F, fill = F) +
+  theme(strip.text = element_text(size = 12, face = "bold")) +
+  theme(axis.title.x = element_text(size = 13, face = 'bold'),
+        axis.title.y = element_text(size = 13, face = 'bold'),
+        axis.text = element_text(size = 12))
+genotypic_climate_cmplt %>% dplyr::select(Elevation, Longitude, Latitude, Seed.weight, bio_1:bio_19) %>%
+  psych::describe() %>% select(mean, sd, median, min, max, range) # %>% mutate(cv = sd/mean * 100)
+
+# Descriptive analysis: qualitative variables
+fqTable <- genotypic_climate_cmplt %>% dplyr::select(Growth.habit, Seed.color, Seed.shape, Seed.brightness, Protein) %>%
+  gather(measure, value) %>%
+  count(measure, value) %>%
+  spread(measure, n) %>%
+  gather(key = Variable, value = Count, Growth.habit:Seed.shape)
+fqTable <- fqTable[complete.cases(fqTable),]; rownames(fqTable) <- 1:nrow(fqTable); colnames(fqTable)[1] <- "Category"
+fqTable <- fqTable %>% dplyr::mutate(Percentage = Count/nrow(genotypic_climate_cmplt))
+
+fqTable %>% ggplot(aes(x =  reorder(Category, Percentage), y = Percentage*100)) +
+  geom_bar(stat = "identity") +
+  xlab("") + ylab("Percentage (%)") +
+  coord_flip() +
+  facet_wrap(~ Variable, scales = "free") +
+  theme_bw() +
+  theme(strip.text = element_text(size = 12, face = "bold")) +
+  theme(axis.title.x = element_text(size = 13, face = 'bold'),
+        axis.title.y = element_text(size = 13, face = 'bold'),
+        axis.text = element_text(size = 12))
+
+
