@@ -30,6 +30,7 @@ suppressMessages(library(factoextra))
 suppressMessages(library(corrplot))
 suppressMessages(library(Rtsne))
 suppressMessages(library(randomForest))
+suppressMessages(library(caret))
 
 ## =================================================================================================================== ##
 ## Blair's study
@@ -221,6 +222,7 @@ genotypic_climate <- readRDS(paste0(root, "/gap_analysis_landraces/Results/_occu
 genotypic_climate %>% glimpse
 genotypic_climate_cmplt <- genotypic_climate[complete.cases(genotypic_climate),]
 genotypic_climate_cmplt <- unique(genotypic_climate_cmplt); rownames(genotypic_climate_cmplt) <- 1:nrow(genotypic_climate_cmplt)
+genotypic_climate_cmplt <- genotypic_climate_cmplt[which(genotypic_climate_cmplt$Common.names != ""),]; rownames(genotypic_climate_cmplt) <- 1:nrow(genotypic_climate_cmplt)
 
 # Descriptive analysis: quantitative variables
 genotypic_climate_cmplt %>% dplyr::select(Elevation, Longitude, Latitude, Seed.weight, bio_1:bio_19) %>%
@@ -258,4 +260,9 @@ fqTable %>% ggplot(aes(x =  reorder(Category, Percentage), y = Percentage*100)) 
         axis.title.y = element_text(size = 13, face = 'bold'),
         axis.text = element_text(size = 12))
 
+# Random forest with default parameters
 
+set.seed(1)
+dfSample <- genotypic_climate_cmplt[sample(x = 1:nrow(genotypic_climate_cmplt), size = 5000, replace = F),]
+
+genotypic.rf <- randomForest(factor(genotypic_climate_cmplt$Common.names) ~ . , data = genotypic_climate_cmplt %>% dplyr::select(Elevation:Seed.weight, bio_1:bio_19))
