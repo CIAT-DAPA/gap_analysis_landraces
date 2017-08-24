@@ -18,11 +18,13 @@ suppressMessages(if(!require(shiny)){install.packages("shiny");library(shiny)}el
 suppressMessages(if(!require(shinydashboard)){install.packages("shinydashboard");library(shinydashboard)}else{library(shinydashboard)})
 suppressMessages(if(!require(leaflet)){install.packages("leaflet");library(leaflet)}else{library(leaflet)})
 suppressMessages(if(!require(shinyBS)){inastall.packages("shinyBS");library(shinyBS)}else{library(shinyBS)})
+suppressMessages(if(!require(ggplot2)){install.packages('ggplot2'); library(ggplot2)} else {library(ggplot2)})
+suppressMessages(if(!require(plotly)){install.packages('plotly'); library(plotly)} else {library(plotly)})
 
 
 
 
-busyIndicator <- function(text = "Calculation in progress..",img = "http://www.cameronbarnes.com/images/loading.gif", wait=1000) {
+busyIndicator <- function(text = "Wait a moment pls...",img = "http://www.cameronbarnes.com/images/loading.gif", wait=1000) {
   
  
   tagList(
@@ -45,7 +47,7 @@ busyIndicator <- function(text = "Calculation in progress..",img = "http://www.c
 }"))
       
       ))
-    ,div(class="shinysky-busy-indicator",h2(HTML("<font color=white>Saving data in progress...</font>")),img(src=img,width="95px", height="50px"))
+    ,div(class="shinysky-busy-indicator",h2(HTML("<font color=white>Wait a moment please...</font>")),img(src=img,width="95px", height="50px"))
     ,tags$script(sprintf(
       "	setInterval(function(){
       if ($('html').hasClass('shiny-busy')) {
@@ -62,6 +64,7 @@ busyIndicator <- function(text = "Calculation in progress..",img = "http://www.c
     )
       )	
   }
+
 
 
 
@@ -103,7 +106,10 @@ body <- dashboardBody(
                                                    h3(HTML("<b> 4. Final revision </b>")),
                                                    h3(HTML("<p align=justify> On the final page of the survey, you have the opportunity to review your work before finalizing.
                                                            Feel free to return to any section needing further editing </p>")),
-                                                   div(style="text-align:center",img(src="review_polygon.gif",width="800px", height="400px",aling="left"))
+                                                   div(style="text-align:center",img(src="review_polygon.gif",width="800px", height="400px",aling="left")),
+                                                   
+                                                   div(style="position: relative;width:100%",h3(HTML("<font color=white >nothing to see here</font>"))),
+                                                   div(style=" border:3px solid #ff0000;align:center",bsButton("intro", size="large",label = HTML("<b><font color=black> Go to survey</font></b>"), block = T, style="primary",icon("hand-o-right")))
                                                    
                                                    
                                        
@@ -130,9 +136,16 @@ body <- dashboardBody(
                                                                    B). Farmer reproduced (farmers save the seed/propagules and replant the landrace,
                                                                     rather than purchasing from the formal seed sector).</p>")),
                                                        textAreaInput("txt1","Write a note or comment:",height = "150px")
-                                                  ,div(style="float:middle",bsButton("done", size="large",label = "Save", block = F, style="primary",icon("cloud-download")),
-                                                       bsTooltip(id = "done", title = "Save your work", placement = "right", trigger = "hover"))
-                                                  ,busyIndicator(text = "Saving data in progress..",img = "http://www.cameronbarnes.com/images/loading.gif", wait=200)
+                                                  ,div(style="position:relative;width: 100%",bsButton("done", size="large",label = "Save", block = F, style="primary",icon("cloud-download")),
+                                                       bsTooltip(id = "done", title = "Save your work", placement = "right", trigger = "hover")
+                                                       
+                                                       ,div(style="float:right;width:95px",bsButton("next1", size="large",label = "Next", block = F, style="primary",icon("forward"))
+                                                        ,bsTooltip(id = "next1", title = "Go to next question", placement = "left", trigger = "hover"))
+                                                       )
+                                               
+                                               
+                                                  ,busyIndicator(text = "wait a moment pls...",img = "http://www.cameronbarnes.com/images/loading.gif", wait=200)
+                                               
                                                   )
       
              )
@@ -148,9 +161,26 @@ body <- dashboardBody(
                                                                    B). Farmer reproduced (farmers save the seed/propagules and replant the landrace,
                                                                     rather than purchasing from the formal seed sector).</p></p>")),
                        textAreaInput("txt2","Write a note or comment:",height = "150px")
-                       ,div(style="float:center",bsButton("done2",size="large" ,label = "Save", block = F, style="primary",icon("cloud-download")),
-                            bsTooltip(id = "done2", title = "Save your work", placement = "right", trigger = "hover"))
-                       ,busyIndicator(text = "Saving data in progress..",img = "http://www.cameronbarnes.com/images/loading.gif", wait=200)
+                       ,div(style="position:relative",bsButton("done2",size="large" ,label = "Save", block = F, style="primary",icon("cloud-download")),
+                            bsTooltip(id = "done2", title = "Save your work", placement = "right", trigger = "hover")
+                            
+                            
+                            
+                            
+                            ,div(style="float:right;width:95px"
+                                 ,bsButton("next2", size="large",label = "Next", block = F, style="primary",icon("forward"))
+                                 ,bsTooltip(id = "next2", title = "Go to next question", placement = "left", trigger = "hover")
+                                 
+                                 ,bsButton("back2", size="large",label = "Back", block = F, style="primary",icon("backward"))
+                                 ,bsTooltip(id = "back2", title = "Return to previous question", placement = "left", trigger = "hover")
+                                 
+                                 )
+                            
+                            
+                            
+                            )  
+                            
+                       ,busyIndicator(text = "Wait a moment pls...",img = "http://www.cameronbarnes.com/images/loading.gif", wait=200)
              )   
                
       )
@@ -168,9 +198,23 @@ body <- dashboardBody(
                                                
                                                tags$h4(HTML("<p align=justify>Draw one or more polygons (of any size) over all areas where you would prioritize collecting trips for landraces of the crop, in order to improve their representation in publicly available genebanks</p>")),
                                                textAreaInput("txt3","Write a note or comment:",height = "150px")                                                      
-                                               ,div(style="float:middle",bsButton("done3",size="large", label = "Save", block = F, style="primary",icon("cloud-download")),
-                                                    bsTooltip(id = "done3", title = "Save your work", placement = "right", trigger = "hover"))
-                                               ,busyIndicator(text = "Saving data in progress..",img = "http://www.cameronbarnes.com/images/loading.gif", wait=200)
+                                               ,div(style="position:relative",bsButton("done3",size="large", label = "Save", block = F, style="primary",icon("cloud-download")),
+                                                    bsTooltip(id = "done3", title = "Save your work", placement = "right", trigger = "hover")
+                                                    
+                                                    ,div(style="float:right;width:95px"
+                                                         ,bsButton("next3", size="large",label = "Next", block = F, style="primary",icon("forward"))
+                                                         ,bsTooltip(id = "next3", title = "Go to next question", placement = "left", trigger = "hover")
+                                                         
+                                                         ,bsButton("back3", size="large",label = "Back", block = F, style="primary",icon("backward"))
+                                                         ,bsTooltip(id = "back3", title = "Return to previous question", placement = "left", trigger = "hover")
+                                                         
+                                                    )
+                                                    
+                                                    
+                                                    
+                                                    
+                                                    )
+                                               ,busyIndicator(text = "Wait a moment pls...",img = "http://www.cameronbarnes.com/images/loading.gif", wait=200)
                                                 )   
 
          )
@@ -182,9 +226,23 @@ body <- dashboardBody(
                                                                                                                      
                                                                 tags$h4(HTML("<p align=justify>Draw one or more polygons (of any size) over all areas where landraces of the crop have already been sufficiently collected and where germplasm is conserved in publicly available genebanks</p>")),
                                                                 textAreaInput("txt4","Write a note or comment:",height = "150px")
-                                                                ,div(style="float:middle",bsButton("done4",size="large" ,label = "Save", block = F, style="primary",icon("cloud-download")),
-                                                                     bsTooltip(id = "done4", title = "Save your work", placement = "right", trigger = "hover"))                                                     
-                                                                ,busyIndicator(text = "Saving data in progress..",img = "http://www.cameronbarnes.com/images/loading.gif", wait=200)
+                                                                ,div(style="position:relative",bsButton("done4",size="large" ,label = "Save", block = F, style="primary",icon("cloud-download")),
+                                                                     bsTooltip(id = "done4", title = "Save your work", placement = "right", trigger = "hover")
+                                                                     
+                                                                     ,div(style="float:right;width:95px"
+                                                                          ,bsButton("next4", size="large",label = "Next", block = F, style="primary",icon("forward"))
+                                                                          ,bsTooltip(id = "next4", title = "Go to next question", placement = "left", trigger = "hover")
+                                                                          
+                                                                          ,bsButton("back4", size="large",label = "Back", block = F, style="primary",icon("backward"))
+                                                                          ,bsTooltip(id = "back4", title = "Return to previous question", placement = "left", trigger = "hover")
+                                                                          
+                                                                     )
+                                                                     
+                                                                     
+                                                                     ,busyIndicator(text = "Wait a moment pls...",img = "http://www.cameronbarnes.com/images/loading.gif", wait=200)
+                                                                     
+                                                                     )                                                     
+                                                                
                                                                 
                                                                 )   
                       
@@ -197,16 +255,24 @@ body <- dashboardBody(
 
       tabPanel("Results",div(tags$h3("Please review your work and return to relevant pages to revise.")),
                
-               box(title = "Plot Cultivars",status = "primary",solidHeader = TRUE, collapsible = TRUE, collapsed = TRUE,plotOutput("plot1")),
+               box(title = "Plot Cultivars",status = "primary",solidHeader = TRUE, collapsible = T, collapsed =T, leafletOutput("plot1", height = 500,width = "100%")),
                
-               box(title = "Plot Landraces",status = "primary", collapsed = TRUE,solidHeader = TRUE, collapsible = TRUE,plotOutput("plot2")),
-               box(title = "Plot Collecting",status = "primary", collapsed = TRUE,solidHeader = TRUE, collapsible = TRUE,plotOutput("plot3")),
-               box(title = "Plot Already conserved",status = "primary", collapsed = TRUE,solidHeader = TRUE, collapsible = TRUE,plotOutput("plot4")),
-               bsButton("close",size="large",label="Finish",style = "danger",icon("sign-out")),
+               box(title = "Plot Landraces",status = "primary", collapsed = TRUE,solidHeader = TRUE, collapsible = TRUE,leafletOutput("plot2", height = 500,width = "100%")),
+               box(title = "Plot Collecting",status = "primary", collapsed = TRUE,solidHeader = TRUE, collapsible = TRUE,leafletOutput("plot3", height = 500,width = "100%")),
+               box(title = "Plot Already conserved",status = "primary", collapsed = TRUE,solidHeader = TRUE, collapsible = TRUE,leafletOutput("plot4", height = 500,width = "100%"))
                
-               bsTooltip(id = "close", title = "Close all", placement = "bottom", trigger = "hover"),
-               busyIndicator(text = "Saving data in progress..",img = "http://www.cameronbarnes.com/images/loading.gif", wait=200)
                
+               
+               ,bsButton("close",size="large",label="Finish",style = "danger",icon("sign-out")),
+               
+               bsTooltip(id = "close", title = "Close all", placement = "bottom", trigger = "hover")
+               
+               
+               ,div(style="float:right;width:95px",bsButton("back5", size="large",label = "Back", block = F, style="warning",icon("backward"))
+               ,bsTooltip(id = "back5", title = "Return to previous question", placement = "left", trigger = "hover"))
+               ,busyIndicator(text = "wait a moment pls...",img = "http://www.cameronbarnes.com/images/loading.gif", wait=200)
+               
+                 
                #,box(title = "debuggin",status = "primary", collapsed = TRUE,solidHeader = TRUE, collapsible = TRUE,tableOutput("debug"))
                
                
