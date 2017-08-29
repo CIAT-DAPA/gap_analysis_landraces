@@ -265,4 +265,8 @@ fqTable %>% ggplot(aes(x =  reorder(Category, Percentage), y = Percentage*100)) 
 set.seed(1)
 dfSample <- genotypic_climate_cmplt[sample(x = 1:nrow(genotypic_climate_cmplt), size = 5000, replace = F),]
 
+genotypic.rf <- randomForest(genotypic_climate_cmplt %>% dplyr::select(Elevation:Latitude, Seed.weight, bio_1:bio_19))
+MDSplot(genotypic.rf, genotypic_climate_cmplt$Common.names)
+
+
 genotypic.rf <- randomForest(factor(genotypic_climate_cmplt$Common.names) ~ . , data = genotypic_climate_cmplt %>% dplyr::select(Elevation:Seed.weight, bio_1:bio_19))

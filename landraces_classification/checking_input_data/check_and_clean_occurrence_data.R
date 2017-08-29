@@ -67,33 +67,56 @@ suppressMessages(library(gtools))
 ## CIAT database
 ## =================================================================================================================== ##
 
-ciat <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/BEAN-GRP-CIAT.csv"))
-nrow(ciat) # 37987
+ciat <- read_excel(path = paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/CIAT_BEAN_DB_2017_08_25.xlsx"), sheet = "CLEANED_FILE")
+nrow(ciat) # 37987 (old and original), 23831 (new one with vernacular names)
 
-sum(ciat$Type.of.material == "Landrace", na.rm = T) # 27644
-sum(!is.na(ciat$Common.names), na.rm = T) # 37987
-sum(ciat$Type.of.material == "Landrace" & !is.na(ciat$Common.names), na.rm = T) # 27644
+names(ciat) <- c("ID", "Source", "Cleaned_by", "Accession.number", "Synonyms", "Common.names",
+                 "Interpreted.name", "Test", "Vernacular.name", "Genepool", "Race.interpreted", "Race",
+                 "Subgroup", "Reference", "Genus", "Species", "Subspecies", "Variety",
+                 "Biological.status", "Type.of.material", "CORE.collection",
+                 "Country", "Department", "County", "Place", "Altitude", "Latitude", "Longitude",
+                 "Date.collection", "Name", "Name2", "Institution", "Country3",
+                 "Date.receipt", "Growth.habit", "Seed.color", "Seed.shape", "Seed.brightness", "Seed.weight",
+                 "Days.to.flowering", "Place4", "Year", "Responsible", "First.harvest", "Last.harvest",
+                 "Place5", "Year6", "Responsible7", "Reaction", "Responsible8", "Reaction9",
+                 "Responsible10", "Date.evaluation", "Protein", "Responsible11")
+
+sum(ciat$Type.of.material == "Landrace", na.rm = T) # 27644 (old and original), 23831 (new one with vernacular names)
+sum(!is.na(ciat$Common.names), na.rm = T) # 37987 (old and original), 15784 (new one with vernacular names)
+sum(!is.na(ciat$Vernacular.name), na.rm = T) # 4196 (new one with vernacular names)
+sum(ciat$Type.of.material == "Landrace" & !is.na(ciat$Vernacular.name), na.rm = T) # 4196
 
 # load world shapefile
 shp_wld <- rgdal::readOGR(dsn = paste0(root, "/gap_analysis_landraces/Input_data/_maps/Global_administrative_unit_layers/gaul_2014"), layer = "G2014_2013_1")
 
-# let just accessions with coordinates
-ciat <- ciat[which(!is.na(ciat$Longitude) & !is.na(ciat$Latitude)),]
-rownames(ciat) <- 1:nrow(ciat)
-nrow(ciat) # 22032
+# Load world raster
+rst_wld <- raster::raster(paste0(root, "/gap_analysis_landraces/Input_data/presence_data/world_body_waters_2-5.asc"))
+
+# Identify accession without coordinates to do Georreferenciation process
+ciat_empyCoordinates <- ciat[which(is.na(ciat$Longitude) & is.na(ciat$Latitude)),]
+ciat_empyCoordinates <- ciat_empyCoordinates %>% dplyr::filter((!is.na(Country) |
+                                                                 !is.na(Department) |
+                                                                 !is.na(County) |
+                                                                 !is.na(Place)) & !is.na(Protein))
+write.csv(x = ciat_empyCoordinates, file = paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/coord4georef.csv"), row.names = F)
+rm(ciat_empyCoordinates)
+
+# Let just accessions with coordinates
+ciat <- ciat %>% dplyr::filter(!is.na(Longitude) & !is.na(ciat$Latitude) & !is.na(Protein))
+nrow(ciat) # 22032 (old and original), 12545 (new one with vernacular names)
 
 # Identify wrong coordinates
+# Using a shapefile
 over_res <- sp::over(SpatialPoints(coords = data.frame(lon = ciat$Longitude, lat = ciat$Latitude), proj4string = CRS(projargs = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")), as(shp_wld, "SpatialPolygons"))
 ciat$Wrong.coordinates <- as.numeric(is.na(over_res)); rm(over_res)
-sum(ciat$Wrong.coordinates) # 153
+sum(ciat$Wrong.coordinates) # 153 (old and original), 87 (new one with vernacular names)
+# plot(shp_wld); points(ciat[,c("Longitude", "Latitude")], col = 4, pch = 20); points(ciat[ciat$Wrong.coordinates == 1, c("Longitude", "Latitude")], col = 2, pch = 20)
 
-# All records of landraces
-sum(ciat$Type.of.material == "Landrace", na.rm = T) # 18474
+# Using a raster file
+ciat$Wrong.coordinates2 <- raster::extract(x = rst_wld, y = ciat[c("Longitude", "Latitude")])
+sum(is.na(ciat$Wrong.coordinates2)) # 69 (new one with vernacular names)
+rm(shp_wld, rst_wld)
 
-# Records of landraces
-sum(ciat$Type.of.material == "Landrace" & ciat$Wrong.coordinates == 1, na.rm = T) # 142
-
-ciat_landraces <- ciat %>% filter(Type.of.material == "Landrace"); rm(ciat)
 mapspam <- raster::brick(paste0(root, "/gap_analysis_landraces/Input_data/_crop_areas/MapSPAM/Bean/spam2005v2r0_harvested-area_bean_total.nc"), lvar = 4)
 mapspam <- mapspam[[1]]
 
@@ -109,17 +132,99 @@ m <- leaflet() %>% addTiles() %>%
 
 # Seed luster = Seed brightness
 
-ciat_landraces3 <- ciat_landraces %>% dplyr::select(Accession, Common.names, Synonyms, Altitude, Longitude, Latitude, Growth.habit, Seed.color, Seed.shape, Seed.brightness, Seed.weight, Protein)
-ciat_landraces3 <- ciat_landraces3 %>% tidyr::separate(Seed.color, into = c("Seed.color", "Seed.color2", "Seed.color3"), sep = ",") 
+ciat2 <- ciat %>% dplyr::select(Test, Vernacular.name, Genepool, Race.interpreted, Subgroup, Altitude, Longitude, Latitude, Growth.habit, Seed.color, Seed.shape, Seed.brightness, Seed.weight, Protein)
+# Split colors
+ciat2 <- ciat2 %>% tidyr::separate(Seed.color, into = c("Seed.color", "Seed.color2", "Seed.color3"), sep = ",") 
+ciat2$Seed.color[grep(pattern = "Crema ", x = ciat2$Seed.color)] <- "Cream"
+ciat2$Seed.color[grep(pattern = "Rosaso", x = ciat2$Seed.color)] <- "Pink"
+# ciat2$Seed.color[grep(pattern = "Blanco ", x = ciat2$Seed.color)] <- "White"
+# ciat2$Seed.color[grep(pattern = "Morado ", x = ciat2$Seed.color)] <- "Purple"
 
-ciat_landraces3$Seed.color[grep(pattern = "Blanco ", x = ciat_landraces3$Seed.color)] <- "White"
-ciat_landraces3$Seed.color[grep(pattern = "Crema ", x = ciat_landraces3$Seed.color)] <- "Cream"
-ciat_landraces3$Seed.color[grep(pattern = "Morado ", x = ciat_landraces3$Seed.color)] <- "Purple"
-ciat_landraces3$Seed.color[grep(pattern = "Rosaso", x = ciat_landraces3$Seed.color)] <- "Pink"
+ciat2$Seed.color2[grep(pattern = " Black", x = ciat2$Seed.color2)] <- "Black"
+ciat2$Seed.color2[grep(pattern = " Brown", x = ciat2$Seed.color2)] <- "Brown"
+ciat2$Seed.color2[grep(pattern = " Cream", x = ciat2$Seed.color2)] <- "Cream"
+ciat2$Seed.color2[grep(pattern = " Other", x = ciat2$Seed.color2)] <- "Other"
+ciat2$Seed.color2[grep(pattern = " Pink", x = ciat2$Seed.color2)] <- "Pink"
+ciat2$Seed.color2[grep(pattern = " Purple", x = ciat2$Seed.color2)] <- "Purple"
+ciat2$Seed.color2[grep(pattern = " Red", x = ciat2$Seed.color2)] <- "Red"
+ciat2$Seed.color2[grep(pattern = " White", x = ciat2$Seed.color2)] <- "White"
+ciat2$Seed.color2[grep(pattern = " Yellow", x = ciat2$Seed.color2)] <- "Yellow"
 
-names(ciat_landraces3)[4] <- "Elevation"
+ciat2$Seed.color3[grep(pattern = " Black", x = ciat2$Seed.color3)] <- "Black"
+ciat2$Seed.color3[grep(pattern = " Brown", x = ciat2$Seed.color3)] <- "Brown"
+ciat2$Seed.color3[grep(pattern = " Cream", x = ciat2$Seed.color3)] <- "Cream"
+ciat2$Seed.color3[grep(pattern = " Other", x = ciat2$Seed.color3)] <- "Other"
+ciat2$Seed.color3[grep(pattern = " Pink", x = ciat2$Seed.color3)] <- "Pink"
+ciat2$Seed.color3[grep(pattern = " Purple", x = ciat2$Seed.color3)] <- "Purple"
+ciat2$Seed.color3[grep(pattern = " Red", x = ciat2$Seed.color3)] <- "Red"
+ciat2$Seed.color3[grep(pattern = " White", x = ciat2$Seed.color3)] <- "White"
+ciat2$Seed.color3[grep(pattern = " Yellow", x = ciat2$Seed.color3)] <- "Yellow"
+
+color_list <- c(ciat2$Seed.color %>% as.character %>% unique,
+                ciat2$Seed.color2 %>% as.character %>% unique,
+                ciat2$Seed.color3 %>% as.character %>% unique) %>% unique %>% sort
+
+for(i in 1:length(color_list)){
+  eval(parse(text = paste0("ciat2$Color_", color_list[i], " <- 0")))
+  if(ciat2$Seed.color == color_list[i] | ciat2$Seed.color2 == color_list[i] | ciat2$Seed.color3 == color_list[i]){
+    
+  }
+}; rm(i)
+
+# Split proteins
+ciat2 <- ciat2 %>% tidyr::separate(Protein, into = c("Protein", "Protein2", "Protein3", "Protein4", "Protein5"), sep = ",") 
+# ciat2$Protein[grep(pattern = "^$", x = ciat2$Protein, fixed = T)] <- NA
+ciat2$Protein[grep(pattern = "^B\\?", x = ciat2$Protein)] <- "B"
+ciat2$Protein[grep(pattern = "^C\\?", x = ciat2$Protein)] <- "C"
+ciat2$Protein[grep(pattern = "^Ca1\\(2D\\)?", x = ciat2$Protein)] <- "Ca1"
+ciat2$Protein[grep(pattern = "CAR\\(2D\\)?$", x = ciat2$Protein)] <- "CAR"
+ciat2$Protein[grep(pattern = "CAR\\(2D\\)H1", x = ciat2$Protein)] <- "CAR,H1"
+ciat2$Protein[grep(pattern = "CH \\(2D\\)", x = ciat2$Protein)] <- "CH"
+ciat2$Protein[grep(pattern = "CH\\(2D\\)", x = ciat2$Protein)] <- "CH"
+ciat2$Protein[grep(pattern = "CH\\?", x = ciat2$Protein)] <- "CH"
+ciat2$Protein[grep(pattern = "H\\?", x = ciat2$Protein)] <- "H"
+ciat2$Protein[grep(pattern = "H1\\(2D\\)", x = ciat2$Protein)] <- "H1"
+ciat2$Protein[grep(pattern = "H1\\?", x = ciat2$Protein)] <- "H1"
+ciat2$Protein[grep(pattern = "H2\\(2D\\)", x = ciat2$Protein)] <- "H2"
+ciat2$Protein[grep(pattern = "HE\\(2D\\)", x = ciat2$Protein)] <- "HE"
+ciat2$Protein[grep(pattern = "L \\(2D\\)", x = ciat2$Protein)] <- "L"
+ciat2$Protein[grep(pattern = "LI\\(2D\\)", x = ciat2$Protein)] <- "LI"
+ciat2$Protein[grep(pattern = "M13\\? o M4\\?", x = ciat2$Protein)] <- "M13,M4"
+ciat2$Protein[grep(pattern = "P1\\?", x = ciat2$Protein)] <- "P1"
+ciat2$Protein[grep(pattern = "S\\(2D\\)", x = ciat2$Protein)] <- "S"
+ciat2$Protein[grep(pattern = "S\\?$", x = ciat2$Protein)] <- "S"
+ciat2$Protein[grep(pattern = "S\\?B\\?", x = ciat2$Protein)] <- "S,B"
+ciat2$Protein[grep(pattern = "Sd\\(2D\\)", x = ciat2$Protein)] <- "Sd"
+ciat2$Protein[grep(pattern = "SIMPLE \\?", x = ciat2$Protein)] <- "SIMPLE"
+ciat2$Protein[grep(pattern = "T \\(2D\\)", x = ciat2$Protein)] <- "T"
+ciat2$Protein[grep(pattern = "T\\(2D\\)", x = ciat2$Protein)] <- "T"
+ciat2$Protein[grep(pattern = "T\\?", x = ciat2$Protein)] <- "T"
+ciat2$Protein[grep(pattern = "TI1\\(2D\\)", x = ciat2$Protein)] <- "TI1"
+ciat2$Protein[grep(pattern = "TI2\\(2D\\)", x = ciat2$Protein)] <- "TI2"
+ciat2$Protein[grep(pattern = "To\\?", x = ciat2$Protein)] <- "To"
+
+ciat2$Protein2[grep(pattern = " H1\\(LCG\\)", x = ciat2$Protein2)] <- "H1"
+ciat2$Protein2[grep(pattern = "C\\?", x = ciat2$Protein2)] <- "C"
+ciat2$Protein2[grep(pattern = "^Ca\\?", x = ciat2$Protein2)] <- "Ca"
+ciat2$Protein2[grep(pattern = "^CAR\\(2D\\)", x = ciat2$Protein2)] <- "CAR"
+ciat2$Protein2[grep(pattern = "^CH\\(2D\\)", x = ciat2$Protein2)] <- "CH"
+ciat2$Protein2[grep(pattern = "^H1\\(2D", x = ciat2$Protein2)] <- "H1"
+ciat2$Protein2[grep(pattern = "^Mu\\?", x = ciat2$Protein2)] <- "Mu"
+ciat2$Protein2[grep(pattern = "^P1\\?", x = ciat2$Protein2)] <- "P1"
+ciat2$Protein2[grep(pattern = "^S\\(2D", x = ciat2$Protein2)] <- "S"
+ciat2$Protein2[grep(pattern = "^T\\?", x = ciat2$Protein2)] <- "T"
+
+ciat2$Protein3[grep(pattern = "^C \\(\\?\\)", x = ciat2$Protein3)] <- "C"
+ciat2$Protein3[grep(pattern = "^CAR\\(2D\\)", x = ciat2$Protein3)] <- "CAR"
+ciat2$Protein3[grep(pattern = "^CH\\? \\(2D\\)", x = ciat2$Protein3)] <- "CH"
 
 ciat_landraces3 <- ciat_landraces3 %>% dplyr::select(Accession, Common.names, Synonyms, Elevation, Longitude, Latitude, Growth.habit, Seed.color, Seed.shape, Seed.brightness, Seed.weight, Protein)
+
+c(ciat2$Protein %>% as.character %>% unique,
+  ciat2$Protein2 %>% as.character %>% unique,
+  ciat2$Protein3 %>% as.character %>% unique,
+  ciat2$Protein4 %>% as.character %>% unique,
+  ciat2$Protein5 %>% as.character %>% unique) %>% unique %>% sort
 
 ###################################################################################
 # Extract climate information on Linux servers
