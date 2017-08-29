@@ -31,6 +31,9 @@ suppressMessages(library(corrplot))
 suppressMessages(library(Rtsne))
 suppressMessages(library(randomForest))
 suppressMessages(library(caret))
+suppressMessages(library(modelr))
+suppressMessages(library(broom))
+suppressMessages(library(purrr))
 
 ## =================================================================================================================== ##
 ## Blair's study
@@ -218,15 +221,16 @@ text(tsne$Y, labels=train$label, col=colors[train$label])
 ## CIAT information with climate data (with phaseolin data and race/genepool classification)
 ## =================================================================================================================== ##
 
-genotypic_climate <- readRDS(paste0(root, "/gap_analysis_landraces/Results/_occurrences_datasets/ciat_climate.RDS"))
+genotypic_climate <- readRDS(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/ciatOrganizedVariables_climate.RDS"))
 genotypic_climate %>% glimpse
-genotypic_climate_cmplt <- genotypic_climate[complete.cases(genotypic_climate),]
-genotypic_climate_cmplt <- unique(genotypic_climate_cmplt); rownames(genotypic_climate_cmplt) <- 1:nrow(genotypic_climate_cmplt)
-genotypic_climate_cmplt <- genotypic_climate_cmplt[which(genotypic_climate_cmplt$Common.names != ""),]; rownames(genotypic_climate_cmplt) <- 1:nrow(genotypic_climate_cmplt)
 
-# Descriptive analysis: quantitative variables
-genotypic_climate_cmplt %>% dplyr::select(Elevation, Longitude, Latitude, Seed.weight, bio_1:bio_19) %>%
-  gather(Variable, Value) %>% ggplot(aes(x = Value, fill = Variable, alpha = .6)) +
+# ==================================== #
+# Univariate descriptive analysis
+# ==================================== #
+
+# Quantitative variables: histograms
+gg <- genotypic_climate %>% dplyr::select(Altitude, Longitude, Latitude, Seed.weight, bio_1:bio_19) %>%
+  gather(Variable, Value) %>% ggplot(aes(x = Value, alpha = .6)) + # fill = Variable
   geom_histogram() +
   facet_wrap(~ Variable, scales = "free") +
   theme_bw() +
@@ -237,19 +241,37 @@ genotypic_climate_cmplt %>% dplyr::select(Elevation, Longitude, Latitude, Seed.w
   theme(axis.title.x = element_text(size = 13, face = 'bold'),
         axis.title.y = element_text(size = 13, face = 'bold'),
         axis.text = element_text(size = 12))
-genotypic_climate_cmplt %>% dplyr::select(Elevation, Longitude, Latitude, Seed.weight, bio_1:bio_19) %>%
-  psych::describe() %>% select(mean, sd, median, min, max, range) # %>% mutate(cv = sd/mean * 100)
+if(!file.exists(paste0(root, "/gap_analysis_landraces/Results/histograms_quantitative_variables.png"))){
+  ggsave(paste0(root, "/gap_analysis_landraces/Results/histograms_quantitative_variables.png"), plot = gg, width = 22, height = 10, units = "in"); rm(gg)
+}; rm(gg)
 
-# Descriptive analysis: qualitative variables
-fqTable <- genotypic_climate_cmplt %>% dplyr::select(Growth.habit, Seed.color, Seed.shape, Seed.brightness, Protein) %>%
+# Quantitative variables: descriptive statistics
+genotypic_climate %>% dplyr::select(Altitude, Longitude, Latitude, Seed.weight, bio_1:bio_19) %>%
+  psych::describe() %>% select(mean, sd, median, min, max, range) %>% as.data.frame %>%
+  round(., digits = 2) %>% write.csv(., file = paste0(root, "/gap_analysis_landraces/Results/descriptiveStats_quantitative_variables.csv"), row.names = T)
+
+# Qualitative variables: create a table of counts
+fqTable <- genotypic_climate %>% dplyr::select(Vernacular.name, Genepool, Race.interpreted, Subgroup, Growth.habit, Seed.shape, Seed.brightness) %>%
   gather(measure, value) %>%
   count(measure, value) %>%
   spread(measure, n) %>%
-  gather(key = Variable, value = Count, Growth.habit:Seed.shape)
+  gather(key = Variable, value = Count, Genepool:Vernacular.name)
 fqTable <- fqTable[complete.cases(fqTable),]; rownames(fqTable) <- 1:nrow(fqTable); colnames(fqTable)[1] <- "Category"
-fqTable <- fqTable %>% dplyr::mutate(Percentage = Count/nrow(genotypic_climate_cmplt))
+fqTable <- fqTable %>% dplyr::mutate(Percentage = Count/nrow(genotypic_climate))
+fqTable <- fqTable %>% as.data.frame
+# Color variable
+fqTable <- rbind(fqTable, data.frame(Category = genotypic_climate[,grep(pattern = "^Color_", x = names(genotypic_climate))] %>% as.data.frame %>% apply(MARGIN = 2, FUN = sum) %>% names %>% gsub(pattern = "Color_", replacement = "", x = .),
+                                     Variable = "Color",
+                                     Count = genotypic_climate[,grep(pattern = "^Color_", x = names(genotypic_climate))] %>% as.data.frame %>% apply(MARGIN = 2, FUN = sum) %>% as.numeric,
+                                     Percentage = genotypic_climate[,grep(pattern = "^Color_", x = names(genotypic_climate))] %>% as.data.frame %>% apply(MARGIN = 2, FUN = sum) %>% as.numeric / nrow(genotypic_climate)))
+# Protein variable
+fqTable <- rbind(fqTable, data.frame(Category = genotypic_climate[,grep(pattern = "^Protein_", x = names(genotypic_climate))] %>% as.data.frame %>% apply(MARGIN = 2, FUN = sum) %>% names %>% gsub(pattern = "Protein_", replacement = "", x = .),
+                                     Variable = "Protein",
+                                     Count = genotypic_climate[,grep(pattern = "^Protein_", x = names(genotypic_climate))] %>% as.data.frame %>% apply(MARGIN = 2, FUN = sum) %>% as.numeric,
+                                     Percentage = genotypic_climate[,grep(pattern = "^Protein_", x = names(genotypic_climate))] %>% as.data.frame %>% apply(MARGIN = 2, FUN = sum) %>% as.numeric / nrow(genotypic_climate)))
 
-fqTable %>% ggplot(aes(x =  reorder(Category, Percentage), y = Percentage*100)) +
+# Qualitative variables: barplot per variable
+gg <- fqTable %>% ggplot(aes(x =  reorder(Category, Percentage), y = Percentage*100)) +
   geom_bar(stat = "identity") +
   xlab("") + ylab("Percentage (%)") +
   coord_flip() +
@@ -259,14 +281,71 @@ fqTable %>% ggplot(aes(x =  reorder(Category, Percentage), y = Percentage*100)) 
   theme(axis.title.x = element_text(size = 13, face = 'bold'),
         axis.title.y = element_text(size = 13, face = 'bold'),
         axis.text = element_text(size = 12))
+if(!file.exists(paste0(root, "/gap_analysis_landraces/Results/barplot_qualitative_variables.png"))){
+  ggsave(paste0(root, "/gap_analysis_landraces/Results/barplot_qualitative_variables.png"), plot = gg, width = 22, height = 10, units = "in"); rm(fqTable, gg)
+}; rm(gg)
 
-# Random forest with default parameters
+# ==================================== #
+# Multivariate descriptive analysis
+# ==================================== #
 
+# Principal Component Analysis for mixed data
+
+# Cluster analysis
+
+# ==================================== #
+# Classification algorithms
+# ==================================== #
+
+## Genepool as response variable
+genepool_data <- genotypic_climate %>% dplyr::select(Genepool, Altitude, Latitude:bio_19)
+genepool_data <- genepool_data[complete.cases(genepool_data),]; rownames(genepool_data) <- 1:nrow(genepool_data)
+genepool_data$Genepool <- factor(genepool_data$Genepool)
+genepool_data$Growth.habit <- factor(genepool_data$Growth.habit)
+genepool_data$Seed.shape <- factor(genepool_data$Seed.shape)
+genepool_data$Seed.brightness <- factor(genepool_data$Seed.brightness)
+
+# Random Forest
 set.seed(1)
-dfSample <- genotypic_climate_cmplt[sample(x = 1:nrow(genotypic_climate_cmplt), size = 5000, replace = F),]
+genepool_folds <- modelr::crossv_kfold(genepool_data, k = 5)
+genepool_folds <- genepool_folds %>% mutate(model = map(train, ~ randomForest(Genepool ~ ., data = .)))
 
-genotypic.rf <- randomForest(genotypic_climate_cmplt %>% dplyr::select(Elevation:Latitude, Seed.weight, bio_1:bio_19))
-MDSplot(genotypic.rf, genotypic_climate_cmplt$Common.names)
+varImpPlot(x = genepool_folds$model$`1`)
+varImpPlot(x = genepool_folds$model$`2`)
 
+genepool_data %>% ggplot(aes(x = Genepool, y = Latitude)) + geom_boxplot()
+genepool_data %>% ggplot(aes(x = Genepool, y = bio_15)) + geom_boxplot()
+genepool_data %>% ggplot(aes(x = Genepool, fill = factor(Protein_T))) + geom_bar()
+genepool_data %>% ggplot(aes(x = Genepool, y = Seed.weight)) + geom_boxplot()
 
-genotypic.rf <- randomForest(factor(genotypic_climate_cmplt$Common.names) ~ . , data = genotypic_climate_cmplt %>% dplyr::select(Elevation:Seed.weight, bio_1:bio_19))
+## Race as response variable
+race_data <- genotypic_climate %>% dplyr::select(Race.interpreted, Altitude, Latitude:bio_19)
+race_data <- race_data[complete.cases(race_data),]; rownames(race_data) <- 1:nrow(race_data)
+race_data$Race.interpreted <- factor(race_data$Race.interpreted)
+race_data$Growth.habit <- factor(race_data$Growth.habit)
+race_data$Seed.shape <- factor(race_data$Seed.shape)
+race_data$Seed.brightness <- factor(race_data$Seed.brightness)
+
+# Random Forest
+set.seed(1)
+race_folds <- modelr::crossv_kfold(race_data, k = 5)
+race_folds <- race_folds %>% mutate(model = map(train, ~ randomForest(Race.interpreted ~ ., data = .)))
+
+varImpPlot(x = race_folds$model$`1`)
+varImpPlot(x = race_folds$model$`2`)
+
+## Subgroup as response variable
+subgroup_data <- genotypic_climate %>% dplyr::select(Subgroup, Altitude, Latitude:bio_19)
+subgroup_data <- subgroup_data[complete.cases(subgroup_data),]; rownames(subgroup_data) <- 1:nrow(subgroup_data)
+subgroup_data$Subgroup <- factor(subgroup_data$Subgroup)
+subgroup_data$Growth.habit <- factor(subgroup_data$Growth.habit)
+subgroup_data$Seed.shape <- factor(subgroup_data$Seed.shape)
+subgroup_data$Seed.brightness <- factor(subgroup_data$Seed.brightness)
+
+# Random Forest
+set.seed(1)
+subgroup_folds <- modelr::crossv_kfold(subgroup_data, k = 5)
+subgroup_folds <- subgroup_folds %>% mutate(model = map(train, ~ randomForest(Subgroup ~ ., data = .)))
+
+varImpPlot(x = subgroup_folds$model$`1`)
+varImpPlot(x = subgroup_folds$model$`2`)

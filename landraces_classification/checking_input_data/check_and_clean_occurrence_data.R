@@ -29,41 +29,6 @@ suppressMessages(library(factoextra))
 suppressMessages(library(gtools))
 
 ## =================================================================================================================== ##
-## Genesys database
-## =================================================================================================================== ##
-
-# # Occurrence data all
-# coll  <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_genesys_data/Bean/_all/coll.csv"))
-# core  <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_genesys_data/Bean/_all/core.csv"))
-# geo   <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_genesys_data/Bean/_all/geo.csv"))
-# names <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_genesys_data/Bean/_all/names.csv"))
-# 
-# names$genesysId <- as.integer(as.character(names$genesysId))
-# 
-# # CORE + GEO
-# core_geo <- left_join(x = core, y = geo, by = "genesysId")
-# sum(!is.na(core_geo$longitude & core_geo$latitude))
-# 
-# # NAMES + CORE
-# names_core <- left_join(x = names, y = core, by = "genesysId")
-# names_core_wout_g <- names_core[-grep(pattern = "^G[0-9]*", names_core$name),]
-# names_core_wout_g <- names_core_wout_g[-grep(pattern = "^G-[0-9]*", names_core_wout_g$name),]
-# names_core_wout_g <- names_core_wout_g[-grep(pattern = "^G [0-9]*", names_core_wout_g$name),]
-# names_core_wout_g <- names_core_wout_g[-grep(pattern = "^PI [0-9]*", names_core_wout_g$name),]
-# names_core_wout_g <- names_core_wout_g[-grep(pattern = "^W6 [0-9]*", names_core_wout_g$name),]
-# names_core_wout_g <- names_core_wout_g[-which(!is.na(match(names_core_wout_g$name, coll$collNumb))),]
-# rownames(names_core_wout_g) <- 1:nrow(names_core_wout_g)
-# 
-# 
-# # Occurrence data landraces
-# coll  <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_genesys_data/Bean/_landraces/coll.csv"))
-# core  <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_genesys_data/Bean/_landraces/core.csv"))
-# geo   <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_genesys_data/Bean/_landraces/geo.csv"))
-# names <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_genesys_data/Bean/_landraces/names.csv"))
-# 
-# names$genesysId <- as.integer(as.character(names$genesysId))
-
-## =================================================================================================================== ##
 ## CIAT database
 ## =================================================================================================================== ##
 
@@ -79,7 +44,7 @@ names(ciat) <- c("ID", "Source", "Cleaned_by", "Accession.number", "Synonyms", "
                  "Date.receipt", "Growth.habit", "Seed.color", "Seed.shape", "Seed.brightness", "Seed.weight",
                  "Days.to.flowering", "Place4", "Year", "Responsible", "First.harvest", "Last.harvest",
                  "Place5", "Year6", "Responsible7", "Reaction", "Responsible8", "Reaction9",
-                 "Responsible10", "Date.evaluation", "Protein", "Responsible11")
+                 "Responsible10", "Date.evaluation", "Protein", "Doubtful.cases", "Race.protein", "Responsible11")
 
 sum(ciat$Type.of.material == "Landrace", na.rm = T) # 27644 (old and original), 23831 (new one with vernacular names)
 sum(!is.na(ciat$Common.names), na.rm = T) # 37987 (old and original), 15784 (new one with vernacular names)
@@ -131,15 +96,12 @@ m <- leaflet() %>% addTiles() %>%
 # %>% addMarkers(~Longitude, ~Latitude, label = ~as.character(Common_names), data = ciat_landraces)
 # saveWidget(m, file =" m.html")
 
-# Seed luster = Seed brightness
+ciat2 <- ciat %>% dplyr::select(ID, Accession.number, Common.names, Interpreted.name, Test, Vernacular.name, Genepool, Race.interpreted, Subgroup, Altitude, Longitude, Latitude, Growth.habit, Seed.color, Seed.shape, Seed.brightness, Seed.weight, Protein, Race.protein)
 
-ciat2 <- ciat %>% dplyr::select(ID, Accession.number, Common.names, Interpreted.name, Test, Vernacular.name, Genepool, Race.interpreted, Subgroup, Altitude, Longitude, Latitude, Growth.habit, Seed.color, Seed.shape, Seed.brightness, Seed.weight, Protein)
 # Split colors
 ciat2 <- ciat2 %>% tidyr::separate(Seed.color, into = c("Seed.color", "Seed.color2", "Seed.color3"), sep = ",") 
 ciat2$Seed.color[grep(pattern = "Crema ", x = ciat2$Seed.color)] <- "Cream"
 ciat2$Seed.color[grep(pattern = "Rosaso", x = ciat2$Seed.color)] <- "Pink"
-# ciat2$Seed.color[grep(pattern = "Blanco ", x = ciat2$Seed.color)] <- "White"
-# ciat2$Seed.color[grep(pattern = "Morado ", x = ciat2$Seed.color)] <- "Purple"
 
 ciat2$Seed.color2[grep(pattern = " Black", x = ciat2$Seed.color2)] <- "Black"
 ciat2$Seed.color2[grep(pattern = " Brown", x = ciat2$Seed.color2)] <- "Brown"
@@ -176,59 +138,38 @@ for(i in 1:length(color_list)){
 ciat2$Seed.color <- ciat2$Seed.color2 <- ciat2$Seed.color3 <- NULL
 
 # Split proteins
+ciat2$Protein[grep(pattern = "\\?", x = ciat2$Protein)] <- NA
 ciat2 <- ciat2 %>% tidyr::separate(Protein, into = c("Protein", "Protein2", "Protein3", "Protein4", "Protein5"), sep = ",")
-ciat2$Protein[grep(pattern = "^B\\?", x = ciat2$Protein)] <- "B"
-ciat2$Protein[grep(pattern = "^C\\?", x = ciat2$Protein)] <- "C"
-ciat2$Protein[grep(pattern = "^Ca1\\(2D\\)?", x = ciat2$Protein)] <- "Ca1"
-ciat2$Protein[grep(pattern = "CAR\\(2D\\)?$", x = ciat2$Protein)] <- "CAR"
+ciat2$Protein[grep(pattern = "Ca1\\(2D\\)", x = ciat2$Protein)] <- "Ca1"
+ciat2$Protein[grep(pattern = "CAR\\(2D\\)", x = ciat2$Protein)] <- "CAR"
 ciat2$Protein[grep(pattern = "CAR\\(2D\\)H1", x = ciat2$Protein)] <- "CAR,H1"
 ciat2$Protein[grep(pattern = "CH \\(2D\\)", x = ciat2$Protein)] <- "CH"
 ciat2$Protein[grep(pattern = "CH\\(2D\\)", x = ciat2$Protein)] <- "CH"
-ciat2$Protein[grep(pattern = "CH\\?", x = ciat2$Protein)] <- "CH"
-ciat2$Protein[grep(pattern = "H\\?", x = ciat2$Protein)] <- "H"
 ciat2$Protein[grep(pattern = "H1\\(2D\\)", x = ciat2$Protein)] <- "H1"
-ciat2$Protein[grep(pattern = "H1\\?", x = ciat2$Protein)] <- "H1"
 ciat2$Protein[grep(pattern = "H2\\(2D\\)", x = ciat2$Protein)] <- "H2"
 ciat2$Protein[grep(pattern = "HE\\(2D\\)", x = ciat2$Protein)] <- "HE"
 ciat2$Protein[grep(pattern = "L \\(2D\\)", x = ciat2$Protein)] <- "L"
 ciat2$Protein[grep(pattern = "LI\\(2D\\)", x = ciat2$Protein)] <- "LI"
-ciat2$Protein[grep(pattern = "M13\\? o M4\\?", x = ciat2$Protein)] <- "M13,M4"
-ciat2$Protein[grep(pattern = "P1\\?", x = ciat2$Protein)] <- "P1"
 ciat2$Protein[grep(pattern = "S\\(2D\\)", x = ciat2$Protein)] <- "S"
-ciat2$Protein[grep(pattern = "S\\?$", x = ciat2$Protein)] <- "S"
-ciat2$Protein[grep(pattern = "S\\?B\\?", x = ciat2$Protein)] <- "S,B"
 ciat2$Protein[grep(pattern = "Sd\\(2D\\)", x = ciat2$Protein)] <- "Sd"
-ciat2$Protein[grep(pattern = "SIMPLE \\?", x = ciat2$Protein)] <- "SIMPLE"
 ciat2$Protein[grep(pattern = "T \\(2D\\)", x = ciat2$Protein)] <- "T"
 ciat2$Protein[grep(pattern = "T\\(2D\\)", x = ciat2$Protein)] <- "T"
-ciat2$Protein[grep(pattern = "T\\?", x = ciat2$Protein)] <- "T"
 ciat2$Protein[grep(pattern = "TI1\\(2D\\)", x = ciat2$Protein)] <- "TI1"
 ciat2$Protein[grep(pattern = "TI2\\(2D\\)", x = ciat2$Protein)] <- "TI2"
-ciat2$Protein[grep(pattern = "To\\?", x = ciat2$Protein)] <- "To"
-
-ciat2 <- ciat2 %>% tidyr::separate(Protein, into = c("Protein", "Protein6"), sep = ",")
 
 ciat2$Protein2[grep(pattern = " H1\\(LCG\\)", x = ciat2$Protein2)] <- "H1"
-ciat2$Protein2[grep(pattern = "C\\?", x = ciat2$Protein2)] <- "C"
-ciat2$Protein2[grep(pattern = "^Ca\\?", x = ciat2$Protein2)] <- "Ca"
 ciat2$Protein2[grep(pattern = "^CAR\\(2D\\)", x = ciat2$Protein2)] <- "CAR"
 ciat2$Protein2[grep(pattern = "^CH\\(2D\\)", x = ciat2$Protein2)] <- "CH"
 ciat2$Protein2[grep(pattern = "^H1\\(2D", x = ciat2$Protein2)] <- "H1"
-ciat2$Protein2[grep(pattern = "^Mu\\?", x = ciat2$Protein2)] <- "Mu"
-ciat2$Protein2[grep(pattern = "^P1\\?", x = ciat2$Protein2)] <- "P1"
 ciat2$Protein2[grep(pattern = "^S\\(2D", x = ciat2$Protein2)] <- "S"
-ciat2$Protein2[grep(pattern = "^T\\?", x = ciat2$Protein2)] <- "T"
 
-ciat2$Protein3[grep(pattern = "^C \\(\\?\\)", x = ciat2$Protein3)] <- "C"
 ciat2$Protein3[grep(pattern = "^CAR\\(2D\\)", x = ciat2$Protein3)] <- "CAR"
-ciat2$Protein3[grep(pattern = "^CH\\? \\(2D\\)", x = ciat2$Protein3)] <- "CH"
 
 protein_list <- c(ciat2$Protein %>% as.character %>% unique,
                 ciat2$Protein2 %>% as.character %>% unique,
                 ciat2$Protein3 %>% as.character %>% unique,
                 ciat2$Protein4 %>% as.character %>% unique,
-                ciat2$Protein5 %>% as.character %>% unique,
-                ciat2$Protein6 %>% as.character %>% unique) %>% unique %>% sort
+                ciat2$Protein5 %>% as.character %>% unique) %>% unique %>% sort
 protein_list <- protein_list[-1]
 
 for(i in 1:length(protein_list)){
@@ -239,7 +180,7 @@ for(i in 1:length(protein_list)){
   }
 }; rm(i, protein_id, protein_list)
 
-ciat2$Protein <- ciat2$Protein2 <- ciat2$Protein3 <- ciat2$Protein4 <- ciat2$Protein5 <- ciat2$Protein6 <- NULL
+ciat2$Protein <- ciat2$Protein2 <- ciat2$Protein3 <- ciat2$Protein4 <- ciat2$Protein5 <- NULL
 
 names(ciat2)
 
@@ -252,6 +193,7 @@ if(!file.exists(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_dat
 ###################################################################################
 # Extract climate information on Linux servers
 ###################################################################################
+ciat2 <- readRDS("ciatOrganizedVariables.RDS")
 bioList <- list.files("/mnt/data_cluster_4/observed/gridded_products/worldclim/Global_30s_v2", full.names = T)
 bioList <- bioList[grep(pattern = "bio", x = bioList)]
 bioList <- bioList[grep(pattern = "tif", x = bioList)] %>% mixedsort
@@ -266,8 +208,42 @@ climate_data <- climate_data %>% as.data.frame()
 climate_data$Accession.number <- ciat2$Accession.number[row_id]; rm(row_id, grep2)
 
 genotypic_climate <- inner_join(x = ciat2, y = climate_data, by = "Accession.number")
-saveRDS(genotypic_climate, paste0(root, "/gap_analysis_landraces/Results/_occurrences_datasets/ciat_climate.RDS"))
-rm(bioList, climate_data, ciat_landraces3)
+saveRDS(genotypic_climate, "ciatOrganizedVariables_climate.RDS")
+
+## =================================================================================================================== ##
+## Genesys database
+## =================================================================================================================== ##
+
+# # Occurrence data all
+# coll  <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_genesys_data/Bean/_all/coll.csv"))
+# core  <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_genesys_data/Bean/_all/core.csv"))
+# geo   <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_genesys_data/Bean/_all/geo.csv"))
+# names <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_genesys_data/Bean/_all/names.csv"))
+# 
+# names$genesysId <- as.integer(as.character(names$genesysId))
+# 
+# # CORE + GEO
+# core_geo <- left_join(x = core, y = geo, by = "genesysId")
+# sum(!is.na(core_geo$longitude & core_geo$latitude))
+# 
+# # NAMES + CORE
+# names_core <- left_join(x = names, y = core, by = "genesysId")
+# names_core_wout_g <- names_core[-grep(pattern = "^G[0-9]*", names_core$name),]
+# names_core_wout_g <- names_core_wout_g[-grep(pattern = "^G-[0-9]*", names_core_wout_g$name),]
+# names_core_wout_g <- names_core_wout_g[-grep(pattern = "^G [0-9]*", names_core_wout_g$name),]
+# names_core_wout_g <- names_core_wout_g[-grep(pattern = "^PI [0-9]*", names_core_wout_g$name),]
+# names_core_wout_g <- names_core_wout_g[-grep(pattern = "^W6 [0-9]*", names_core_wout_g$name),]
+# names_core_wout_g <- names_core_wout_g[-which(!is.na(match(names_core_wout_g$name, coll$collNumb))),]
+# rownames(names_core_wout_g) <- 1:nrow(names_core_wout_g)
+# 
+# 
+# # Occurrence data landraces
+# coll  <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_genesys_data/Bean/_landraces/coll.csv"))
+# core  <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_genesys_data/Bean/_landraces/core.csv"))
+# geo   <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_genesys_data/Bean/_landraces/geo.csv"))
+# names <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_genesys_data/Bean/_landraces/names.csv"))
+# 
+# names$genesysId <- as.integer(as.character(names$genesysId))
 
 ## =================================================================================================================== ##
 ## GRIN database
