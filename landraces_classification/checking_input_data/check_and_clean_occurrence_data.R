@@ -98,8 +98,9 @@ ciat_empyCoordinates <- ciat_empyCoordinates %>% dplyr::filter((!is.na(Country) 
                                                                  !is.na(Department) |
                                                                  !is.na(County) |
                                                                  !is.na(Place)) & !is.na(Protein))
-write.csv(x = ciat_empyCoordinates, file = paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/coord4georef.csv"), row.names = F)
-rm(ciat_empyCoordinates)
+if(!file.exists(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/coord4georef.csv"))){
+  write.csv(x = ciat_empyCoordinates, file = paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/coord4georef.csv"), row.names = F)
+}; rm(ciat_empyCoordinates)
 
 # Let just accessions with coordinates
 ciat <- ciat %>% dplyr::filter(!is.na(Longitude) & !is.na(ciat$Latitude) & !is.na(Protein))
@@ -132,7 +133,7 @@ m <- leaflet() %>% addTiles() %>%
 
 # Seed luster = Seed brightness
 
-ciat2 <- ciat %>% dplyr::select(Test, Vernacular.name, Genepool, Race.interpreted, Subgroup, Altitude, Longitude, Latitude, Growth.habit, Seed.color, Seed.shape, Seed.brightness, Seed.weight, Protein)
+ciat2 <- ciat %>% dplyr::select(ID, Accession.number, Common.names, Interpreted.name, Test, Vernacular.name, Genepool, Race.interpreted, Subgroup, Altitude, Longitude, Latitude, Growth.habit, Seed.color, Seed.shape, Seed.brightness, Seed.weight, Protein)
 # Split colors
 ciat2 <- ciat2 %>% tidyr::separate(Seed.color, into = c("Seed.color", "Seed.color2", "Seed.color3"), sep = ",") 
 ciat2$Seed.color[grep(pattern = "Crema ", x = ciat2$Seed.color)] <- "Cream"
@@ -166,14 +167,16 @@ color_list <- c(ciat2$Seed.color %>% as.character %>% unique,
 
 for(i in 1:length(color_list)){
   eval(parse(text = paste0("ciat2$Color_", color_list[i], " <- 0")))
-  if(ciat2$Seed.color == color_list[i] | ciat2$Seed.color2 == color_list[i] | ciat2$Seed.color3 == color_list[i]){
-    
+  col_id <- which(ciat2$Seed.color == color_list[i] | ciat2$Seed.color2 == color_list[i] | ciat2$Seed.color3 == color_list[i])
+  if(length(col_id) > 0){
+    eval(parse(text = paste0("ciat2$Color_", color_list[i], "[col_id] <- 1")))
   }
-}; rm(i)
+}; rm(i, col_id, color_list)
+
+ciat2$Seed.color <- ciat2$Seed.color2 <- ciat2$Seed.color3 <- NULL
 
 # Split proteins
-ciat2 <- ciat2 %>% tidyr::separate(Protein, into = c("Protein", "Protein2", "Protein3", "Protein4", "Protein5"), sep = ",") 
-# ciat2$Protein[grep(pattern = "^$", x = ciat2$Protein, fixed = T)] <- NA
+ciat2 <- ciat2 %>% tidyr::separate(Protein, into = c("Protein", "Protein2", "Protein3", "Protein4", "Protein5"), sep = ",")
 ciat2$Protein[grep(pattern = "^B\\?", x = ciat2$Protein)] <- "B"
 ciat2$Protein[grep(pattern = "^C\\?", x = ciat2$Protein)] <- "C"
 ciat2$Protein[grep(pattern = "^Ca1\\(2D\\)?", x = ciat2$Protein)] <- "Ca1"
@@ -203,6 +206,8 @@ ciat2$Protein[grep(pattern = "TI1\\(2D\\)", x = ciat2$Protein)] <- "TI1"
 ciat2$Protein[grep(pattern = "TI2\\(2D\\)", x = ciat2$Protein)] <- "TI2"
 ciat2$Protein[grep(pattern = "To\\?", x = ciat2$Protein)] <- "To"
 
+ciat2 <- ciat2 %>% tidyr::separate(Protein, into = c("Protein", "Protein6"), sep = ",")
+
 ciat2$Protein2[grep(pattern = " H1\\(LCG\\)", x = ciat2$Protein2)] <- "H1"
 ciat2$Protein2[grep(pattern = "C\\?", x = ciat2$Protein2)] <- "C"
 ciat2$Protein2[grep(pattern = "^Ca\\?", x = ciat2$Protein2)] <- "Ca"
@@ -218,13 +223,31 @@ ciat2$Protein3[grep(pattern = "^C \\(\\?\\)", x = ciat2$Protein3)] <- "C"
 ciat2$Protein3[grep(pattern = "^CAR\\(2D\\)", x = ciat2$Protein3)] <- "CAR"
 ciat2$Protein3[grep(pattern = "^CH\\? \\(2D\\)", x = ciat2$Protein3)] <- "CH"
 
-ciat_landraces3 <- ciat_landraces3 %>% dplyr::select(Accession, Common.names, Synonyms, Elevation, Longitude, Latitude, Growth.habit, Seed.color, Seed.shape, Seed.brightness, Seed.weight, Protein)
+protein_list <- c(ciat2$Protein %>% as.character %>% unique,
+                ciat2$Protein2 %>% as.character %>% unique,
+                ciat2$Protein3 %>% as.character %>% unique,
+                ciat2$Protein4 %>% as.character %>% unique,
+                ciat2$Protein5 %>% as.character %>% unique,
+                ciat2$Protein6 %>% as.character %>% unique) %>% unique %>% sort
+protein_list <- protein_list[-1]
 
-c(ciat2$Protein %>% as.character %>% unique,
-  ciat2$Protein2 %>% as.character %>% unique,
-  ciat2$Protein3 %>% as.character %>% unique,
-  ciat2$Protein4 %>% as.character %>% unique,
-  ciat2$Protein5 %>% as.character %>% unique) %>% unique %>% sort
+for(i in 1:length(protein_list)){
+  eval(parse(text = paste0("ciat2$Protein_", protein_list[i], " <- 0")))
+  protein_id <- which(ciat2$Protein == protein_list[i] | ciat2$Protein2 == protein_list[i] | ciat2$Protein3 == protein_list[i] | ciat2$Protein4 == protein_list[i] | ciat2$Protein5 == protein_list[i] | ciat2$Protein6 == protein_list[i])
+  if(length(protein_id) > 0){
+    eval(parse(text = paste0("ciat2$Protein_", protein_list[i], "[protein_id] <- 1")))
+  }
+}; rm(i, protein_id, protein_list)
+
+ciat2$Protein <- ciat2$Protein2 <- ciat2$Protein3 <- ciat2$Protein4 <- ciat2$Protein5 <- ciat2$Protein6 <- NULL
+
+names(ciat2)
+
+if(!file.exists(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/ciatOrganizedVariables.RDS"))){
+  saveRDS(ciat2, paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/ciatOrganizedVariables.RDS"))
+}
+
+# Now, go to linux servers!!!
 
 ###################################################################################
 # Extract climate information on Linux servers
@@ -235,14 +258,14 @@ bioList <- bioList[grep(pattern = "tif", x = bioList)] %>% mixedsort
 grep2 <- Vectorize(FUN = grep, vectorize.args = "pattern")
 bioList <- raster::stack(bioList)
 
-climate_data <- raster::extract(x = bioList, y = ciat_landraces3[,c("Longitude", "Latitude")] %>% as.data.frame %>% na.omit)
-row_id <- rownames(ciat_landraces3[,c("Longitude", "Latitude")] %>% as.data.frame %>% na.omit)
+climate_data <- raster::extract(x = bioList, y = ciat2[,c("Longitude", "Latitude")] %>% as.data.frame %>% na.omit)
+row_id <- rownames(ciat2[,c("Longitude", "Latitude")] %>% as.data.frame %>% na.omit)
 row_id <- row_id %>% as.character() %>% as.numeric()
 
 climate_data <- climate_data %>% as.data.frame()
-climate_data$Accession <- ciat_landraces3$Accession[row_id]; rm(row_id, grep2)
+climate_data$Accession.number <- ciat2$Accession.number[row_id]; rm(row_id, grep2)
 
-genotypic_climate <- inner_join(x = ciat_landraces3, y = climate_data, by = "Accession")
+genotypic_climate <- inner_join(x = ciat2, y = climate_data, by = "Accession.number")
 saveRDS(genotypic_climate, paste0(root, "/gap_analysis_landraces/Results/_occurrences_datasets/ciat_climate.RDS"))
 rm(bioList, climate_data, ciat_landraces3)
 
