@@ -34,6 +34,7 @@ suppressMessages(library(caret))
 suppressMessages(library(modelr))
 suppressMessages(library(broom))
 suppressMessages(library(purrr))
+suppressMessages(library(PCAmixdata))
 
 ## =================================================================================================================== ##
 ## Blair's study
@@ -223,6 +224,17 @@ text(tsne$Y, labels=train$label, col=colors[train$label])
 
 genotypic_climate <- readRDS(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/ciatOrganizedVariables_climate.RDS"))
 genotypic_climate$Race.protein[genotypic_climate$Race.protein == "N/A"] <- NA
+genotypic_climate$Accession.number <- as.factor(genotypic_climate$Accession.number)
+genotypic_climate$Common.names <- as.factor(genotypic_climate$Common.names)
+genotypic_climate$Interpreted.name <- as.factor(genotypic_climate$Interpreted.name)
+genotypic_climate$Vernacular.name <- as.factor(genotypic_climate$Vernacular.name)
+genotypic_climate$Genepool <- as.factor(genotypic_climate$Genepool)
+genotypic_climate$Race.interpreted <- as.factor(genotypic_climate$Race.interpreted)
+genotypic_climate$Subgroup <- as.factor(genotypic_climate$Subgroup)
+genotypic_climate$Growth.habit <- as.factor(genotypic_climate$Growth.habit)
+genotypic_climate$Seed.shape <- as.factor(genotypic_climate$Seed.shape)
+genotypic_climate$Seed.brightness <- as.factor(genotypic_climate$Seed.brightness)
+genotypic_climate$Race.protein <- as.factor(genotypic_climate$Race.protein)
 genotypic_climate %>% glimpse
 
 # ==================================== #
@@ -291,7 +303,10 @@ if(!file.exists(paste0(root, "/gap_analysis_landraces/Results/barplot_qualitativ
 # ==================================== #
 
 # Principal Component Analysis for mixed data
+pca.mix_res <- PCAmix(X.quanti = genotypic_climate[complete.cases(genotypic_climate),] %>% select(Altitude:Latitude, Seed.weight, Color_Black:bio_19) %>% Filter(function(x) sd(x) != 0, .),
+                      X.quali = genotypic_climate[complete.cases(genotypic_climate),] %>% select(Genepool:Subgroup, Growth.habit:Seed.brightness, Race.protein), graph = T)
 
+genotypic_climate %>% names
 # Cluster analysis
 
 # ==================================== #
