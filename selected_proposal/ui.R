@@ -83,49 +83,74 @@ body <- dashboardBody(
 
                                                    #p(style="align=justify","Below you will find a short tutorial to handle drawing and editing tools of the polygons."),
                                                    h3(HTML("<b> 1. Selec your crop from the drop down list and type your full name. Press the save button to advance. </b>")),
-                                                  
+
                                                    div(style="text-align:center",img(src="name_and_croptype.gif",width="800px", height="400px",aling="left")),
-                                                  
+
                                                    h3(HTML("<b>2. Questions</b>")),
-                                                   h3(HTML("<p align=justify> This survey has four pages of questions, related to the current distribution of modern crop cultivars, of landraces, 
-                                                           of gaps in germplasm collections for landraces, and of areas that are already well represented in genebanks. On each page, please draw your 
+                                                   h3(HTML("<p align=justify> This survey has four pages of questions, related to the current distribution of modern crop cultivars, of landraces,
+                                                           of gaps in germplasm collections for landraces, and of areas that are already well represented in genebanks. On each page, please draw your
                                                            best understanding of the requested information, and add any notes or comments helpful in interpretation.</p> ")),
-                                                   
+
                                                    h3(HTML("<b>2. Drawing tools</b>")),
                                                    h3(HTML("<p align=justify>On  each map the tools are located at top left. You can zoom in the map with + or - buttons in the  draw toolbar or you can use the mouse wheel. </p>")),
                                                    div(style="text-align:center",img(src="maps_tools.PNG",width="800px", height="400px",aling="left")),
 
-                                                   h3(HTML("<p align=justify>Please draw a shape, being sure to complete the shape by reconnecting to the starting point. 
+                                                   h3(HTML("<p align=justify>Please draw a shape, being sure to complete the shape by reconnecting to the starting point.
                                                            </P>")),
                                                    div(style="text-align:center",img(src="drawing_polygon.gif",width="800px", height="400px",aling="left")),
-                                                   
+
                                                    h3(HTML("<p align=justify>  You can undo your work as needed. Save your work when you are done.       </p>")),
-                                                   
+
                                                    div(style="text-align:center",img(src="edit_polygon.gif",width="800px", height="400px",aling="left")),
-                                                   
+
                                                    h3(HTML("<b> 4. Final revision </b>")),
                                                    h3(HTML("<p align=justify> On the final page of the survey, you have the opportunity to review your work before finalizing.
                                                            Feel free to return to any section needing further editing </p>")),
                                                    div(style="text-align:center",img(src="review_polygon.gif",width="800px", height="400px",aling="left")),
-                                                   
+
                                                    div(style="position: relative;width:100%",h3(HTML("<font color=white >nothing to see here</font>"))),
                                                    div(style=" border:3px solid #ff0000;align:center",bsButton("intro", size="large",label = HTML("<b><font color=black> Go to survey</font></b>"), block = T, style="primary",icon("hand-o-right")))
-                                                   
-                                                   
-                                       
-                                                   
+
+
+
+
                                                    )
-                                         
-                                         
+
+
                                          )
-               
-               
+
+
                ),
+      
       
       tabPanel("Crops and expert name",selectInput("crop","Select crop variety:",c("-- Please select crop --" ,"Potato" ,       "Barley"  ,      "Banana"  ,      "Rice"  ,        "Chickpea" ,     "Common bean" ,  "Wheat (bread)" ,"Wheat (durum)" ,"Cassava"   ,    "Maize" ,       
                                                                        "Yam" ,          "Grass pea" ,    "Lentil"  ,      "Sweet potato" , "Sorghum" ,      "Groundnut" ,    "Cowpea"    ,    "Pea"    ,       "Faba bean"   ,  "Pigeonpea" ,   
-                                                                        "Finger millet", "Pearl millet" , "Forages"   ),selected = NULL),textInput('nombre',"Please type your full name"),bsButton("keep",label = " Save",size = "large",block=F,style="primary",icon("hand-o-right")),bsTooltip(id = "keep", title = "Save name", placement = "right", trigger = "hover")),
-      tabPanel("1. Cultivars",box(background ="black",solidHeader = TRUE,width = 8,leafletOutput("mymap5",height = 500,width = "100%")
+            
+                                                                                                                                   "Finger millet", "Pearl millet" , "Forages"   ),selected = NULL),textInput('nombre',"Please type your full name"),bsButton("keep",label = " Save",size = "large",block=F,style="primary",icon("hand-o-right")),bsTooltip(id = "keep", title = "Save name", placement = "right", trigger = "hover")),
+      
+      tabPanel("Occurrence",   box(background ="black",solidHeader = TRUE,width = 8,leafletOutput("mymap4",height = 500,width = "100%") ) 
+               
+               
+               , box(solidHeader = F,width = 4, tagList(div( tags$h3(HTML("<b>1. Truly occurrence of crops </b>"))),
+                                                               tags$h5(HTML("<p align=justify> Draw one or more polygons ... <br/> Landrace is a complicated ... <br/> <br/>
+                                                                  .</p>")),
+                                                                                                                                                                                   textAreaInput("txt0","Write a note or comment:",height = "150px")
+                                                                                                                                                                                   ,div(style="position:relative;width: 100%",bsButton("done0", size="large",label = "Save", block = F, style="primary",icon("cloud-download")),
+                                                                                                                                                                                        bsTooltip(id = "done0", title = "Save your work", placement = "right", trigger = "hover")
+                                                                                                                                                                                        
+                                                                                                                                                                                        ,div(style="float:right;width:95px",bsButton("next0", size="large",label = "Next", block = F, style="primary",icon("forward"))
+                                                                                                                                                                                             ,bsTooltip(id = "next0", title = "Go to next question", placement = "left", trigger = "hover"))
+                                                                                                                                                                                   )
+                                                                                                                                                                                   
+                                                                                                                                                                                   
+                                                                                                                                                                                   ,busyIndicator(text = "wait a moment pls...",img = "http://www.cameronbarnes.com/images/loading.gif", wait=200)
+                                                                                                                                                                                   
+      )   )
+      
+      )
+      
+      
+      ,tabPanel("1. Cultivars",box(background ="black",solidHeader = TRUE,width = 8,leafletOutput("mymap5",height = 500,width = "100%")
                                   
                                   
                                   )

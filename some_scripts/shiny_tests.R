@@ -688,7 +688,7 @@ core<-read.csv("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/Input_data/
 #name<-read.csv("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/Input_data/genesys-accessions-filtered/names.csv",header=T)
 
 #####--------------------------------------------------------------------###########
-#####------ DEPURAR LA BASE DE DATOS DE PRESENCIA DE LOS CULTIVOS --------############
+#####------ DEPURAR LA BASE DE DATOS DE PRESENCIA DE LOS CULTIVOS -------###########
 #####-------------------------------------------------------------------############
 
 presence<-merge(geo,core,by="genesysId")
