@@ -303,11 +303,28 @@ if(!file.exists(paste0(root, "/gap_analysis_landraces/Results/barplot_qualitativ
 # ==================================== #
 
 # Principal Component Analysis for mixed data
-pca.mix_res <- PCAmix(X.quanti = genotypic_climate[complete.cases(genotypic_climate),] %>% select(Altitude:Latitude, Seed.weight, Color_Black:bio_19) %>% Filter(function(x) sd(x) != 0, .),
-                      X.quali = genotypic_climate[complete.cases(genotypic_climate),] %>% select(Genepool:Subgroup, Growth.habit:Seed.brightness, Race.protein), graph = T)
+pca.mix_res <- PCAmix(X.quanti = genotypic_climate[complete.cases(genotypic_climate),] %>% select(Altitude:Latitude, Seed.weight, Color_Black:bio_19) %>% Filter(function(x) sd(x) != 0, .) %>% as.data.frame,
+                      X.quali = genotypic_climate[complete.cases(genotypic_climate),] %>% select(Genepool:Subgroup, Growth.habit:Seed.brightness, Race.protein) %>% as.data.frame, graph = T, rename.level=TRUE)
+pca.mix_res %>% summary
 
-genotypic_climate %>% names
 # Cluster analysis
+pca.mix_res$scores[,1:2] %>% plot
+
+library("cluster")
+# Agglomerative Nesting (Hierarchical Clustering)
+res.agnes <- agnes(x = pca.mix_res$scores, # data matrix
+                   stand = TRUE, # Standardize the data
+                   metric = "euclidean", # metric for distance matrix
+                   method = "ward") # Linkage method
+factoextra::fviz_dend(res.agnes, cex = 0.6)
+
+# Divisive Analysis Clustering
+res.diana <- diana(x = pca.mix_res$scores, # data matrix
+                   stand = TRUE, # standardize the data
+                   metric = "euclidean") # metric for distance matrix
+factoextra::fviz_dend(res.diana, cex = 0.6)
+
+res.diana$height %>% sort %>% barplot
 
 # ==================================== #
 # Classification algorithms
