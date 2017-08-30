@@ -174,7 +174,7 @@ protein_list <- protein_list[-1]
 
 for(i in 1:length(protein_list)){
   eval(parse(text = paste0("ciat2$Protein_", protein_list[i], " <- 0")))
-  protein_id <- which(ciat2$Protein == protein_list[i] | ciat2$Protein2 == protein_list[i] | ciat2$Protein3 == protein_list[i] | ciat2$Protein4 == protein_list[i] | ciat2$Protein5 == protein_list[i] | ciat2$Protein6 == protein_list[i])
+  protein_id <- which(ciat2$Protein == protein_list[i] | ciat2$Protein2 == protein_list[i] | ciat2$Protein3 == protein_list[i] | ciat2$Protein4 == protein_list[i] | ciat2$Protein5 == protein_list[i])
   if(length(protein_id) > 0){
     eval(parse(text = paste0("ciat2$Protein_", protein_list[i], "[protein_id] <- 1")))
   }

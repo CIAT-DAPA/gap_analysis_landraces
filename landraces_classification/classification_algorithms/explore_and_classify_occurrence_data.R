@@ -305,6 +305,7 @@ genepool_data$Genepool <- factor(genepool_data$Genepool)
 genepool_data$Growth.habit <- factor(genepool_data$Growth.habit)
 genepool_data$Seed.shape <- factor(genepool_data$Seed.shape)
 genepool_data$Seed.brightness <- factor(genepool_data$Seed.brightness)
+genepool_data$Race.protein <- factor(genepool_data$Race.protein)
 
 # Random Forest
 set.seed(1)
@@ -313,10 +314,13 @@ genepool_folds <- genepool_folds %>% mutate(model = map(train, ~ randomForest(Ge
 
 varImpPlot(x = genepool_folds$model$`1`)
 varImpPlot(x = genepool_folds$model$`2`)
+varImpPlot(x = genepool_folds$model$`3`)
+varImpPlot(x = genepool_folds$model$`4`)
+varImpPlot(x = genepool_folds$model$`5`)
 
 genepool_data %>% ggplot(aes(x = Genepool, y = Latitude)) + geom_boxplot()
 genepool_data %>% ggplot(aes(x = Genepool, y = bio_15)) + geom_boxplot()
-genepool_data %>% ggplot(aes(x = Genepool, fill = factor(Protein_T))) + geom_bar()
+genepool_data %>% ggplot(aes(x = Genepool, fill = factor(Race.protein))) + geom_bar()
 genepool_data %>% ggplot(aes(x = Genepool, y = Seed.weight)) + geom_boxplot()
 
 ## Race as response variable
@@ -326,6 +330,7 @@ race_data$Race.interpreted <- factor(race_data$Race.interpreted)
 race_data$Growth.habit <- factor(race_data$Growth.habit)
 race_data$Seed.shape <- factor(race_data$Seed.shape)
 race_data$Seed.brightness <- factor(race_data$Seed.brightness)
+race_data$Race.protein <- factor(race_data$Race.protein)
 
 # Random Forest
 set.seed(1)
