@@ -440,3 +440,18 @@ subgroup_folds <- subgroup_folds %>% mutate(model = map(train, ~ randomForest(Su
 
 varImpPlot(x = subgroup_folds$model$`1`)
 varImpPlot(x = subgroup_folds$model$`2`)
+
+
+suppressMessages(library(caret))
+ctrl <- trainControl(method = "repeatedcv", # 10 fold cross validation
+                     repeats = 5,           # Do 5 repititions of cv
+                     # summaryFunction = twoClassSummary, # Use AUC to pick the best model
+                     classProbs = F)
+
+svm.tune <- train(x = training[,-ncol(training)],
+                  y = training[,output],
+                  method = "svmRadial",           # Radial kernel
+                  tuneLength = 9,                 # 9 values of the cost function
+                  preProc = c("center", "scale"), # Center and scale data
+                  trControl = ctrl,
+                  importance = T)
