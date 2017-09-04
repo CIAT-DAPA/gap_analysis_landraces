@@ -40,24 +40,24 @@ suppressMessages(library(PCAmixdata))
 ## Blair's study
 ## =================================================================================================================== ##
 
-phenotypic_data <- read_excel(path = paste0(root, "/gap_analysis_landraces/Input_data/_phenotypic_data/Bean/Blair_et_al_2009_races_subgroups_phenotypic.xlsx"), sheet = 2)
-
-par(mfrow = c(1,3))
-phenotypic_data %>% select(Meso.total, Andean.total) %>% cor(method = "pearson", use = "complete.obs") %>% corrplot.mixed()
-phenotypic_data %>% select(Meso.total, Andean.total) %>% cor(method = "spearman", use = "complete.obs") %>% corrplot.mixed()
-phenotypic_data %>% select(Meso.total, Andean.total) %>% cor(method = "kendall", use = "complete.obs") %>% corrplot.mixed()
-
-par(mfrow = c(1,3))
-phenotypic_data %>% select(D_J1, D_J2, G, M1, M2, NG1, NG2, P1, P2) %>% cor(method = "pearson", use = "complete.obs") %>% corrplot.mixed()
-phenotypic_data %>% select(D_J1, D_J2, G, M1, M2, NG1, NG2, P1, P2) %>% cor(method = "spearman", use = "complete.obs") %>% corrplot.mixed()
-phenotypic_data %>% select(D_J1, D_J2, G, M1, M2, NG1, NG2, P1, P2) %>% cor(method = "kendall", use = "complete.obs") %>% corrplot.mixed()
-# phenotypic_data %>% select(D_J1, D_J2, G, M1, M2, NG1, NG2, P1, P2) %>% cor(method = "kendall", use = "complete.obs") %>% corrplot(is.corr = T, method = "ellipse", type = "upper")
-
-par(mfrow = c(1,3))
-phenotypic_data %>% select(D_J.total, G, M.total, NG.total, P.total) %>% cor(method = "pearson", use = "complete.obs") %>% corrplot.mixed()
-phenotypic_data %>% select(D_J.total, G, M.total, NG.total, P.total) %>% cor(method = "spearman", use = "complete.obs") %>% corrplot.mixed()
-phenotypic_data %>% select(D_J.total, G, M.total, NG.total, P.total) %>% cor(method = "kendall", use = "complete.obs") %>% corrplot.mixed()
-rm(phenotypic_data)
+# phenotypic_data <- read_excel(path = paste0(root, "/gap_analysis_landraces/Input_data/_phenotypic_data/Bean/Blair_et_al_2009_races_subgroups_phenotypic.xlsx"), sheet = 2)
+# 
+# par(mfrow = c(1,3))
+# phenotypic_data %>% select(Meso.total, Andean.total) %>% cor(method = "pearson", use = "complete.obs") %>% corrplot.mixed()
+# phenotypic_data %>% select(Meso.total, Andean.total) %>% cor(method = "spearman", use = "complete.obs") %>% corrplot.mixed()
+# phenotypic_data %>% select(Meso.total, Andean.total) %>% cor(method = "kendall", use = "complete.obs") %>% corrplot.mixed()
+# 
+# par(mfrow = c(1,3))
+# phenotypic_data %>% select(D_J1, D_J2, G, M1, M2, NG1, NG2, P1, P2) %>% cor(method = "pearson", use = "complete.obs") %>% corrplot.mixed()
+# phenotypic_data %>% select(D_J1, D_J2, G, M1, M2, NG1, NG2, P1, P2) %>% cor(method = "spearman", use = "complete.obs") %>% corrplot.mixed()
+# phenotypic_data %>% select(D_J1, D_J2, G, M1, M2, NG1, NG2, P1, P2) %>% cor(method = "kendall", use = "complete.obs") %>% corrplot.mixed()
+# # phenotypic_data %>% select(D_J1, D_J2, G, M1, M2, NG1, NG2, P1, P2) %>% cor(method = "kendall", use = "complete.obs") %>% corrplot(is.corr = T, method = "ellipse", type = "upper")
+# 
+# par(mfrow = c(1,3))
+# phenotypic_data %>% select(D_J.total, G, M.total, NG.total, P.total) %>% cor(method = "pearson", use = "complete.obs") %>% corrplot.mixed()
+# phenotypic_data %>% select(D_J.total, G, M.total, NG.total, P.total) %>% cor(method = "spearman", use = "complete.obs") %>% corrplot.mixed()
+# phenotypic_data %>% select(D_J.total, G, M.total, NG.total, P.total) %>% cor(method = "kendall", use = "complete.obs") %>% corrplot.mixed()
+# rm(phenotypic_data)
 
 ## =================================================================================================================== ##
 ## CIAT + USDA information with climate data (without phaseolin data and race/genepool classification)
@@ -73,144 +73,144 @@ rm(phenotypic_data)
 # 2. Habito crecimiento, dias a floracion
 # 3. Color semilla, patron, brillo
 
-genotypic_climate <- readRDS(paste0(root, "/gap_analysis_landraces/Results/_occurrences_datasets/ciat_usda_climate.RDS"))
-genotypic_climate %>% glimpse
-genotypic_climate_cmplt <- genotypic_climate[complete.cases(genotypic_climate),]
-genotypic_climate_cmplt <- unique(genotypic_climate_cmplt); rownames(genotypic_climate_cmplt) <- 1:nrow(genotypic_climate_cmplt)
-
-# Descriptive analysis: quantitative variables
-genotypic_climate_cmplt %>% dplyr::select(Elevation, Longitude, Latitude, Seed.weight, bio_1:bio_19) %>%
-  gather(Variable, Value) %>% ggplot(aes(x = Value, fill = Variable, alpha = .6)) +
-  geom_histogram() +
-  facet_wrap(~ Variable, scales = "free") +
-  theme_bw() +
-  theme(legend.position = "bottom") +
-  theme(legend.title = element_text(face = "bold")) +
-  guides(alpha = F, fill = F) +
-  theme(strip.text = element_text(size = 12, face = "bold")) +
-  theme(axis.title.x = element_text(size = 13, face = 'bold'),
-        axis.title.y = element_text(size = 13, face = 'bold'),
-        axis.text = element_text(size = 12))
-genotypic_climate_cmplt %>% dplyr::select(Elevation, Longitude, Latitude, Seed.weight, bio_1:bio_19) %>%
-  psych::describe() %>% select(mean, sd, median, min, max, range) # %>% mutate(cv = sd/mean * 100)
-
-# Descriptive analysis: qualitative variables
-fqTable <- genotypic_climate_cmplt %>% dplyr::select(Growth.habit, Seed.color, Seed.shape, Seed.brightness, Owner) %>%
-  gather(measure, value) %>%
-  count(measure, value) %>%
-  spread(measure, n) %>%
-  gather(key = Variable, value = Count, Growth.habit:Seed.shape)
-fqTable <- fqTable[complete.cases(fqTable),]; rownames(fqTable) <- 1:nrow(fqTable); colnames(fqTable)[1] <- "Category"
-fqTable <- fqTable %>% dplyr::mutate(Percentage = Count/nrow(genotypic_climate_cmplt))
-
-fqTable %>% ggplot(aes(x =  reorder(Category, Percentage), y = Percentage*100)) +
-  geom_bar(stat = "identity") +
-  xlab("") + ylab("Percentage (%)") +
-  coord_flip() +
-  facet_wrap(~ Variable, scales = "free") +
-  theme_bw() +
-  theme(strip.text = element_text(size = 12, face = "bold")) +
-  theme(axis.title.x = element_text(size = 13, face = 'bold'),
-        axis.title.y = element_text(size = 13, face = 'bold'),
-        axis.text = element_text(size = 12))
-
-# Identify multivariate outliers
-
-
-# Calculate Mahalanobis Distance with height and weight distributions
-m_dist <- mahalanobis(genotypic_climate_cmplt %>% dplyr::select(Elevation, Latitude, Seed.weight, bio_1:bio_19),
-                      colMeans(genotypic_climate_cmplt %>% dplyr::select(Elevation, Latitude, Seed.weight, bio_1:bio_19)),
-                      cov(genotypic_climate_cmplt %>% dplyr::select(Elevation, Latitude, Seed.weight, bio_1:bio_19)))
-
-pca.res <- genotypic_climate_cmplt %>% dplyr::select(Elevation, Latitude, Seed.weight, bio_1:bio_19) %>%
-  FactoMineR::PCA(X = ., scale.unit = T, graph = T)
-
-test <- data.frame(pca.res$ind$coord[,1:2], m_dist)
-test %>% ggplot(aes(x = Dim.1, y = Dim.2, col = m_dist)) + geom_point()
-test <- data.frame(genotypic_climate_cmplt[,c("Longitude", "Latitude")], m_dist)
-test %>% ggplot(aes(x = Longitude, y = Latitude, col = m_dist)) + geom_point()
-
-highchart() %>% 
-  hc_title(text = "Scatter chart with number of coordinates and median harvested area by country") %>% 
-  hc_add_series_scatter(x = test$Longitude, y = test$Latitude, color = test$m_dist, label = genotypic_climate_cmplt$Owner)
-
-# Mahalanobis Outliers - Threshold set to 12
-df$outlier_maha <- "No"
-df$outlier_maha[df$m_dist > 12] <- "Yes"
-
-
-
-# Factor Analysis of Mixed Data
-set.seed(1)
-famd_res <- FactoMineR::FAMD(base = genotypic_climate_cmplt[sample(x = 1:nrow(genotypic_climate_cmplt), size = 2000, replace = F),] %>% select(Elevation, Latitude, Growth.habit, Seed.color, Seed.shape, Seed.brightness, Seed.weight, wc2.0_bio_30s_01:wc2.0_bio_30s_18), graph = T)
-fviz_screeplot(famd_res) + theme_bw()
-fviz_famd_var(famd_res) + theme_bw()
-fviz_famd_var(famd_res, "quanti.var", repel = TRUE, col.var = "black") + theme_bw()
-fviz_famd_var(famd_res, "quali.var", col.var = "black")
-fviz_famd_ind(famd_res, col.ind = "cos2",
-              gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
-              repel = TRUE)
-
-# Multiple Factor Analysis
-set.seed(1)
-mfa_res <- FactoMineR::MFA(base = genotypic_climate_cmplt[sample(x = 1:nrow(genotypic_climate_cmplt), size = 2000, replace = F),] %>% select(Elevation, Latitude, Growth.habit, Seed.color, Seed.shape, Seed.brightness, Seed.weight, wc2.0_bio_30s_01:wc2.0_bio_30s_18), group = c(2, 4, 9), type = c("s", "n", "s"), graph = T)
-
-# Random forest clustering
-no.forests <- 25
-no.trees <- 3000
-set.seed(1)
-distRF <- RFdist(datRF = genotypic_climate_cmplt[sample(x = 1:nrow(genotypic_climate_cmplt), size = 2000, replace = F),] %>% dplyr::select(Elevation, Latitude, Growth.habit, Seed.color, Seed.shape, Seed.brightness, Seed.weight, wc2.0_bio_30s_01:wc2.0_bio_30s_18) %>% unique(),
-                 mtry1 = 3, no.trees, no.forests, addcl1 = T, addcl2 = F, imp = T, oob.prox1 = T)
-
-### Clustering methods
-
-## Gower distance
-
-set.seed(1)
-gower.dist <- daisy(genotypic_climate_cmplt[sample(x = 1:nrow(genotypic_climate_cmplt), size = 2000, replace = F),] %>% dplyr::select(Elevation, Latitude, Growth.habit, Seed.color, Seed.shape, Seed.brightness, Seed.weight, wc2.0_bio_30s_01:wc2.0_bio_30s_18),
-                    metric = "gower", type = list(logratio = 3))
-summary(gower.dist)
-gower.mat <- as.matrix(gower.dist)
-
-fviz_dist(as.dist(gower.mat),
-          gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07"))
-
-res.hc <- hclust(d = gower.dist, method = "ward.D2")
-fviz_dend(res.hc, cex = 0.5)
-
-fviz_dend(res.hc, k = 3, cex = 0.4, horiz = TRUE, k_colors = "jco",
-          rect = TRUE, rect_border = "jco", rect_fill = TRUE)
-
-library(ClustOfVar)
-stability(tree = res.hc, B = 40, graph = T)
-
-
-
-
-
-
-fviz_nbclust(genotypic_climate_cmplt[sample(x = 1:nrow(genotypic_climate_cmplt), size = 2000, replace = F),] %>% dplyr::select(Elevation, Latitude, Growth.habit, Seed.color, Seed.shape, Seed.brightness, Seed.weight, wc2.0_bio_30s_01:wc2.0_bio_30s_18),
-             kmeans, method = "gap_stat") + geom_vline(xintercept = 4, linetype = 2) + 
-  labs(subtitle = "Elbow method")
-
-
-# Fuzzy clustering
-
-# T-SNE
-Labels <- train$label
-train$label <- as.factor(train$label)
-## for plotting
-colors = rainbow(length(unique(train$label)))
-names(colors) = unique(train$label)
-
-## Executing the algorithm on curated data
-set.seed(1)
-tsne <- Rtsne(genotypic_climate_cmplt[sample(x = 1:nrow(genotypic_climate_cmplt), size = 2000, replace = F),] %>% select(Elevation, Latitude, Growth.habit, Seed.color, Seed.shape, Seed.brightness, Seed.weight, wc2.0_bio_30s_01:wc2.0_bio_30s_18) %>% unique(),
-              dims = 2, perplexity = 30, verbose = TRUE, max_iter = 500)
-
-## Plotting
-plot(tsne$Y, main = "tsne", pch = 20)
-text(tsne$Y, labels=train$label, col=colors[train$label])
+# genotypic_climate <- readRDS(paste0(root, "/gap_analysis_landraces/Results/_occurrences_datasets/ciat_usda_climate.RDS"))
+# genotypic_climate %>% glimpse
+# genotypic_climate_cmplt <- genotypic_climate[complete.cases(genotypic_climate),]
+# genotypic_climate_cmplt <- unique(genotypic_climate_cmplt); rownames(genotypic_climate_cmplt) <- 1:nrow(genotypic_climate_cmplt)
+# 
+# # Descriptive analysis: quantitative variables
+# genotypic_climate_cmplt %>% dplyr::select(Elevation, Longitude, Latitude, Seed.weight, bio_1:bio_19) %>%
+#   gather(Variable, Value) %>% ggplot(aes(x = Value, fill = Variable, alpha = .6)) +
+#   geom_histogram() +
+#   facet_wrap(~ Variable, scales = "free") +
+#   theme_bw() +
+#   theme(legend.position = "bottom") +
+#   theme(legend.title = element_text(face = "bold")) +
+#   guides(alpha = F, fill = F) +
+#   theme(strip.text = element_text(size = 12, face = "bold")) +
+#   theme(axis.title.x = element_text(size = 13, face = 'bold'),
+#         axis.title.y = element_text(size = 13, face = 'bold'),
+#         axis.text = element_text(size = 12))
+# genotypic_climate_cmplt %>% dplyr::select(Elevation, Longitude, Latitude, Seed.weight, bio_1:bio_19) %>%
+#   psych::describe() %>% select(mean, sd, median, min, max, range) # %>% mutate(cv = sd/mean * 100)
+# 
+# # Descriptive analysis: qualitative variables
+# fqTable <- genotypic_climate_cmplt %>% dplyr::select(Growth.habit, Seed.color, Seed.shape, Seed.brightness, Owner) %>%
+#   gather(measure, value) %>%
+#   count(measure, value) %>%
+#   spread(measure, n) %>%
+#   gather(key = Variable, value = Count, Growth.habit:Seed.shape)
+# fqTable <- fqTable[complete.cases(fqTable),]; rownames(fqTable) <- 1:nrow(fqTable); colnames(fqTable)[1] <- "Category"
+# fqTable <- fqTable %>% dplyr::mutate(Percentage = Count/nrow(genotypic_climate_cmplt))
+# 
+# fqTable %>% ggplot(aes(x =  reorder(Category, Percentage), y = Percentage*100)) +
+#   geom_bar(stat = "identity") +
+#   xlab("") + ylab("Percentage (%)") +
+#   coord_flip() +
+#   facet_wrap(~ Variable, scales = "free") +
+#   theme_bw() +
+#   theme(strip.text = element_text(size = 12, face = "bold")) +
+#   theme(axis.title.x = element_text(size = 13, face = 'bold'),
+#         axis.title.y = element_text(size = 13, face = 'bold'),
+#         axis.text = element_text(size = 12))
+# 
+# # Identify multivariate outliers
+# 
+# 
+# # Calculate Mahalanobis Distance with height and weight distributions
+# m_dist <- mahalanobis(genotypic_climate_cmplt %>% dplyr::select(Elevation, Latitude, Seed.weight, bio_1:bio_19),
+#                       colMeans(genotypic_climate_cmplt %>% dplyr::select(Elevation, Latitude, Seed.weight, bio_1:bio_19)),
+#                       cov(genotypic_climate_cmplt %>% dplyr::select(Elevation, Latitude, Seed.weight, bio_1:bio_19)))
+# 
+# pca.res <- genotypic_climate_cmplt %>% dplyr::select(Elevation, Latitude, Seed.weight, bio_1:bio_19) %>%
+#   FactoMineR::PCA(X = ., scale.unit = T, graph = T)
+# 
+# test <- data.frame(pca.res$ind$coord[,1:2], m_dist)
+# test %>% ggplot(aes(x = Dim.1, y = Dim.2, col = m_dist)) + geom_point()
+# test <- data.frame(genotypic_climate_cmplt[,c("Longitude", "Latitude")], m_dist)
+# test %>% ggplot(aes(x = Longitude, y = Latitude, col = m_dist)) + geom_point()
+# 
+# highchart() %>% 
+#   hc_title(text = "Scatter chart with number of coordinates and median harvested area by country") %>% 
+#   hc_add_series_scatter(x = test$Longitude, y = test$Latitude, color = test$m_dist, label = genotypic_climate_cmplt$Owner)
+# 
+# # Mahalanobis Outliers - Threshold set to 12
+# df$outlier_maha <- "No"
+# df$outlier_maha[df$m_dist > 12] <- "Yes"
+# 
+# 
+# 
+# # Factor Analysis of Mixed Data
+# set.seed(1)
+# famd_res <- FactoMineR::FAMD(base = genotypic_climate_cmplt[sample(x = 1:nrow(genotypic_climate_cmplt), size = 2000, replace = F),] %>% select(Elevation, Latitude, Growth.habit, Seed.color, Seed.shape, Seed.brightness, Seed.weight, wc2.0_bio_30s_01:wc2.0_bio_30s_18), graph = T)
+# fviz_screeplot(famd_res) + theme_bw()
+# fviz_famd_var(famd_res) + theme_bw()
+# fviz_famd_var(famd_res, "quanti.var", repel = TRUE, col.var = "black") + theme_bw()
+# fviz_famd_var(famd_res, "quali.var", col.var = "black")
+# fviz_famd_ind(famd_res, col.ind = "cos2",
+#               gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+#               repel = TRUE)
+# 
+# # Multiple Factor Analysis
+# set.seed(1)
+# mfa_res <- FactoMineR::MFA(base = genotypic_climate_cmplt[sample(x = 1:nrow(genotypic_climate_cmplt), size = 2000, replace = F),] %>% select(Elevation, Latitude, Growth.habit, Seed.color, Seed.shape, Seed.brightness, Seed.weight, wc2.0_bio_30s_01:wc2.0_bio_30s_18), group = c(2, 4, 9), type = c("s", "n", "s"), graph = T)
+# 
+# # Random forest clustering
+# no.forests <- 25
+# no.trees <- 3000
+# set.seed(1)
+# distRF <- RFdist(datRF = genotypic_climate_cmplt[sample(x = 1:nrow(genotypic_climate_cmplt), size = 2000, replace = F),] %>% dplyr::select(Elevation, Latitude, Growth.habit, Seed.color, Seed.shape, Seed.brightness, Seed.weight, wc2.0_bio_30s_01:wc2.0_bio_30s_18) %>% unique(),
+#                  mtry1 = 3, no.trees, no.forests, addcl1 = T, addcl2 = F, imp = T, oob.prox1 = T)
+# 
+# ### Clustering methods
+# 
+# ## Gower distance
+# 
+# set.seed(1)
+# gower.dist <- daisy(genotypic_climate_cmplt[sample(x = 1:nrow(genotypic_climate_cmplt), size = 2000, replace = F),] %>% dplyr::select(Elevation, Latitude, Growth.habit, Seed.color, Seed.shape, Seed.brightness, Seed.weight, wc2.0_bio_30s_01:wc2.0_bio_30s_18),
+#                     metric = "gower", type = list(logratio = 3))
+# summary(gower.dist)
+# gower.mat <- as.matrix(gower.dist)
+# 
+# fviz_dist(as.dist(gower.mat),
+#           gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07"))
+# 
+# res.hc <- hclust(d = gower.dist, method = "ward.D2")
+# fviz_dend(res.hc, cex = 0.5)
+# 
+# fviz_dend(res.hc, k = 3, cex = 0.4, horiz = TRUE, k_colors = "jco",
+#           rect = TRUE, rect_border = "jco", rect_fill = TRUE)
+# 
+# library(ClustOfVar)
+# stability(tree = res.hc, B = 40, graph = T)
+# 
+# 
+# 
+# 
+# 
+# 
+# fviz_nbclust(genotypic_climate_cmplt[sample(x = 1:nrow(genotypic_climate_cmplt), size = 2000, replace = F),] %>% dplyr::select(Elevation, Latitude, Growth.habit, Seed.color, Seed.shape, Seed.brightness, Seed.weight, wc2.0_bio_30s_01:wc2.0_bio_30s_18),
+#              kmeans, method = "gap_stat") + geom_vline(xintercept = 4, linetype = 2) + 
+#   labs(subtitle = "Elbow method")
+# 
+# 
+# # Fuzzy clustering
+# 
+# # T-SNE
+# Labels <- train$label
+# train$label <- as.factor(train$label)
+# ## for plotting
+# colors = rainbow(length(unique(train$label)))
+# names(colors) = unique(train$label)
+# 
+# ## Executing the algorithm on curated data
+# set.seed(1)
+# tsne <- Rtsne(genotypic_climate_cmplt[sample(x = 1:nrow(genotypic_climate_cmplt), size = 2000, replace = F),] %>% select(Elevation, Latitude, Growth.habit, Seed.color, Seed.shape, Seed.brightness, Seed.weight, wc2.0_bio_30s_01:wc2.0_bio_30s_18) %>% unique(),
+#               dims = 2, perplexity = 30, verbose = TRUE, max_iter = 500)
+# 
+# ## Plotting
+# plot(tsne$Y, main = "tsne", pch = 20)
+# text(tsne$Y, labels=train$label, col=colors[train$label])
 
 
 # Stepwise Discriminant analysis
@@ -338,6 +338,52 @@ genepool_data$Growth.habit <- factor(genepool_data$Growth.habit)
 genepool_data$Seed.shape <- factor(genepool_data$Seed.shape)
 genepool_data$Seed.brightness <- factor(genepool_data$Seed.brightness)
 genepool_data$Race.protein <- factor(genepool_data$Race.protein)
+
+# Descriptive analysis: quantitative
+gg <- genepool_data %>% dplyr::select(Genepool, Altitude, Latitude, Seed.weight, bio_1:bio_19) %>%
+  gather(Variable, Value, -Genepool) %>% ggplot(aes(x = Value, colour = Genepool, alpha = .6)) + # fill = Variable
+  geom_density() +
+  facet_wrap(~ Variable, scales = "free") +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  theme(legend.title = element_text(face = "bold")) +
+  guides(alpha = F, fill = F) +
+  theme(strip.text = element_text(size = 12, face = "bold")) +
+  theme(axis.title.x = element_text(size = 13, face = 'bold'),
+        axis.title.y = element_text(size = 13, face = 'bold'),
+        axis.text = element_text(size = 12))
+
+# Descriptive analysis: qualitative
+fqTable <- genepool_data %>% dplyr::select(Genepool, Growth.habit, Seed.shape, Seed.brightness, Race.protein) %>%
+  gather(measure, value, -Genepool) %>%
+  count(Genepool, measure, value) %>%
+  spread(measure, n) %>%
+  gather(key = Variable, value = Count, Growth.habit:Seed.shape)
+fqTable <- fqTable[complete.cases(fqTable),]; rownames(fqTable) <- 1:nrow(fqTable); colnames(fqTable)[2] <- "Category"
+fqTable <- fqTable %>% dplyr::mutate(Percentage = Count/nrow(genotypic_climate))
+fqTable <- fqTable %>% as.data.frame
+# Color variable
+fqTable <- rbind(fqTable, data.frame(Category = genepool_data[,c(1, grep(pattern = "^Color_", x = names(genepool_data)))] %>% as.data.frame %>% group_by(Genepool) %>% dplyr::do(color = base::colSums(.)) %>% names %>% gsub(pattern = "Color_", replacement = "", x = .),
+                                     Variable = "Color",
+                                     Count = genotypic_climate[,grep(pattern = "^Color_", x = names(genotypic_climate))] %>% as.data.frame %>% apply(MARGIN = 2, FUN = sum) %>% as.numeric,
+                                     Percentage = genotypic_climate[,grep(pattern = "^Color_", x = names(genotypic_climate))] %>% as.data.frame %>% apply(MARGIN = 2, FUN = sum) %>% as.numeric / nrow(genotypic_climate)))
+# Protein variable
+fqTable <- rbind(fqTable, data.frame(Category = genotypic_climate[,grep(pattern = "^Protein_", x = names(genotypic_climate))] %>% as.data.frame %>% apply(MARGIN = 2, FUN = sum) %>% names %>% gsub(pattern = "^Protein_", replacement = "", x = .),
+                                     Variable = "Protein",
+                                     Count = genotypic_climate[,grep(pattern = "^Protein_", x = names(genotypic_climate))] %>% as.data.frame %>% apply(MARGIN = 2, FUN = sum) %>% as.numeric,
+                                     Percentage = genotypic_climate[,grep(pattern = "^Protein_", x = names(genotypic_climate))] %>% as.data.frame %>% apply(MARGIN = 2, FUN = sum) %>% as.numeric / nrow(genotypic_climate)))
+
+# Qualitative variables: barplot per variable
+gg <- fqTable %>% ggplot(aes(x =  reorder(Category, Percentage), y = Percentage*100, fill = Genepool)) +
+  geom_bar(stat = "identity") +
+  xlab("") + ylab("Percentage (%)") +
+  coord_flip() +
+  facet_wrap(~ Variable, scales = "free") +
+  theme_bw() +
+  theme(strip.text = element_text(size = 12, face = "bold")) +
+  theme(axis.title.x = element_text(size = 13, face = 'bold'),
+        axis.title.y = element_text(size = 13, face = 'bold'),
+        axis.text = element_text(size = 12))
 
 # Random Forest
 set.seed(1)
