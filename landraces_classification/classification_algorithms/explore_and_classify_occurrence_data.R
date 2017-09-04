@@ -310,6 +310,11 @@ pca.mix_res %>% summary
 # Cluster analysis
 pca.mix_res$scores[,1:2] %>% plot
 
+View(pca.mix_res$eig)
+
+View(pca.mix_res$quanti$cos2)
+
+
 library("cluster")
 # Agglomerative Nesting (Hierarchical Clustering)
 res.agnes <- agnes(x = pca.mix_res$scores, # data matrix
@@ -395,6 +400,8 @@ varImpPlot(x = genepool_folds$model$`2`)
 varImpPlot(x = genepool_folds$model$`3`)
 varImpPlot(x = genepool_folds$model$`4`)
 varImpPlot(x = genepool_folds$model$`5`)
+
+# Andres Cortes calcular drought arity
 
 genepool_data %>% ggplot(aes(x = Genepool, y = Latitude)) + geom_boxplot()
 genepool_data %>% ggplot(aes(x = Genepool, y = bio_15)) + geom_boxplot()

@@ -46,6 +46,19 @@ names(ciat) <- c("ID", "Source", "Cleaned_by", "Accession.number", "Synonyms", "
                  "Place5", "Year6", "Responsible7", "Reaction", "Responsible8", "Reaction9",
                  "Responsible10", "Date.evaluation", "Protein", "Doubtful.cases", "Race.protein", "Responsible11")
 
+sum(!is.na(ciat$Longitude) & !is.na(ciat$Latitude)) # Accessions with coordinates
+sum(!is.na(ciat$Place) & is.na(ciat$Longitude)) # Accessions with place but without coordinates
+sum(is.na(ciat$Place) & is.na(ciat$Longitude)) # Accessions without place and coordinates
+sum(ciat %>% select(Altitude:Longitude, Growth.habit:Seed.weight, Protein) %>% complete.cases)
+sum(ciat %>% select(Genepool, Race.interpreted, Subgroup, Altitude:Longitude, Growth.habit:Seed.weight, Protein) %>% complete.cases)
+sum(!is.na(ciat$Vernacular.name))
+sum(!is.na(ciat$Vernacular.name) & !is.na(ciat$Longitude))
+
+predictorList <- c("Altitude", "Latitude", "Growth.habit", "Seed.color", "Seed.shape", "Seed.brightness", "Seed.weight", "Protein", "Race.protein")
+for(i in 1:length(predictorList)){
+  eval(parse(text = paste0("cat(sum(!is.na(ciat$Longitude) & !is.na(ciat$", predictorList[i], ")), '\n')")))
+}
+
 sum(ciat$Type.of.material == "Landrace", na.rm = T) # 27644 (old and original), 23831 (new one with vernacular names)
 sum(!is.na(ciat$Common.names), na.rm = T) # 37987 (old and original), 15784 (new one with vernacular names)
 sum(!is.na(ciat$Vernacular.name), na.rm = T) # 4196 (new one with vernacular names)
@@ -95,6 +108,19 @@ m <- leaflet() %>% addTiles() %>%
              color = "#ffa500", stroke = TRUE, fillOpacity = 0.8, data = ciat_landraces) # popup = ct$type, 
 # %>% addMarkers(~Longitude, ~Latitude, label = ~as.character(Common_names), data = ciat_landraces)
 # saveWidget(m, file =" m.html")
+
+sum(!is.na(ciat$Longitude) & !is.na(ciat$Latitude)) # Accessions with coordinates
+sum(!is.na(ciat$Place) & is.na(ciat$Longitude)) # Accessions with place but without coordinates
+sum(is.na(ciat$Place) & is.na(ciat$Longitude)) # Accessions without place and coordinates
+sum(ciat %>% select(Altitude:Longitude, Growth.habit:Seed.weight, Protein) %>% complete.cases)
+sum(ciat %>% select(Genepool, Race.interpreted, Subgroup, Altitude:Longitude, Growth.habit:Seed.weight, Protein) %>% complete.cases)
+sum(!is.na(ciat$Vernacular.name))
+sum(!is.na(ciat$Vernacular.name) & !is.na(ciat$Longitude))
+
+predictorList <- c("Altitude", "Latitude", "Growth.habit", "Seed.color", "Seed.shape", "Seed.brightness", "Seed.weight", "Protein", "Race.protein")
+for(i in 1:length(predictorList)){
+  eval(parse(text = paste0("cat(sum(!is.na(ciat$Longitude) & !is.na(ciat$", predictorList[i], ")), '\n')")))
+}; rm(i)
 
 ciat2 <- ciat %>% dplyr::select(ID, Accession.number, Common.names, Interpreted.name, Test, Vernacular.name, Genepool, Race.interpreted, Subgroup, Altitude, Longitude, Latitude, Growth.habit, Seed.color, Seed.shape, Seed.brightness, Seed.weight, Protein, Race.protein)
 
