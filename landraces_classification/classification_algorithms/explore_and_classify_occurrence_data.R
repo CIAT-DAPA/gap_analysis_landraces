@@ -35,6 +35,8 @@ suppressMessages(library(modelr))
 suppressMessages(library(broom))
 suppressMessages(library(purrr))
 suppressMessages(library(PCAmixdata))
+suppressMessages(library(AppliedPredictiveModeling))
+suppressMessages(library(googlesheets))
 
 ## =================================================================================================================== ##
 ## Blair's study
@@ -390,9 +392,32 @@ gg <- fqTable %>% ggplot(aes(x =  reorder(Category, Percentage), y = Percentage*
         axis.title.y = element_text(size = 13, face = 'bold'),
         axis.text = element_text(size = 12))
 
+transparentTheme(trans = .4)
+featurePlot(x = genepool_data %>% select(Altitude, Latitude, Seed.weight), 
+            y = genepool_data$Genepool,
+            plot = "pairs",
+            ## Add a key at the top
+            auto.key = list(columns = 3))
+
+transparentTheme(trans = .4)
+featurePlot(x = genepool_data %>% select(bio_1:bio_19), 
+            y = genepool_data$Genepool,
+            plot = "pairs",
+            ## Add a key at the top
+            auto.key = list(columns = 3))
+
+# Delete zero- and near zero-variance predictors
+# nzv <- nearZeroVar(genepool_data, saveMetrics = TRUE)
+# nzv[nzv$nzv,][1:10,]
+nzv <- nearZeroVar(genepool_data)
+filtered_genepool_data <- genepool_data[,-nzv]
+
+filtered_genepool_data <- cbind(filtered_genepool_data %>% select(Altitude, Latitude, Seed.weight, bio_1:bio_19) %>% scale(.),
+                                filtered_genepool_data %>% select(Growth.habit:Seed.brightness, Race.protein, Color_Black:Protein_T, Genepool))
+
 # Random Forest
 set.seed(1)
-genepool_folds <- modelr::crossv_kfold(genepool_data, k = 5)
+genepool_folds <- modelr::crossv_kfold(filtered_genepool_data, k = 5)
 genepool_folds <- genepool_folds %>% mutate(model = map(train, ~ randomForest(Genepool ~ ., data = .)))
 
 varImpPlot(x = genepool_folds$model$`1`)
@@ -400,6 +425,14 @@ varImpPlot(x = genepool_folds$model$`2`)
 varImpPlot(x = genepool_folds$model$`3`)
 varImpPlot(x = genepool_folds$model$`4`)
 varImpPlot(x = genepool_folds$model$`5`)
+
+CM = table(genepool_folds$test$`2`$data$Genepool, predict(genepool_folds$model$`2`, genepool_folds$test$`2`$data[,-ncol(genepool_folds$test$`2`$data)]))
+
+genepool_folds <- genepool_folds %>% mutate(model_svm = map(train, ~ svm(Genepool ~ ., kernel = "radial", scale = F, data = .)))
+genepool_folds$model_svm$`1`
+summary(genepool_folds$model_svm$`1`)
+
+CM = table(genepool_folds$test$`2`$data$Genepool, predict(genepool_folds$model_svm$`2`, genepool_folds$test$`2`$data[,-ncol(genepool_folds$test$`2`$data)]))
 
 # Andres Cortes calcular drought arity
 

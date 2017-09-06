@@ -27,12 +27,16 @@ suppressMessages(library(d3heatmap))
 suppressMessages(library(cluster))
 suppressMessages(library(factoextra))
 suppressMessages(library(gtools))
+suppressMessages(library(googlesheets))
 
 ## =================================================================================================================== ##
 ## CIAT database
 ## =================================================================================================================== ##
 
-ciat <- read_excel(path = paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/CIAT_BEAN_DB_2017_08_25.xlsx"), sheet = "CLEANED_FILE")
+ciat <- gs_ls("Bean_landrace_name_table")
+ciat <- gs_title("Bean_landrace_name_table")
+ciat %>% gs_browse(ws = "Phaseolus_vulgaris_landraces_G")
+ciat <- ciat %>% gs_read(ws = "Phaseolus_vulgaris_landraces_G")
 nrow(ciat) # 37987 (old and original), 23831 (new one with vernacular names)
 
 names(ciat) <- c("ID", "Source", "Cleaned_by", "Accession.number", "Synonyms", "Common.names",
