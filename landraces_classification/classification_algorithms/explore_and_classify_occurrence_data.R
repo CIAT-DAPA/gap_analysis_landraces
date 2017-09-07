@@ -224,20 +224,25 @@ suppressMessages(library(googlesheets))
 ## CIAT information with climate data (with phaseolin data and race/genepool classification)
 ## =================================================================================================================== ##
 
-genotypic_climate <- readRDS(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/ciatOrganizedVariables_climate.RDS"))
-genotypic_climate$Race.protein[genotypic_climate$Race.protein == "N/A"] <- NA
+# genotypic_climate <- readRDS(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/ciatOrganizedVariables_climate.RDS"))
+genotypic_climate <- read.csv("D:/ciat_beans_filtered_with_climate.csv")
+genotypic_climate$Genepool.lit <- as.character(genotypic_climate$Genepool.lit)
+genotypic_climate$Genepool.lit[grep(pattern = "Andean_Spain_I", x = genotypic_climate$Genepool.lit)] <- "Andean"
+genotypic_climate$Genepool.protein[genotypic_climate$Genepool.protein == "N/A"] <- NA
 genotypic_climate$Accession.number <- as.factor(genotypic_climate$Accession.number)
 genotypic_climate$Common.names <- as.factor(genotypic_climate$Common.names)
-genotypic_climate$Interpreted.name <- as.factor(genotypic_climate$Interpreted.name)
-genotypic_climate$Vernacular.name <- as.factor(genotypic_climate$Vernacular.name)
-genotypic_climate$Genepool <- as.factor(genotypic_climate$Genepool)
-genotypic_climate$Race.interpreted <- as.factor(genotypic_climate$Race.interpreted)
-genotypic_climate$Subgroup <- as.factor(genotypic_climate$Subgroup)
+genotypic_climate$Interpreted.name.lit <- as.factor(genotypic_climate$Interpreted.name.lit)
+genotypic_climate$Vernacular.name.lit <- as.factor(genotypic_climate$Vernacular.name.lit)
+genotypic_climate$Genepool.lit <- as.factor(genotypic_climate$Genepool.lit)
+genotypic_climate$Race.interpreted.lit <- as.factor(genotypic_climate$Race.interpreted.lit)
+genotypic_climate$Subgroup.lit <- as.factor(genotypic_climate$Subgroup.lit)
 genotypic_climate$Growth.habit <- as.factor(genotypic_climate$Growth.habit)
 genotypic_climate$Seed.shape <- as.factor(genotypic_climate$Seed.shape)
 genotypic_climate$Seed.brightness <- as.factor(genotypic_climate$Seed.brightness)
-genotypic_climate$Race.protein <- as.factor(genotypic_climate$Race.protein)
+genotypic_climate$Genepool.protein <- as.factor(genotypic_climate$Genepool.protein)
 genotypic_climate %>% glimpse
+
+genotypic_climate <- genotypic_climate %>% filter(Analysis == "Americas")
 
 # ==================================== #
 # Univariate descriptive analysis
@@ -337,18 +342,22 @@ res.diana$height %>% sort %>% barplot
 # Classification algorithms
 # ==================================== #
 
+toPredict <- genotypic_climate %>% dplyr::select(ID, Longitude, Latitude, Genepool.lit, Altitude, Latitude, Growth.habit:bio_19)
+toPredict <- toPredict %>% filter(is.na(Genepool.lit))
+toPredict <- toPredict[which(complete.cases(toPredict[,-which(names(toPredict)=="Genepool.lit")])),]; rownames(toPredict) <- 1:nrow(toPredict)
+
 ## Genepool as response variable
-genepool_data <- genotypic_climate %>% dplyr::select(Genepool, Altitude, Latitude:bio_19)
+genepool_data <- genotypic_climate %>% dplyr::select(ID, Longitude, Latitude, Genepool.lit, Altitude, Latitude, Growth.habit:bio_19)
 genepool_data <- genepool_data[complete.cases(genepool_data),]; rownames(genepool_data) <- 1:nrow(genepool_data)
-genepool_data$Genepool <- factor(genepool_data$Genepool)
+genepool_data$Genepool.lit <- factor(genepool_data$Genepool.lit)
 genepool_data$Growth.habit <- factor(genepool_data$Growth.habit)
 genepool_data$Seed.shape <- factor(genepool_data$Seed.shape)
 genepool_data$Seed.brightness <- factor(genepool_data$Seed.brightness)
-genepool_data$Race.protein <- factor(genepool_data$Race.protein)
+genepool_data$Genepool.protein <- factor(genepool_data$Genepool.protein)
 
 # Descriptive analysis: quantitative
-gg <- genepool_data %>% dplyr::select(Genepool, Altitude, Latitude, Seed.weight, bio_1:bio_19) %>%
-  gather(Variable, Value, -Genepool) %>% ggplot(aes(x = Value, colour = Genepool, alpha = .6)) + # fill = Variable
+gg <- genepool_data %>% dplyr::select(Genepool.lit, Latitude, Altitude, Seed.weight, bio_1:bio_19) %>%
+  gather(Variable, Value, -Genepool.lit) %>% ggplot(aes(x = Value, colour = Genepool.lit, alpha = .6)) + # fill = Variable
   geom_density() +
   facet_wrap(~ Variable, scales = "free") +
   theme_bw() +
@@ -412,21 +421,92 @@ featurePlot(x = genepool_data %>% select(bio_1:bio_19),
 nzv <- nearZeroVar(genepool_data)
 filtered_genepool_data <- genepool_data[,-nzv]
 
-filtered_genepool_data <- cbind(filtered_genepool_data %>% select(Altitude, Latitude, Seed.weight, bio_1:bio_19) %>% scale(.),
-                                filtered_genepool_data %>% select(Growth.habit:Seed.brightness, Race.protein, Color_Black:Protein_T, Genepool))
-
 # Random Forest
-set.seed(1)
-genepool_folds <- modelr::crossv_kfold(filtered_genepool_data, k = 5)
-genepool_folds <- genepool_folds %>% mutate(model = map(train, ~ randomForest(Genepool ~ ., data = .)))
+# set.seed(1)
+# genepool_folds <- modelr::crossv_kfold(filtered_genepool_data, k = 5)
+# genepool_folds <- genepool_folds %>% mutate(model = map(train, ~ randomForest(Genepool ~ ., data = .)))
+# 
+# varImpPlot(x = genepool_folds$model$`1`)
+# varImpPlot(x = genepool_folds$model$`2`)
+# varImpPlot(x = genepool_folds$model$`3`)
+# varImpPlot(x = genepool_folds$model$`4`)
+# varImpPlot(x = genepool_folds$model$`5`)
+# 
+# CM = table(genepool_folds$test$`2`$data$Genepool, predict(genepool_folds$model$`2`, genepool_folds$test$`2`$data[,-ncol(genepool_folds$test$`2`$data)]))
 
-varImpPlot(x = genepool_folds$model$`1`)
-varImpPlot(x = genepool_folds$model$`2`)
-varImpPlot(x = genepool_folds$model$`3`)
-varImpPlot(x = genepool_folds$model$`4`)
-varImpPlot(x = genepool_folds$model$`5`)
+set.seed(825)
+ctrol2 <- trainControl(method = "LGOCV", p = 0.8, number = 5, savePredictions = T)
 
-CM = table(genepool_folds$test$`2`$data$Genepool, predict(genepool_folds$model$`2`, genepool_folds$test$`2`$data[,-ncol(genepool_folds$test$`2`$data)]))
+grid <- expand.grid(mtry = round((ncol(filtered_genepool_data)-4)/3))
+
+rfFit <- train(Genepool.lit ~ ., data = filtered_genepool_data[,3:ncol(filtered_genepool_data)], 
+               method = "rf",
+               tuneGrid = grid,
+               importance = TRUE,
+               ntree = 2000,
+               trControl = ctrol2
+               )
+used.variables <- names(filtered_genepool_data[,3:ncol(filtered_genepool_data)])
+used.variables <- used.variables[-which(used.variables == "Genepool.lit")]
+
+toPredict[,used.variables] %>% dim
+toPredict[,used.variables][complete.cases(toPredict[,used.variables]),] %>% dim
+
+toPredict$Genepool.predicted.rf <- predict(object = rfFit, newdata = toPredict[,used.variables])
+
+svmFit <- train(Genepool.lit ~ ., data = filtered_genepool_data[,3:ncol(filtered_genepool_data)], 
+                method = "svmRadial", # Radial kernel
+                tuneLength = 9,       # 9 values of the cost function
+                trControl = ctrol2,
+                importance = T
+                )
+toPredict$Genepool.predicted.svm <- predict(object = svmFit, newdata = toPredict[,used.variables])
+
+importanceRF <- rfFit$finalModel$importance %>% as.data.frame()
+importanceSVM <- varImp(svmFit)
+importanceSVM <- importanceSVM$importance
+
+importanceRF$Variable <- rownames(importanceRF)
+importanceSVM$Variable <- rownames(importanceSVM)
+
+importanceRF <- importanceRF %>% select(Variable, MeanDecreaseGini)
+importanceSVM <- importanceSVM %>% select(Variable, Mesoamerican)
+
+names(importanceRF)[2] <- "Importance"
+names(importanceSVM)[2] <- "Importance"
+
+importanceRF$Importance <- (importanceRF$Importance - min(importanceRF$Importance))/(max(importanceRF$Importance)-min(importanceRF$Importance))
+importanceSVM$Importance <- (importanceSVM$Importance - min(importanceSVM$Importance))/(max(importanceSVM$Importance)-min(importanceSVM$Importance))
+
+importanceRF$Model <- "RandomForest"
+importanceSVM$Model <- "SVM"
+
+generalImportance <- rbind(importanceRF, importanceSVM)
+
+shp_wld <- rgdal::readOGR(dsn = "D:/Harold/_maps/ShapeFiles/world", layer = "all_countries")
+proj4string(shp_wld) <- CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
+shp_wld$CONTINENT <- iconv(shp_wld$CONTINENT, from = "UTF-8", to = "latin1")
+shp_wld <- shp_wld[shp_wld@data$CONTINENT == "North America" | shp_wld@data$CONTINENT == "South America",]
+
+shp_wld <- fortify(shp_wld)
+
+ggplot() + 
+  geom_polygon(data = shp_wld, aes(long, lat, group = group)) +
+  geom_point(data = toPredict, aes(x = Longitude, y = Latitude, fill = Genepool.predicted.rf, colour = Genepool.predicted.rf)) +
+  coord_cartesian(xlim = c(-180, 0))
+
+ggplot() + 
+  geom_polygon(data = shp_wld, aes(long, lat, group = group)) +
+  geom_point(data = toPredict, aes(x = Longitude, y = Latitude, fill = Genepool.predicted.svm, colour = Genepool.predicted.svm)) +
+  coord_cartesian(xlim = c(-180, 0))
+
+toPredict %>% ggplot(aes(x = Longitude, y = Latitude, fill = Genepool.predicted.rf, colour = Genepool.predicted.rf)) + geom_point()
+toPredict %>% ggplot(aes(x = Longitude, y = Latitude, fill = Genepool.predicted.svm, colour = Genepool.predicted.svm)) + geom_point()
+
+generalImportance %>% ggplot(aes(x = reorder(Variable, Importance), y = Importance, fill = Model)) +
+  geom_bar(stat = "identity", position = position_dodge()) + coord_flip()
+
+
 
 genepool_folds <- genepool_folds %>% mutate(model_svm = map(train, ~ svm(Genepool ~ ., kernel = "radial", scale = F, data = .)))
 genepool_folds$model_svm$`1`
@@ -473,18 +553,3 @@ subgroup_folds <- subgroup_folds %>% mutate(model = map(train, ~ randomForest(Su
 
 varImpPlot(x = subgroup_folds$model$`1`)
 varImpPlot(x = subgroup_folds$model$`2`)
-
-
-suppressMessages(library(caret))
-ctrl <- trainControl(method = "repeatedcv", # 10 fold cross validation
-                     repeats = 5,           # Do 5 repititions of cv
-                     # summaryFunction = twoClassSummary, # Use AUC to pick the best model
-                     classProbs = F)
-
-svm.tune <- train(x = training[,-ncol(training)],
-                  y = training[,output],
-                  method = "svmRadial",           # Radial kernel
-                  tuneLength = 9,                 # 9 values of the cost function
-                  preProc = c("center", "scale"), # Center and scale data
-                  trControl = ctrl,
-                  importance = T)
