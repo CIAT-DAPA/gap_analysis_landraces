@@ -40,25 +40,59 @@ ciat <- ciat %>% gs_read(ws = "Phaseolus_vulgaris_landraces_G")
 nrow(ciat) # 37987 (old and original), 23831 (new one with vernacular names)
 
 names(ciat) <- c("ID", "Source", "Cleaned_by", "Accession.number", "Synonyms", "Common.names",
-                 "Interpreted.name", "Test", "Vernacular.name", "Genepool", "Race.interpreted", "Race",
-                 "Subgroup", "Reference", "Genus", "Species", "Subspecies", "Variety",
+                 "Interpreted.name.lit", "Test", "Vernacular.name.lit", "Genepool.lit", "Race.interpreted.lit", "Race",
+                 "Subgroup.lit", "Reference", "Genus", "Species", "Subspecies", "Variety",
                  "Biological.status", "Type.of.material", "CORE.collection",
-                 "Country", "Department", "County", "Place", "Altitude", "Latitude", "Longitude",
+                 "Country", "Department", "County", "Place", "Altitude", "Latitude", "Longitude", "Lat_geo", "Lon_geo",
+                 "Coord.status",
                  "Date.collection", "Name", "Name2", "Institution", "Country3",
                  "Date.receipt", "Growth.habit", "Seed.color", "Seed.shape", "Seed.brightness", "Seed.weight",
-                 "Days.to.flowering", "Place4", "Year", "Responsible", "First.harvest", "Last.harvest",
-                 "Place5", "Year6", "Responsible7", "Reaction", "Responsible8", "Reaction9",
-                 "Responsible10", "Date.evaluation", "Protein", "Doubtful.cases", "Race.protein", "Responsible11")
+                 "Protein", "Genepool.weight.fix", "Genepool.protein", "Race.protein", "Responsible11")
 
+ciat <- ciat %>% dplyr::select(ID, Accession.number:Race.interpreted.lit, Subgroup.lit,
+                               Genus:Coord.status, Growth.habit:Protein, Genepool.protein)
+
+# Replace empty spaces with georreferenced coordinates
+ciat$Latitude[which(!is.na(ciat$Lat_geo) & is.na(ciat$Latitude))] <- ciat$Lat_geo[which(!is.na(ciat$Lat_geo) & is.na(ciat$Latitude))]
+ciat$Longitude[which(!is.na(ciat$Lon_geo) & is.na(ciat$Longitude))] <- ciat$Lon_geo[which(!is.na(ciat$Lon_geo) & is.na(ciat$Longitude))]
+ciat$Lon_geo <- ciat$Lat_geo <- ciat$Coord.status <- NULL
+
+# Identify coordinates without altitude data
+which(!is.na(ciat$Latitude) & is.na(ciat$Altitude)) %>% length
+ciat %>% dplyr::filter(!is.na(Latitude) & is.na(Altitude)) %>% dplyr::select(Longitude, Latitude) %>% head
+
+# # Density of altitude records
+# plot(density(na.omit(ciat$Altitude)))
+# dens <- density(na.omit(ciat$Altitude))
+# integrate(approxfun(dens), lower = 3000, upper = 3500)
+# # 0.006958508 with absolute error < 0.000024
+
+srtm <- raster::raster("//dapadfs/data_cluster_4/observed/gridded_products/srtm/Altitude_30s/alt")
+srtm.vals <- raster::extract(x = srtm,
+                             y = ciat %>% dplyr::filter(!is.na(Latitude) & is.na(Altitude)) %>% dplyr::select(Longitude, Latitude))
+# hist(srtm.vals)
+ciat$Altitude[which(!is.na(ciat$Latitude) & is.na(ciat$Altitude))] <- srtm.vals
+
+# # Density of altitude with new records according to georreferenced coordinates
+# plot(density(as.numeric(na.omit(ciat$Altitude))))
+# dens <- density(na.omit(ciat$Altitude))
+# integrate(approxfun(dens), lower = 3000, upper = 5500)
+# integrate(approxfun(dens), lower = 3500, upper = 5500)
+rm(srtm.vals, srtm)
+
+ciat <- ciat %>% filter(Altitude <= 3500)
+write.csv(x = ciat, file = "D:/ciat_beans_filtered_by_altitude.csv", row.names = F)
+
+# Counts
 sum(!is.na(ciat$Longitude) & !is.na(ciat$Latitude)) # Accessions with coordinates
 sum(!is.na(ciat$Place) & is.na(ciat$Longitude)) # Accessions with place but without coordinates
 sum(is.na(ciat$Place) & is.na(ciat$Longitude)) # Accessions without place and coordinates
-sum(ciat %>% select(Altitude:Longitude, Growth.habit:Seed.weight, Protein) %>% complete.cases)
-sum(ciat %>% select(Genepool, Race.interpreted, Subgroup, Altitude:Longitude, Growth.habit:Seed.weight, Protein) %>% complete.cases)
-sum(!is.na(ciat$Vernacular.name))
-sum(!is.na(ciat$Vernacular.name) & !is.na(ciat$Longitude))
+sum(ciat %>% select(Altitude:Genepool.protein) %>% complete.cases)
+sum(ciat %>% select(Genepool.lit, Race.interpreted.lit, Subgroup.lit, Altitude:Genepool.protein) %>% complete.cases)
+sum(!is.na(ciat$Vernacular.name.lit))
+sum(!is.na(ciat$Vernacular.name.lit) & !is.na(ciat$Longitude))
 
-predictorList <- c("Altitude", "Latitude", "Growth.habit", "Seed.color", "Seed.shape", "Seed.brightness", "Seed.weight", "Protein", "Race.protein")
+predictorList <- c("Altitude", "Latitude", "Growth.habit", "Seed.color", "Seed.shape", "Seed.brightness", "Seed.weight", "Protein", "Genepool.protein")
 for(i in 1:length(predictorList)){
   eval(parse(text = paste0("cat(sum(!is.na(ciat$Longitude) & !is.na(ciat$", predictorList[i], ")), '\n')")))
 }
@@ -68,65 +102,67 @@ sum(!is.na(ciat$Common.names), na.rm = T) # 37987 (old and original), 15784 (new
 sum(!is.na(ciat$Vernacular.name), na.rm = T) # 4196 (new one with vernacular names)
 sum(ciat$Type.of.material == "Landrace" & !is.na(ciat$Vernacular.name), na.rm = T) # 4196
 
-# load world shapefile
-shp_wld <- rgdal::readOGR(dsn = paste0(root, "/gap_analysis_landraces/Input_data/_maps/Global_administrative_unit_layers/gaul_2014"), layer = "G2014_2013_1")
-
-# Load world raster
-rst_wld <- raster::raster(paste0(root, "/gap_analysis_landraces/Input_data/presence_data/world_body_waters_2-5.asc"))
-
-# Identify accession without coordinates to do Georreferenciation process
-ciat_empyCoordinates <- ciat[which(is.na(ciat$Longitude) & is.na(ciat$Latitude)),]
-ciat_empyCoordinates <- ciat_empyCoordinates %>% dplyr::filter((!is.na(Country) |
-                                                                 !is.na(Department) |
-                                                                 !is.na(County) |
-                                                                 !is.na(Place)) & !is.na(Protein))
-if(!file.exists(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/coord4georef.csv"))){
-  write.csv(x = ciat_empyCoordinates, file = paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/coord4georef.csv"), row.names = F)
-}; rm(ciat_empyCoordinates)
+# # load world shapefile
+# shp_wld <- rgdal::readOGR(dsn = paste0(root, "/gap_analysis_landraces/Input_data/_maps/Global_administrative_unit_layers/gaul_2014"), layer = "G2014_2013_1")
+# 
+# # Load world raster
+# rst_wld <- raster::raster(paste0(root, "/gap_analysis_landraces/Input_data/presence_data/world_body_waters_2-5.asc"))
+# 
+# # Identify accession without coordinates to do Georreferenciation process
+# ciat_empyCoordinates <- ciat[which(is.na(ciat$Longitude) & is.na(ciat$Latitude)),]
+# ciat_empyCoordinates <- ciat_empyCoordinates %>% dplyr::filter((!is.na(Country) |
+#                                                                  !is.na(Department) |
+#                                                                  !is.na(County) |
+#                                                                  !is.na(Place)) & !is.na(Protein))
+# if(!file.exists(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/coord4georef.csv"))){
+#   write.csv(x = ciat_empyCoordinates, file = paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/coord4georef.csv"), row.names = F)
+# }; rm(ciat_empyCoordinates)
 
 # Let just accessions with coordinates
-ciat <- ciat %>% dplyr::filter(!is.na(Longitude) & !is.na(ciat$Latitude) & !is.na(Protein))
-nrow(ciat) # 22032 (old and original), 12545 (new one with vernacular names)
+ciat2 <- ciat %>% dplyr::filter(!is.na(Longitude) & !is.na(Altitude) &
+                                 !is.na(Growth.habit) & !is.na(Seed.color) &
+                                 !is.na(Seed.shape) & !is.na(Seed.brightness) &
+                                 !is.na(Seed.weight) & !is.na(Protein) & !is.na(Genepool.protein))
+nrow(ciat2) # 22032 (old and original), 12545 (new one with vernacular names)
+write.csv(x = ciat2, file = "D:/ciat_beans_filtered_by_altitude_by_predictors.csv", row.names = F)
 
-# Identify wrong coordinates
-# Using a shapefile
-over_res <- sp::over(SpatialPoints(coords = data.frame(lon = ciat$Longitude, lat = ciat$Latitude), proj4string = CRS(projargs = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")), as(shp_wld, "SpatialPolygons"))
-ciat$Wrong.coordinates <- as.numeric(is.na(over_res)); rm(over_res)
-sum(ciat$Wrong.coordinates) # 153 (old and original), 87 (new one with vernacular names)
-# plot(shp_wld); points(ciat[,c("Longitude", "Latitude")], col = 4, pch = 20); points(ciat[ciat$Wrong.coordinates == 1, c("Longitude", "Latitude")], col = 2, pch = 20)
-
-# Using a raster file
-ciat$Wrong.coordinates2 <- raster::extract(x = rst_wld, y = ciat[c("Longitude", "Latitude")])
-sum(is.na(ciat$Wrong.coordinates2)) # 69 (new one with vernacular names)
-rm(shp_wld, rst_wld)
-
-mapspam <- raster::brick(paste0(root, "/gap_analysis_landraces/Input_data/_crop_areas/MapSPAM/Bean/spam2005v2r0_harvested-area_bean_total.nc"), lvar = 4)
-mapspam <- mapspam[[1]]
-
-pal <- colorNumeric(c("#0C2C84", "#41B6C4", "#FFFFCC"), values(mapspam), na.color = "transparent")
-m <- leaflet() %>% addTiles() %>%
-  addRasterImage(mapspam, colors = pal, opacity = 0.8) %>%
-  addLegend(pal = pal, values = values(mapspam),
-            title = "MapSPAM harvested area") %>%
-  addCircles(~Longitude, ~Latitude, weight = 3, radius = 40, 
-             color = "#ffa500", stroke = TRUE, fillOpacity = 0.8, data = ciat_landraces) # popup = ct$type, 
-# %>% addMarkers(~Longitude, ~Latitude, label = ~as.character(Common_names), data = ciat_landraces)
-# saveWidget(m, file =" m.html")
-
-sum(!is.na(ciat$Longitude) & !is.na(ciat$Latitude)) # Accessions with coordinates
-sum(!is.na(ciat$Place) & is.na(ciat$Longitude)) # Accessions with place but without coordinates
-sum(is.na(ciat$Place) & is.na(ciat$Longitude)) # Accessions without place and coordinates
-sum(ciat %>% select(Altitude:Longitude, Growth.habit:Seed.weight, Protein) %>% complete.cases)
-sum(ciat %>% select(Genepool, Race.interpreted, Subgroup, Altitude:Longitude, Growth.habit:Seed.weight, Protein) %>% complete.cases)
-sum(!is.na(ciat$Vernacular.name))
-sum(!is.na(ciat$Vernacular.name) & !is.na(ciat$Longitude))
-
-predictorList <- c("Altitude", "Latitude", "Growth.habit", "Seed.color", "Seed.shape", "Seed.brightness", "Seed.weight", "Protein", "Race.protein")
-for(i in 1:length(predictorList)){
-  eval(parse(text = paste0("cat(sum(!is.na(ciat$Longitude) & !is.na(ciat$", predictorList[i], ")), '\n')")))
-}; rm(i)
-
-ciat2 <- ciat %>% dplyr::select(ID, Accession.number, Common.names, Interpreted.name, Test, Vernacular.name, Genepool, Race.interpreted, Subgroup, Altitude, Longitude, Latitude, Growth.habit, Seed.color, Seed.shape, Seed.brightness, Seed.weight, Protein, Race.protein)
+# # Identify wrong coordinates
+# # Using a shapefile
+# over_res <- sp::over(SpatialPoints(coords = data.frame(lon = ciat$Longitude, lat = ciat$Latitude), proj4string = CRS(projargs = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")), as(shp_wld, "SpatialPolygons"))
+# ciat$Wrong.coordinates <- as.numeric(is.na(over_res)); rm(over_res)
+# sum(ciat$Wrong.coordinates) # 153 (old and original), 87 (new one with vernacular names)
+# # plot(shp_wld); points(ciat[,c("Longitude", "Latitude")], col = 4, pch = 20); points(ciat[ciat$Wrong.coordinates == 1, c("Longitude", "Latitude")], col = 2, pch = 20)
+# 
+# # Using a raster file
+# ciat$Wrong.coordinates2 <- raster::extract(x = rst_wld, y = ciat[c("Longitude", "Latitude")])
+# sum(is.na(ciat$Wrong.coordinates2)) # 69 (new one with vernacular names)
+# rm(shp_wld, rst_wld)
+# 
+# mapspam <- raster::brick(paste0(root, "/gap_analysis_landraces/Input_data/_crop_areas/MapSPAM/Bean/spam2005v2r0_harvested-area_bean_total.nc"), lvar = 4)
+# mapspam <- mapspam[[1]]
+# 
+# pal <- colorNumeric(c("#0C2C84", "#41B6C4", "#FFFFCC"), values(mapspam), na.color = "transparent")
+# m <- leaflet() %>% addTiles() %>%
+#   addRasterImage(mapspam, colors = pal, opacity = 0.8) %>%
+#   addLegend(pal = pal, values = values(mapspam),
+#             title = "MapSPAM harvested area") %>%
+#   addCircles(~Longitude, ~Latitude, weight = 3, radius = 40, 
+#              color = "#ffa500", stroke = TRUE, fillOpacity = 0.8, data = ciat_landraces) # popup = ct$type, 
+# # %>% addMarkers(~Longitude, ~Latitude, label = ~as.character(Common_names), data = ciat_landraces)
+# # saveWidget(m, file =" m.html")
+# 
+# sum(!is.na(ciat$Longitude) & !is.na(ciat$Latitude)) # Accessions with coordinates
+# sum(!is.na(ciat$Place) & is.na(ciat$Longitude)) # Accessions with place but without coordinates
+# sum(is.na(ciat$Place) & is.na(ciat$Longitude)) # Accessions without place and coordinates
+# sum(ciat %>% select(Altitude:Longitude, Growth.habit:Seed.weight, Protein) %>% complete.cases)
+# sum(ciat %>% select(Genepool, Race.interpreted, Subgroup, Altitude:Longitude, Growth.habit:Seed.weight, Protein) %>% complete.cases)
+# sum(!is.na(ciat$Vernacular.name))
+# sum(!is.na(ciat$Vernacular.name) & !is.na(ciat$Longitude))
+# 
+# predictorList <- c("Altitude", "Latitude", "Growth.habit", "Seed.color", "Seed.shape", "Seed.brightness", "Seed.weight", "Protein", "Race.protein")
+# for(i in 1:length(predictorList)){
+#   eval(parse(text = paste0("cat(sum(!is.na(ciat$Longitude) & !is.na(ciat$", predictorList[i], ")), '\n')")))
+# }; rm(i)
 
 # Split colors
 ciat2 <- ciat2 %>% tidyr::separate(Seed.color, into = c("Seed.color", "Seed.color2", "Seed.color3"), sep = ",") 
@@ -211,8 +247,15 @@ for(i in 1:length(protein_list)){
 }; rm(i, protein_id, protein_list)
 
 ciat2$Protein <- ciat2$Protein2 <- ciat2$Protein3 <- ciat2$Protein4 <- ciat2$Protein5 <- NULL
-
 names(ciat2)
+
+shp_ame <- rgdal::readOGR(dsn = paste0("D:/Americas"), layer = "AMERICAS")
+over_res <- sp::over(SpatialPoints(coords = data.frame(lon = ciat2$Longitude, lat = ciat2$Latitude), proj4string = CRS(projargs = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")), as(shp_ame, "SpatialPolygons"))
+ciat2$Analysis <- as.numeric(is.na(over_res)); rm(over_res)
+ciat2$Analysis[which(ciat2$Analysis == "0")] <- "Americas"
+ciat2$Analysis[which(ciat2$Analysis == "1")] <- "World"
+
+write.csv(x = ciat2, file = "D:/ciat_beans_filtered_by_altitude_by_predictors_by_americas.csv", row.names = F)
 
 if(!file.exists(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/ciatOrganizedVariables.RDS"))){
   saveRDS(ciat2, paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/ciatOrganizedVariables.RDS"))
@@ -220,10 +263,41 @@ if(!file.exists(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_dat
 
 # Now, go to linux servers!!!
 
+# Calculate biovars
+bioList <- list.files("/mnt/data_cluster_4/observed/gridded_products/worldclim/Global_2_5min_v2", full.names = T)
+tmax <- bioList[grep(pattern = "tmax", x = bioList)]
+tmax <- tmax[grep(pattern = "tif$", x = tmax)] %>% mixedsort
+tmax <- raster::stack(tmax)
+
+tmin <- bioList[grep(pattern = "tmin", x = bioList)]
+tmin <- tmin[grep(pattern = "tif$", x = tmin)] %>% mixedsort
+tmin <- raster::stack(tmin)
+
+prec <- bioList[grep(pattern = "prec", x = bioList)]
+prec <- prec[grep(pattern = "tif$", x = prec)] %>% mixedsort
+prec <- raster::stack(prec)
+
+srad <- bioList[grep(pattern = "srad", x = bioList)]
+srad <- srad[grep(pattern = "tif$", x = srad)] %>% mixedsort
+srad <- raster::stack(srad)
+
+bios <- dismo::biovars(prec = srad, tmin = srad, tmax = srad)
+
+# Radiation - annual mean (Bio20)
+# Radiation - highest period (Bio21)
+# Radiation - lowest period (Bio22)
+# Radiation - seasonality (Bio23)
+# Radiation - wettest quarter (Bio24)
+# Radiation - driest quarter (Bio25)
+# Radiation - warmest quarter (Bio26)
+# Radiation - coldest quarter (Bio27)
+# 
+
 ###################################################################################
 # Extract climate information on Linux servers
 ###################################################################################
-ciat2 <- readRDS("ciatOrganizedVariables.RDS")
+# ciat2 <- readRDS("ciatOrganizedVariables.RDS")
+ciat2 <- read.csv("ciat_beans_filtered_by_altitude_by_predictors_by_americas.csv")
 bioList <- list.files("/mnt/data_cluster_4/observed/gridded_products/worldclim/Global_30s_v2", full.names = T)
 bioList <- bioList[grep(pattern = "bio", x = bioList)]
 bioList <- bioList[grep(pattern = "tif", x = bioList)] %>% mixedsort
@@ -238,7 +312,28 @@ climate_data <- climate_data %>% as.data.frame()
 climate_data$Accession.number <- ciat2$Accession.number[row_id]; rm(row_id, grep2)
 
 genotypic_climate <- inner_join(x = ciat2, y = climate_data, by = "Accession.number")
-saveRDS(genotypic_climate, "ciatOrganizedVariables_climate.RDS")
+write.csv(genotypic_climate, "ciat_beans_filtered_with_climate.csv", row.names = F)
+
+genotypic_climate <- read.csv("D:/ciat_beans_filtered_with_climate.csv")
+original <- gs_ls("Bean_landrace_name_table")
+original <- gs_title("Bean_landrace_name_table")
+original %>% gs_browse(ws = "Phaseolus_vulgaris_landraces_G")
+original <- original %>% gs_read(ws = "Phaseolus_vulgaris_landraces_G")
+nrow(original) # 37987 (old and original), 23831 (new one with vernacular names)
+
+names(original) <- c("ID", "Source", "Cleaned_by", "Accession.number", "Synonyms", "Common.names",
+                 "Interpreted.name.lit", "Test", "Vernacular.name.lit", "Genepool.lit", "Race.interpreted.lit", "Race",
+                 "Subgroup.lit", "Reference", "Genus", "Species", "Subspecies", "Variety",
+                 "Biological.status", "Type.of.material", "CORE.collection",
+                 "Country", "Department", "County", "Place", "Altitude", "Latitude", "Longitude", "Lat_geo", "Lon_geo",
+                 "Coord.status",
+                 "Date.collection", "Name", "Name2", "Institution", "Country3",
+                 "Date.receipt", "Growth.habit", "Seed.color", "Seed.shape", "Seed.brightness", "Seed.weight",
+                 "Protein", "Genepool.weight.fix", "Genepool.protein", "Race.protein", "Responsible11")
+original <- original %>% select(ID, Reference)
+
+genotypic_climate <- inner_join(x = genotypic_climate, y = original, by = "ID")
+write.csv(genotypic_climate, "D:/ciat_beans_filtered_with_climate_reference.csv", row.names = F)
 
 ## =================================================================================================================== ##
 ## Genesys database
