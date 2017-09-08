@@ -436,9 +436,7 @@ filtered_genepool_data <- genepool_data[,-nzv]
 
 set.seed(825)
 ctrol2 <- trainControl(method = "LGOCV", p = 0.8, number = 5, savePredictions = T)
-
 grid <- expand.grid(mtry = round((ncol(filtered_genepool_data)-4)/3))
-
 rfFit <- train(Genepool.lit ~ ., data = filtered_genepool_data[,3:ncol(filtered_genepool_data)], 
                method = "rf",
                tuneGrid = grid,
@@ -454,6 +452,7 @@ toPredict[,used.variables][complete.cases(toPredict[,used.variables]),] %>% dim
 
 toPredict$Genepool.predicted.rf <- predict(object = rfFit, newdata = toPredict[,used.variables])
 
+set.seed(825)
 svmFit <- train(Genepool.lit ~ ., data = filtered_genepool_data[,3:ncol(filtered_genepool_data)], 
                 method = "svmRadial", # Radial kernel
                 tuneLength = 9,       # 9 values of the cost function
@@ -462,12 +461,23 @@ svmFit <- train(Genepool.lit ~ ., data = filtered_genepool_data[,3:ncol(filtered
                 )
 toPredict$Genepool.predicted.svm <- predict(object = svmFit, newdata = toPredict[,used.variables])
 
+write.csv(x = toPredict, "D:/predicted_coordinates_genepool.csv", row.names = F)
+
+chrys_data <- read.csv("D:/ciat_beans_filtered_with_climate_reference.csv")
+complete.data <- left_join(x = chrys_data, y = toPredict %>% dplyr::select(ID, Genepool.predicted.rf, Genepool.predicted.svm), by = "ID")
+write.csv(x = complete.data, "D:/predicted_coordinates_genepool_rf_svm.csv", row.names = F)
+
+ggplot() + 
+  geom_polygon(data = shp_wld, aes(long, lat, group = group)) +
+  geom_point(data = complete.data[!is.na(complete.data$Race.interpreted.lit),], aes(x = Longitude, y = Latitude, fill = Race.interpreted.lit, colour = Race.interpreted.lit)) +
+  coord_cartesian(xlim = c(-180, 0)) + theme_bw()
+
 importanceRF <- rfFit$finalModel$importance %>% as.data.frame()
 importanceSVM <- varImp(svmFit)
 importanceSVM <- importanceSVM$importance
 
-importanceRF$Variable <- rownames(importanceRF)
-importanceSVM$Variable <- rownames(importanceSVM)
+importanceRF$Variable <- rownames(importanceRF); rownames(importanceRF) <- 1:nrow(importanceRF)
+importanceSVM$Variable <- rownames(importanceSVM); rownames(importanceSVM) <- 1:nrow(importanceSVM)
 
 importanceRF <- importanceRF %>% select(Variable, MeanDecreaseGini)
 importanceSVM <- importanceSVM %>% select(Variable, Mesoamerican)
@@ -493,18 +503,18 @@ shp_wld <- fortify(shp_wld)
 ggplot() + 
   geom_polygon(data = shp_wld, aes(long, lat, group = group)) +
   geom_point(data = toPredict, aes(x = Longitude, y = Latitude, fill = Genepool.predicted.rf, colour = Genepool.predicted.rf)) +
-  coord_cartesian(xlim = c(-180, 0))
+  coord_cartesian(xlim = c(-180, 0)) + theme_bw()
 
 ggplot() + 
   geom_polygon(data = shp_wld, aes(long, lat, group = group)) +
   geom_point(data = toPredict, aes(x = Longitude, y = Latitude, fill = Genepool.predicted.svm, colour = Genepool.predicted.svm)) +
-  coord_cartesian(xlim = c(-180, 0))
+  coord_cartesian(xlim = c(-180, 0)) + theme_bw()
 
 toPredict %>% ggplot(aes(x = Longitude, y = Latitude, fill = Genepool.predicted.rf, colour = Genepool.predicted.rf)) + geom_point()
 toPredict %>% ggplot(aes(x = Longitude, y = Latitude, fill = Genepool.predicted.svm, colour = Genepool.predicted.svm)) + geom_point()
 
 generalImportance %>% ggplot(aes(x = reorder(Variable, Importance), y = Importance, fill = Model)) +
-  geom_bar(stat = "identity", position = position_dodge()) + coord_flip()
+  geom_bar(stat = "identity") + facet_wrap(~Model) + coord_flip() + theme_bw()
 
 
 
