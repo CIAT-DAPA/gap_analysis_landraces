@@ -444,6 +444,7 @@ rfFit <- train(Genepool.lit ~ ., data = filtered_genepool_data[,3:ncol(filtered_
                ntree = 2000,
                trControl = ctrol2
                )
+rfFit$finalModel$confusion
 used.variables <- names(filtered_genepool_data[,3:ncol(filtered_genepool_data)])
 used.variables <- used.variables[-which(used.variables == "Genepool.lit")]
 
@@ -459,6 +460,7 @@ svmFit <- train(Genepool.lit ~ ., data = filtered_genepool_data[,3:ncol(filtered
                 trControl = ctrol2,
                 importance = T
                 )
+mean(svmFit$results$Accuracy)
 toPredict$Genepool.predicted.svm <- predict(object = svmFit, newdata = toPredict[,used.variables])
 
 write.csv(x = toPredict, "D:/predicted_coordinates_genepool.csv", row.names = F)
@@ -475,22 +477,16 @@ ggplot() +
 importanceRF <- rfFit$finalModel$importance %>% as.data.frame()
 importanceSVM <- varImp(svmFit)
 importanceSVM <- importanceSVM$importance
-
 importanceRF$Variable <- rownames(importanceRF); rownames(importanceRF) <- 1:nrow(importanceRF)
 importanceSVM$Variable <- rownames(importanceSVM); rownames(importanceSVM) <- 1:nrow(importanceSVM)
-
 importanceRF <- importanceRF %>% select(Variable, MeanDecreaseGini)
 importanceSVM <- importanceSVM %>% select(Variable, Mesoamerican)
-
 names(importanceRF)[2] <- "Importance"
 names(importanceSVM)[2] <- "Importance"
-
 importanceRF$Importance <- (importanceRF$Importance - min(importanceRF$Importance))/(max(importanceRF$Importance)-min(importanceRF$Importance))
 importanceSVM$Importance <- (importanceSVM$Importance - min(importanceSVM$Importance))/(max(importanceSVM$Importance)-min(importanceSVM$Importance))
-
 importanceRF$Model <- "RandomForest"
 importanceSVM$Model <- "SVM"
-
 generalImportance <- rbind(importanceRF, importanceSVM)
 
 shp_wld <- rgdal::readOGR(dsn = "D:/Harold/_maps/ShapeFiles/world", layer = "all_countries")
@@ -532,13 +528,158 @@ genepool_data %>% ggplot(aes(x = Genepool, fill = factor(Race.protein))) + geom_
 genepool_data %>% ggplot(aes(x = Genepool, y = Seed.weight)) + geom_boxplot()
 
 ## Race as response variable
-race_data <- genotypic_climate %>% dplyr::select(Race.interpreted, Altitude, Latitude:bio_19)
+
+toPredict.race <- genotypic_climate %>% dplyr::select(ID, Longitude, Latitude, Race.interpreted.lit, Altitude, Latitude, Growth.habit:bio_19)
+toPredict.race <- toPredict.race %>% filter(is.na(Race.interpreted.lit))
+toPredict.race <- toPredict.race[which(complete.cases(toPredict.race[,-which(names(toPredict.race)=="Race.interpreted.lit")])),]; rownames(toPredict.race) <- 1:nrow(toPredict.race)
+
+race_data <- genotypic_climate %>% dplyr::select(ID, Longitude, Latitude, Race.interpreted.lit, Altitude, Latitude, Growth.habit:bio_19)
 race_data <- race_data[complete.cases(race_data),]; rownames(race_data) <- 1:nrow(race_data)
-race_data$Race.interpreted <- factor(race_data$Race.interpreted)
+race_data$Race.interpreted.lit <- as.character(race_data$Race.interpreted.lit)
+race_data$Race.interpreted.lit <- factor(race_data$Race.interpreted.lit)
 race_data$Growth.habit <- factor(race_data$Growth.habit)
 race_data$Seed.shape <- factor(race_data$Seed.shape)
 race_data$Seed.brightness <- factor(race_data$Seed.brightness)
-race_data$Race.protein <- factor(race_data$Race.protein)
+race_data$Genepool.protein <- factor(race_data$Genepool.protein)
+
+nzv <- nearZeroVar(race_data)
+filtered_race_data <- race_data[,-nzv]
+
+set.seed(825)
+ctrol2 <- trainControl(method = "LGOCV", p = 0.8, number = 5, savePredictions = T)
+grid <- expand.grid(mtry = round((ncol(filtered_race_data)-4)/3))
+rfFit <- train(Race.interpreted.lit ~ ., data = filtered_race_data[,3:ncol(filtered_race_data)], 
+               method = "rf",
+               tuneGrid = grid,
+               importance = TRUE,
+               ntree = 2000,
+               trControl = ctrol2
+)
+used.variables <- names(filtered_race_data[,3:ncol(filtered_race_data)])
+used.variables <- used.variables[-which(used.variables == "Race.interpreted.lit")]
+
+toPredict.race[,used.variables] %>% dim
+toPredict.race[,used.variables][complete.cases(toPredict.race[,used.variables]),] %>% dim
+
+toPredict.race$Race.predicted.rf <- predict(object = rfFit, newdata = toPredict.race[,used.variables])
+
+ggplot() + 
+  geom_polygon(data = shp_wld, aes(long, lat, group = group)) +
+  geom_point(data = toPredict.race, aes(x = Longitude, y = Latitude, fill = Race.predicted.rf, colour = Race.predicted.rf)) +
+  coord_cartesian(xlim = c(-180, 0)) + theme_bw()
+
+set.seed(825)
+svmFit <- train(Race.interpreted.lit ~ ., data = filtered_race_data[,3:ncol(filtered_race_data)], 
+                method = "svmRadial", # Radial kernel
+                tuneLength = 9,       # 9 values of the cost function
+                trControl = ctrol2,
+                importance = T
+)
+mean(svmFit$results$Accuracy)
+toPredict.race$Race.predicted.svm <- predict(object = svmFit, newdata = toPredict.race[,used.variables])
+
+ggplot() + 
+  geom_polygon(data = shp_wld, aes(long, lat, group = group)) +
+  geom_point(data = toPredict.race, aes(x = Longitude, y = Latitude, fill = Race.predicted.svm, colour = Race.predicted.svm)) +
+  coord_cartesian(xlim = c(-180, 0)) + theme_bw()
+
+importanceRF <- rfFit$finalModel$importance %>% as.data.frame()
+importanceSVM <- varImp(svmFit)
+importanceSVM <- importanceSVM$importance
+importanceRF$Variable <- rownames(importanceRF); rownames(importanceRF) <- 1:nrow(importanceRF)
+importanceSVM$Variable <- rownames(importanceSVM); rownames(importanceSVM) <- 1:nrow(importanceSVM)
+importanceRF <- importanceRF %>% select(Variable, MeanDecreaseGini)
+importanceSVM <- importanceSVM %>% select(Variable, Mesoamerican)
+names(importanceRF)[2] <- "Importance"
+names(importanceSVM)[2] <- "Importance"
+importanceRF$Importance <- (importanceRF$Importance - min(importanceRF$Importance))/(max(importanceRF$Importance)-min(importanceRF$Importance))
+importanceSVM$Importance <- (importanceSVM$Importance - min(importanceSVM$Importance))/(max(importanceSVM$Importance)-min(importanceSVM$Importance))
+importanceRF$Model <- "RandomForest"
+importanceSVM$Model <- "SVM"
+generalImportance <- rbind(importanceRF, importanceSVM)
+
+importanceRF %>% ggplot(aes(x = reorder(Variable, Importance), y = Importance)) +
+  geom_bar(stat = "identity") + coord_flip() + theme_bw()
+
+chrys_data <- read.csv("D:/ciat_beans_filtered_with_climate_reference.csv")
+complete.data.race <- left_join(x = chrys_data, y = toPredict.race %>% dplyr::select(ID, Race.predicted.rf, Race.predicted.svm), by = "ID")
+write.csv(x = complete.data.race, "D:/predicted_coordinates_race_rf_svm.csv", row.names = F)
+
+# Filtered just for origin zones
+filtered_race_data_origin <- filtered_race_data %>% filter(Longitude < -61.5 & Latitude < 30)
+toPredict.race.origin <- genotypic_climate %>% dplyr::select(ID, Longitude, Latitude, Race.interpreted.lit, Altitude, Latitude, Growth.habit:bio_19)
+toPredict.race.origin <- toPredict.race.origin %>% filter(is.na(Race.interpreted.lit))
+toPredict.race.origin <- toPredict.race.origin[which(complete.cases(toPredict.race.origin[,-which(names(toPredict.race.origin)=="Race.interpreted.lit")])),]; rownames(toPredict.race.origin) <- 1:nrow(toPredict.race.origin)
+toPredict.race.origin <- toPredict.race.origin %>% filter(Longitude < -61.5 & Latitude < 30)
+
+set.seed(825)
+ctrol2 <- trainControl(method = "LGOCV", p = 0.8, number = 5, savePredictions = T)
+grid <- expand.grid(mtry = round((ncol(filtered_race_data_origin)-4)/3))
+rfFit <- train(Race.interpreted.lit ~ ., data = filtered_race_data_origin[,3:ncol(filtered_race_data_origin)], 
+               method = "rf",
+               tuneGrid = grid,
+               importance = TRUE,
+               ntree = 2000,
+               trControl = ctrol2
+)
+rfFit$results
+used.variables <- names(filtered_race_data_origin[,3:ncol(filtered_race_data_origin)])
+used.variables <- used.variables[-which(used.variables == "Race.interpreted.lit")]
+
+toPredict.race.origin[,used.variables] %>% dim
+toPredict.race.origin[,used.variables][complete.cases(toPredict.race.origin[,used.variables]),] %>% dim
+
+toPredict.race.origin$Race.predicted.rf <- predict(object = rfFit, newdata = toPredict.race.origin[,used.variables])
+
+ggplot() + 
+  geom_polygon(data = shp_wld, aes(long, lat, group = group)) +
+  geom_point(data = toPredict.race.origin, aes(x = Longitude, y = Latitude, fill = Race.predicted.rf, colour = Race.predicted.rf)) +
+  coord_cartesian(xlim = c(-180, 0)) + theme_bw()
+
+set.seed(825)
+svmFit <- train(Race.interpreted.lit ~ ., data = filtered_race_data_origin[,3:ncol(filtered_race_data_origin)], 
+                method = "svmRadial", # Radial kernel
+                tuneLength = 9,       # 9 values of the cost function
+                trControl = ctrol2,
+                importance = T
+)
+mean(svmFit$results$Accuracy)
+toPredict.race.origin$Race.predicted.svm <- predict(object = svmFit, newdata = toPredict.race.origin[,used.variables])
+
+ggplot() + 
+  geom_polygon(data = shp_wld, aes(long, lat, group = group)) +
+  geom_point(data = toPredict.race.origin, aes(x = Longitude, y = Latitude, fill = Race.predicted.svm, colour = Race.predicted.svm)) +
+  coord_cartesian(xlim = c(-180, 0)) + theme_bw()
+
+importanceRF <- rfFit$finalModel$importance %>% as.data.frame()
+importanceSVM <- varImp(svmFit)
+importanceSVM <- importanceSVM$importance
+importanceRF$Variable <- rownames(importanceRF); rownames(importanceRF) <- 1:nrow(importanceRF)
+importanceSVM$Variable <- rownames(importanceSVM); rownames(importanceSVM) <- 1:nrow(importanceSVM)
+importanceRF <- importanceRF %>% select(Variable, MeanDecreaseGini)
+importanceSVM <- importanceSVM %>% select(Variable, Mesoamerican)
+names(importanceRF)[2] <- "Importance"
+names(importanceSVM)[2] <- "Importance"
+importanceRF$Importance <- (importanceRF$Importance - min(importanceRF$Importance))/(max(importanceRF$Importance)-min(importanceRF$Importance))
+importanceSVM$Importance <- (importanceSVM$Importance - min(importanceSVM$Importance))/(max(importanceSVM$Importance)-min(importanceSVM$Importance))
+importanceRF$Model <- "RandomForest"
+importanceSVM$Model <- "SVM"
+generalImportance <- rbind(importanceRF, importanceSVM)
+
+importanceRF %>% ggplot(aes(x = reorder(Variable, Importance), y = Importance)) +
+  geom_bar(stat = "identity") + coord_flip() + theme_bw()
+
+chrys_data <- read.csv("D:/ciat_beans_filtered_with_climate_reference.csv")
+complete.data.race <- left_join(x = chrys_data, y = toPredict.race %>% dplyr::select(ID, Race.predicted.rf, Race.predicted.svm), by = "ID")
+write.csv(x = complete.data.race, "D:/predicted_coordinates_race_rf_svm.csv", row.names = F)
+
+
+
+
+
+
+
+
 
 # Random Forest
 set.seed(1)
