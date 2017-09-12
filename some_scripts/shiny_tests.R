@@ -875,7 +875,31 @@ jsonlite::fromJSON(pl1_g,simplifyVector=FALSE)$coordinates %>%
 
 
 
+x <- matrix(runif(500), 100)
+y <- gl(2, 50)
+
+rf <- foreach(ntree=rep(250, 4), .combine=combine) %do% randomForest(x, y, ntree=ntree)
+rf
+
+detectCores(logical = F)
+registerDoParallel(cores=3)
+rf2 <- foreach(ntree=rep(250, 4), .combine=combine, .packages='randomForest') %dopar% randomForest(x, y, ntree=ntree)
+rf
+
+detectCores(logical = F)
+registerDoParallel(cores=3)
+
+foreach(i=1:3)%do%sqrt(i)
+
+ foreach(a=1:7, .combine= '+') %do% {set.seed(10);(rnorm(7))}
+rowSums(s)
+
+foreach(i=4:1, .combine='c',.inorder = F) %dopar% {
+   Sys.sleep(3 * i)
+   i
+   }
 
 
-
+x <- foreach(a=irnorm(1, count=5), .combine='cbind') %do% a
+x
 

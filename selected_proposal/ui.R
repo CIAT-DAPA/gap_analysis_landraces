@@ -17,7 +17,7 @@
 suppressMessages(if(!require(shiny)){install.packages("shiny");library(shiny)}else{library(shiny)})
 suppressMessages(if(!require(shinydashboard)){install.packages("shinydashboard");library(shinydashboard)}else{library(shinydashboard)})
 suppressMessages(if(!require(leaflet)){install.packages("leaflet");library(leaflet)}else{library(leaflet)})
-suppressMessages(if(!require(shinyBS)){inastall.packages("shinyBS");library(shinyBS)}else{library(shinyBS)})
+suppressMessages(if(!require(shinyBS)){install.packages("shinyBS");library(shinyBS)}else{library(shinyBS)})
 suppressMessages(if(!require(ggplot2)){install.packages('ggplot2'); library(ggplot2)} else {library(ggplot2)})
 suppressMessages(if(!require(plotly)){install.packages('plotly'); library(plotly)} else {library(plotly)})
 
@@ -72,8 +72,22 @@ header <- dashboardHeader(
   title = "Survey - Crop Landraces Gap Analysis",titleWidth = 400
 
 )
+sidebar<-dashboardSidebar(
+  sidebarMenu(
+    menuItem("Beans Geenepools",tabName = "geneBeans", icon = icon("dashboard"), startExpanded = TRUE,
+    menuSubItem("Andean beans", tabName = "Andean"),
+    menuSubItem("Mesoamerican beans", tabName = "Mesoamerican")
+    
+    )#End menu item beans genepool
+    
+  )
+  
+  
+)
 
-body <- dashboardBody(
+body <- dashboardBody( 
+  tabItems(
+  tabItem(tabName = "Andean",
   fluidRow( 
     tabBox(
       title = tagList(shiny::icon("bug"), "Questions"),
@@ -315,11 +329,22 @@ body <- dashboardBody(
   
   
  
-)
+  ),#end tabItem for the first survey
+  
+  tabItem(tabName = "Mesoamerican", h2("Nothing to see here")
+          
+          
+  )
+  
 
+)#end tabItems
+
+
+
+)#end dashboard Body
 dashboardPage(
   header,
-  dashboardSidebar(disable = TRUE),
+  sidebar,#dashboardSidebar(disable = F),
   body
 )
 

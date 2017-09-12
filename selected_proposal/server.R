@@ -25,7 +25,7 @@ suppressMessages(if(!require(digest)){install.packages("digest");library(digest)
 suppressMessages(if(!require(rdrop2)){install.packages("rdrop2");library(rdrop2)}else{library(rdrop2)})
 suppressMessages(if(!require(zip)){install.packages("zip");library(zip)}else{library(zip)})
 suppressMessages(if(!require(rsconnect)){install.packages("rsconnect");library(rsconnect)}else{library(rsconnect)})
-suppressMessages(if(!require(shinyBS)){inastall.packages("shinyBS");library(shinyBS)}else{library(shinyBS)})
+suppressMessages(if(!require(shinyBS)){install.packages("shinyBS");library(shinyBS)}else{library(shinyBS)})
 suppressMessages(if(!require(rgdal)){install.packages('rgdal'); library(rgdal)} else {library(rgdal)})
 suppressMessages(if(!require(dplyr)){install.packages('dplyr'); library(dplyr)} else {library(dplyr)})
 suppressMessages(if(!require(ggplot2)){install.packages('ggplot2'); library(ggplot2)} else {library(ggplot2)})
@@ -171,8 +171,8 @@ function(input, output,session) {
   
   
  beanIcon <- makeIcon(
-    iconUrl = "https://cdn3.iconfinder.com/data/icons/yummicon-pro/100/099_Bean-512.png",
-    iconWidth = 20, iconHeight = 20,
+    iconUrl = "https://cdn0.iconfinder.com/data/icons/different-types-of-legumes/32/kidney-beans-512.png",
+    iconWidth = 25, iconHeight = 25,
     iconAnchorX = 0, iconAnchorY = 0
   )
   
@@ -181,10 +181,15 @@ function(input, output,session) {
       addProviderTiles(providers$OpenStreetMap.BlackAndWhite, #map type or map theme. -default($Stame.TonerLite)
                        options = providerTileOptions(noWrap = TRUE) 
                        
-      )%>% addScaleBar(position="bottomleft")%>%  addSearchOSM( options = searchOSMOptions(position="topleft")) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
+      )%>% addScaleBar(position="bottomleft")%>%  addSearchOSM( ) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
                                                                                                                                 opacity = 0.5, fillOpacity = 0.5,
                                                                                                                                 fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F))   %>%
-                                                                                                                    addMarkers(lng=presence$long,lat=presence$lat,icon=beanIcon,label=htmlEscape(as.character(presence$full_taxa)),clusterOptions=markerClusterOptions()) %>%
+                                                                                                                    addMarkers(lng=presence$long,lat=presence$lat,icon=beanIcon,label=(as.character(presence$full_taxa)),clusterOptions=markerClusterOptions(spiderfyOnMaxZoom= F,
+                                                                                                                                                                                                                                                                       showCoverageOnHover= T,
+                                                                                                                                                                                                                                                                       zoomToBoundsOnClick= T,
+                                                                                                                                                                                                                                                                       animate=T,
+                                                                                                                                                                                                                                                                       disableClusteringAtZoom=8 ,
+                                                                                                                                                                                                                                                             animateAddingMarkers=T )) %>%
       
                                                                                                                                   addDrawToolbar(
                                                                                                                                   targetGroup= NULL,
@@ -372,7 +377,7 @@ output$mymap5<-renderLeaflet({
    addProviderTiles(providers$OpenStreetMap.BlackAndWhite, #map type or map theme. -default($Stame.TonerLite)
                     options = providerTileOptions(noWrap = TRUE) 
                     
-   )%>% addScaleBar(position="bottomleft")%>%  addSearchOSM( options = searchOSMOptions(position="topleft")) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
+   )%>% addScaleBar(position="bottomleft")%>%  addSearchOSM() %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
                     opacity = 0.5, fillOpacity = 0.5,
                     fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F))   %>%addDrawToolbar(
      targetGroup= NULL,
@@ -678,7 +683,7 @@ output$mymap6<-renderLeaflet({
                          
         ) %>%  addPolygons(data=returnlist()$finished,color = "darkgray", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
                            opacity = 0.5, fillOpacity = 0.05,
-                           fillColor = colorQuantile("Blues", domain=NULL)) %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( options = searchOSMOptions(position="topleft")) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
+                           fillColor = colorQuantile("Blues", domain=NULL)) %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( ) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
                                                                                                                                                                                                      opacity = 0.5, fillOpacity = 0.5,
                                                                                                                                                                                                      fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F))   %>% addDrawToolbar(
                              targetGroup= NULL,
@@ -702,7 +707,7 @@ output$mymap6<-renderLeaflet({
       addProviderTiles(providers$OpenStreetMap.BlackAndWhite, #map type or map theme. -default($Stame.TonerLite)
                        options = providerTileOptions(noWrap = TRUE) 
                        
-      )%>% addScaleBar(position="bottomleft")%>%  addSearchOSM( options = searchOSMOptions(position="topleft")) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
+      )%>% addScaleBar(position="bottomleft")%>%  addSearchOSM( ) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
                                                                                                                                 opacity = 0.5, fillOpacity = 0.5,
                                                                                                                                 fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F))  %>% addDrawToolbar(
         targetGroup= NULL,
@@ -732,7 +737,7 @@ observeEvent(input$mymap5_draw_new_feature,{
   
   proxy<-leafletProxy("mymap6")
   if(length(returnlist()$finished)!=0){
-  proxy %>%  clearShapes()%>% addScaleBar(position="bottomleft")%>%  addSearchOSM( options = searchOSMOptions(position="topleft")) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
+  proxy %>%  clearShapes()%>% addScaleBar(position="bottomleft")%>%  addSearchOSM() %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
                                                                                                                                                    opacity = 0.5, fillOpacity = 0.5,
                                                                                                                                                    fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F)) %>%addPolygons(data = returnlist()$finished,
                                           color = "darkgray", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
@@ -748,7 +753,7 @@ observeEvent(input$mymap5_draw_edited_features,{
   if(length(returnlist()$finished)!=0){
  
   
-  proxy %>%  clearShapes()%>% addScaleBar(position="bottomleft")%>%  addSearchOSM( options = searchOSMOptions(position="topleft")) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
+  proxy %>%  clearShapes()%>% addScaleBar(position="bottomleft")%>%  addSearchOSM( ) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
                                                                                                                                                    opacity = 0.5, fillOpacity = 0.5,
                                                                                                                                                    fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F)) %>% addPolygons(data = returnlist()$finished,color = "darkgray", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
                                            opacity = 0.5, fillOpacity = 0.05,
@@ -764,14 +769,14 @@ observeEvent(input$mymap5_draw_deleted_features,{
   if(length(returnlist()$finished)!=0){
   
   
-  proxy %>%  clearShapes()%>% addScaleBar(position="bottomleft")%>%  addSearchOSM( options = searchOSMOptions(position="topleft")) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
+  proxy %>%  clearShapes()%>% addScaleBar(position="bottomleft")%>%  addSearchOSM( ) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
                                                                                                                                                    opacity = 0.5, fillOpacity = 0.5,
                                                                                                                                                    fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F)) %>% addPolygons(data = returnlist()$finished,color = "darkgray", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
                                            opacity = 0.5, fillOpacity = 0.05,
                                            fillColor = colorQuantile("Blues", domain=NULL)
   )
   
-  }else{  proxy %>%  clearShapes()  %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( options = searchOSMOptions(position="topleft")) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
+  }else{  proxy %>%  clearShapes()  %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( ) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
                                                                                                                                                              opacity = 0.5, fillOpacity = 0.5,
                                                                                                                                                              fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F))  }
   
@@ -956,7 +961,7 @@ output$mymap7<-renderLeaflet({
                      
     )%>% addPolygons(data=returnlist2()$finished,color = "darkgray", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
                                                             opacity = 0.5, fillOpacity = 0.05,
-                                                            fillColor = colorQuantile("Blues", domain=NULL)) %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( options = searchOSMOptions(position="topleft")) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
+                                                            fillColor = colorQuantile("Blues", domain=NULL)) %>% addScaleBar(position="bottomleft")%>%  addSearchOSM() %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
                                                                                                                                                                                                                                       opacity = 0.5, fillOpacity = 0.5,
                                                                                                                                                                                                                                       fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F))   %>% 
     
@@ -978,7 +983,7 @@ output$mymap7<-renderLeaflet({
       addProviderTiles(providers$OpenStreetMap.BlackAndWhite, #map type or map theme. -default($Stamen.TonerLite)
                        options = providerTileOptions(noWrap = TRUE) 
                        
-      )%>% addScaleBar(position="bottomleft")%>%  addSearchOSM( options = searchOSMOptions(position="topleft")) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
+      )%>% addScaleBar(position="bottomleft")%>%  addSearchOSM() %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
                                                                                                                                 opacity = 0.5, fillOpacity = 0.5,
                                                                                                                                 fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F))  %>% 
       addDrawToolbar(
@@ -1002,7 +1007,7 @@ observeEvent(input$mymap6_draw_new_feature,{
   if(length(returnlist2()$finished)!=0){
   
   
-  proxy %>%  clearShapes() %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( options = searchOSMOptions(position="topleft")) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
+  proxy %>%  clearShapes() %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( ) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
                                                                                                                                                     opacity = 0.5, fillOpacity = 0.5,
                                                                                                                                                     fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F))   %>% addPolygons(data = returnlist2()$finished,
                                           color = "darkgray", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
@@ -1019,7 +1024,7 @@ observeEvent(input$mymap6_draw_edited_features,{
   if(length(returnlist2()$finished)!=0){
   
   
-  proxy %>%  clearShapes() %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( options = searchOSMOptions(position="topleft")) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
+  proxy %>%  clearShapes() %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( ) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
                                                                                                                                                     opacity = 0.5, fillOpacity = 0.5,
                                                                                                                                                     fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F))  %>% addPolygons(data = returnlist2()$finished,color = "darkgray", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
                                            opacity = 0.5, fillOpacity = 0.05,
@@ -1036,13 +1041,13 @@ observeEvent(input$mymap6_draw_deleted_features,{
   if(length(returnlist2()$finished)!=0){
   
   
-  proxy %>%  clearShapes()  %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( options = searchOSMOptions(position="topleft")) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
+  proxy %>%  clearShapes()  %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( ) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
                                                                                                                                                      opacity = 0.5, fillOpacity = 0.5,
                                                                                                                                                      fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F)) %>% addPolygons(data = returnlist2()$finished,color = "darkgray", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
                                            opacity = 0.5, fillOpacity = 0.05,
                                            fillColor = colorQuantile("Blues", domain=NULL))
   
-  }else{  proxy %>%  clearShapes() %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( options = searchOSMOptions(position="topleft")) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
+  }else{  proxy %>%  clearShapes() %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( ) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
                                                                                                                                                             opacity = 0.5, fillOpacity = 0.5,
                                                                                                                                                             fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F))    }
   })
@@ -1225,7 +1230,7 @@ isolate({
       addProviderTiles(providers$OpenStreetMap.BlackAndWhite, #map type or map theme. -default($Stamen.TonerLite)
                        options = providerTileOptions(noWrap = TRUE) 
                        
-      )%>% addScaleBar(position="bottomleft")%>%  addSearchOSM( options = searchOSMOptions(position="topleft")) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
+      )%>% addScaleBar(position="bottomleft")%>%  addSearchOSM( ) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
                                                                                                                                 opacity = 0.5, fillOpacity = 0.5,
                                                                                                                                 fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F))   %>%  addPolygons(data=returnlist2()$finished,color = "darkgray", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
                         opacity = 0.5, fillOpacity = 0.05,
@@ -1252,7 +1257,7 @@ isolate({
       addProviderTiles(providers$OpenStreetMap.BlackAndWhite, #map type or map theme. -default($Stamen.TonerLite)
                        options = providerTileOptions(noWrap = TRUE) 
                        
-      )  %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( options = searchOSMOptions(position="topleft")) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
+      )  %>% addScaleBar(position="bottomleft")%>%  addSearchOSM() %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
                                                                                                                                   opacity = 0.5, fillOpacity = 0.5,
                                                                                                                                   fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F)) %>% addDrawToolbar(
         targetGroup= NULL,
@@ -1285,7 +1290,7 @@ observeEvent(input$mymap6_draw_new_feature,{
   if(length(returnlist2()$finished)!=0){
   
   
-  proxy %>%  clearShapes() %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( options = searchOSMOptions(position="topleft")) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
+  proxy %>%  clearShapes() %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( ) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
                                                                                                                                                     opacity = 0.5, fillOpacity = 0.5,
                                                                                                                                                     fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F)) %>%addPolygons(data = returnlist2()$finished,
                                           color = "darkgray", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
@@ -1302,7 +1307,7 @@ observeEvent(input$mymap6_draw_edited_features,{
   if(length(returnlist2()$finished)!=0){
  
   
-  proxy %>%  clearShapes() %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( options = searchOSMOptions(position="topleft")) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
+  proxy %>%  clearShapes() %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( ) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
                                                                                                                                                     opacity = 0.5, fillOpacity = 0.5,
                                                                                                                                                     fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F)) %>% addPolygons(data = returnlist2()$finished,color = "darkgray", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
                                            opacity = 0.5, fillOpacity = 0.05,
@@ -1318,12 +1323,12 @@ observeEvent(input$mymap6_draw_deleted_features,{
   if(length(returnlist2()$finished)!=0){
   
   
-  proxy %>%  clearShapes() %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( options = searchOSMOptions(position="topleft")) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
+  proxy %>%  clearShapes() %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( ) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
                                                                                                                                                     opacity = 0.5, fillOpacity = 0.5,
                                                                                                                                                     fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F)) %>% addPolygons(data = returnlist2()$finished,color = "darkgray", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
                                            opacity = 0.5, fillOpacity = 0.05,
                                            fillColor = colorQuantile("Blues", domain=NULL))
-  }else{  proxy %>%  clearShapes() %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( options = searchOSMOptions(position="topleft")) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
+  }else{  proxy %>%  clearShapes() %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( ) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
                                                                                                                                                             opacity = 0.5, fillOpacity = 0.5,
                                                                                                                                                             fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F))   }
   })
