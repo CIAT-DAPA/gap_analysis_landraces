@@ -378,8 +378,11 @@ glmFit3
 #####################################################################
 #####################################################################
 
+genotypic_climate <- read.csv("C:/Users/acmendez/Google Drive/CIAT/ciat_beans_filtered_with_climate.csv") #read.csv("C:/Users/Usuario/Google Drive/CIAT/ciat_beans_filtered_by_altitude_by_predictors_by_americas.csv")
 
-genepool_predicted<- function(data_gen=genotypic_climate,y="Genepool.lit"){
+
+
+genepool_predicted<- function(data_gen=genotypic_climate,y="Genepool.lit",area="Americas"){
   row.names(data_gen)<-data_gen$ID
   
   
@@ -399,28 +402,37 @@ genepool_predicted<- function(data_gen=genotypic_climate,y="Genepool.lit"){
     
   }
   
-  runGadget(shinyApp(ui, server), viewer = paneViewer())
+  runGadget(shinyApp(ui, server),viewer = dialogViewer("Select Vars", width = 600, height = 600))
   
   
-  row.names(data_gen)<-data_gen$ID
+  
   data_gen %>% glimpse
-  data_gen$Genepool.lit
+ 
   
-
+  genepool_data<-data_gen
   genepool_data <- genepool_data[complete.cases(genepool_data),]; rownames(genepool_data) <- 1:nrow(genepool_data)
-  genepool_data$Genepool <- factor(genepool_data$Genepool)
+  
+ if(length( grep("Andean_Spain_I",eval(parse(text=paste0("data_gen$",y)))))!=0){
+   eval(parse(text=paste0("data_gen$",y, "[","which(data_gen$",y," =='Andean_Spain_I'",")","]","<-'Andean'")))
+   
+ }
+  eval(parse(text= paste0("data_gen$",y,"<-","factor(","data_gen$",y,")") )) 
+  str(data_gen)
+   
+  
   genepool_data$Growth.habit <- factor(genepool_data$Growth.habit)
   genepool_data$Seed.shape <- factor(genepool_data$Seed.shape)
   genepool_data$Seed.brightness <- factor(genepool_data$Seed.brightness)
-  genepool_data$Race.protein <- factor(genepool_data$Race.protein)
+  genepool_data$Race.protein <- factor(genepool_data$Genepool.protein)
+  
   #genepool_data<-genepool_data %>% dplyr::select(.,Genepool, Altitude, Latitude,Seed.weight,Color_Black:bio_19 )
+  
   
   
   #detectar varaibles con bajas freceencias y con dsd(x)=0
   nzv <- nearZeroVar(genepool_data)
   genepool_data<-genepool_data[,-nzv]
-   # genepool_data<-genepool_data %>% mutate(.,genepool_bin=ifelse(Genepool=="Andean",1,0))%>% mutate_at(., vars(genepool_bin),funs(factor(.))) %>% dplyr::select(.,-Genepool)
-    genepool_data<- genepool_data %>% mutate_at(.,vars(Genepool),funs(factor(.)))
+
   
     colinearity<-function(genepool_data){
       
@@ -435,10 +447,11 @@ genepool_predicted<- function(data_gen=genotypic_climate,y="Genepool.lit"){
     }
     
     
-    only_numeric<- function(data_gen){
+    only_numeric<- function(genepool_data){
       
-      data_gen<-data_gen[,sapply(data_gen, is.numeric)]
-      return(data_gen)
+      genepool_data2<-genepool_data[,sapply(genepool_data, is.numeric)]
+      genepool_data<-eval(parse(text=paste0("data.frame(",y,"=","genepool_data$",y,",","genepool_data2",")")))
+      return(genepool_data)
     }
     
     
@@ -447,12 +460,12 @@ genepool_predicted<- function(data_gen=genotypic_climate,y="Genepool.lit"){
     ctrol2<-trainControl(method="LGOCV",p=0.8,number=5,savePredictions = T)
     #Bagged Flexible Discriminant Analysis
     
-    
-    FDA<-train((Genepool)~., data=genepool_data,
+    data_in<-only_numeric(genepool_data)
+    FDA<-train(Genepool.lit~., data=data_in,
                    method="bagFDA",
                    trControl=ctrol2)
     
-   
+   names(data_in)
    
   
 #Clasificación por Regresion Logistica
@@ -486,21 +499,21 @@ genepool_predicted<- function(data_gen=genotypic_climate,y="Genepool.lit"){
                   importance = T
   )
   svmFit$finalModel
-    genepool_na <- data_gen[!complete.cases(sdata_gen$Genepool),]; #rownames(data_gen) <- 1:nrow(genepool_data)
+    genepool_na <- data_gen[!complete.cases(eval(parse(text=paste0("data_gen$",y)))),]; #rownames(data_gen) <- 1:nrow(genepool_data)
   
-    genepool_na<- genepool_na %>% dplyr::select(.,Genepool, Altitude, Latitude,Seed.weight,Color_Black:bio_19 ) # %>% Filter( function(x) sd(x)!=0,. )
-    genepool_na<- genepool_na[complete.cases(genepool_na[,2:ncol(genepool_na)]),]
+    genepool_na<- genepool_na %>% dplyr::select(., names(data_gen)) # %>% Filter( function(x) sd(x)!=0,. )
+    genepool_na<- genepool_na[complete.cases( genepool_na %>% dplyr::select(., names(genepool_na)[-which(names(genepool_na)==y)])  ),   ]
     
     
     
     model_type<-c("FDA","glmFit1","Rforest","svmFit")
 
-    pred<-lapply(model_type,function(x){ model<-eval(parse(text=x))
+    predictions<-lapply(model_type,function(x){ model<-eval(parse(text=x))
     
     ifelse(model$method=="glm" | model$method=="rf",tp<-"response",tp<-"class")
    
     if(model$method=="svmRadial") {
-      pred<-predict(model,newdata=genepool_na[,-1])  
+      pred<-predict(model,newdata=genepool_na[,-which(names(genepool_na)==y)])  
     } else{
       pred<-predict(model$finalModel,newdata=genepool_na[,-1],type=tp)
            }
@@ -512,7 +525,10 @@ genepool_predicted<- function(data_gen=genotypic_climate,y="Genepool.lit"){
     
       return(pred)
                 })
+    
+    
     names(pred)<- model_type
+    
     genepool_na<- genepool_na %>% cbind(.,data.frame(pred))
     
     accu.FDA<-mean(FDA$finalModel$oob[,1])
@@ -530,7 +546,10 @@ genepool_predicted<- function(data_gen=genotypic_climate,y="Genepool.lit"){
     }) )
     
     accuracy<-c(accu.FDA,accu.glmFit1,accu.Rforest,accu.svm)
-} #End funcion para calcular los parametros de cada
+
+    return(list(data_predicted=data.frame(genepool_na,pred),models_ accuracy=accuracy))
+    
+    } #End funcion para calcular los parametros de cada
 
 
 
