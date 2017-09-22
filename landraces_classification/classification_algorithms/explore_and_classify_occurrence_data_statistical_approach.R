@@ -4,6 +4,9 @@ if(OSys == "Linux"){ root <- "/mnt/workspace_cluster_9" } else {
   if(OSys == "Windows"){ root <- "//dapadfs/Workspace_cluster_9" }
 }; rm(OSys)
 
+
+options(scipen=999)#numeros sin euler
+
 # Load packages
 suppressMessages(library(tidyverse))
 suppressMessages(library(readxl))
@@ -176,6 +179,7 @@ genepool_data<-genepool_data[,-nzv]
 # numeric  <- numeric[,-highlyCorDescr]
 # genepool_data <- cbind(genepool_data %>% select(Genepool:(which(names(genepool_data)=="bio_1")-1)), numeric)
 genepool_data<-genepool_data %>% mutate(.,genepool_bin=ifelse(Genepool=="Andean",1,0))%>% mutate_at(., vars(genepool_bin),funs(factor(.))) %>% dplyr::select(.,-Genepool)
+
 
 
 
@@ -398,7 +402,7 @@ server<- function(input,output,session){
 
 runGadget(shinyApp(ui, server),viewer = dialogViewer("Select Vars", width = 600, height = 600))
 
-genepool_predicted<- function(data_gen=genotypic_climate,y="Genepool.lit",area="Americas"){
+genepool_predicted<- function(data_gen=genotypic_climate,y="Race.interpreted.lit",area="Americas"){
   
   row.names(data_gen)<-data_gen$ID
   data_gen<- data_gen %>% filter(., Analysis==area) %>% select(., -ID,-Analysis)
@@ -468,8 +472,7 @@ genepool_predicted<- function(data_gen=genotypic_climate,y="Genepool.lit",area="
     eval(parse(text=paste0( "FDA<-train(",y,"~.,data=data_in,method='bagFDA',trControl=ctrol2)" ) ))
     
     
-    folds<-
-    mda(Genepool.lit~.,data=data_in)
+    
 
 #Clasificación por Regresion Logistica
    vf<-colinearity(genepool_data)
@@ -577,6 +580,47 @@ genepool_predicted<- function(data_gen=genotypic_climate,y="Genepool.lit",area="
 
 
 predictions<-genepool_predicted(data_gen=genotypic_climate,y="Genepool.lit",area="Americas")
+df<-predictions[[1]]
 
 
+
+install.packages("nnet")
+library("nnet")
+
+
+
+genepool_data$Race.interpreted.lit<-relevel(genepool_data$Race.interpreted.lit,ref="Peru")
+
+genepool_data<- colinearity(genepool_data)
+folds<-modelr::crossv_kfold(genepool_data,k=5)
+
+model<- folds %>% mutate(.,model=purrr::map(train, ~multinom( Race.interpreted.lit~., data=. ) ) )
+
+testing<- folds %>% mutate(.,tested= purrr::map(test, ~predict(model$model$`1`,model$test$`1`,type="probs" ) )  )
+
+
+
+multi<-multinom(Race.interpreted.lit~.,data=genepool_data)
+
+tes<-folds$train$`1`$data
+
+predict(multi,tes,type="probs")
+
+str(genepool_data)
+
+
+validate<-data.frame(predict(model$model$`1`,model$test$`1`,type="probs" ), observados=data.frame(model$test$`1`)$Race.interpreted.lit )
+
+validate<- validate %>% mutate(., raze.predicted=  apply(validate[,1:6],1,function(x){ names(x)[which(x==max(x) )] }  )    ) %>% mutate_at(.,vars(raze.predicted),funs(factor) )
+cm<-table(validate$observados,validate$raze.predicted)
+
+levels(validate$observados)
+
+levels(validate$raze.predicted)
+
+
+(73+3+88+22+127+42)/sum(cm)
+
+
+accu<-sum(diag(cm))/sum(cm)
 
