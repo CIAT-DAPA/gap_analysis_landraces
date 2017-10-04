@@ -7,7 +7,7 @@ options(warn = -1); options(scipen = 999); g <- gc(reset = T); rm(list = ls())
 
 OSys <- Sys.info()[1]
 OSysPath <- switch(OSys, "Linux" = "/mnt", "Windows" = "//dapadfs")
-root <- paste0(OSysPath, "/Workspace_cluster_9"); rm(OSys)
+root     <- switch(OSys, "Linux" = "/mnt/workspace_cluster_9", "Windows" = "//dapadfs/Workspace_cluster_9")
 
 # Load packages
 suppressMessages(library(tidyverse))
@@ -122,7 +122,7 @@ sum(ciat$Type.of.material == "Landrace" & !is.na(ciat$Vernacular.name), na.rm = 
 # Biophysical information
 # ------------------------------------ #
 
-coord_df <- ciat %>% select(ID, Longitude, Latitude)
+coord_df <- ciat %>% dplyr::select(ID, Longitude, Latitude)
 
 # Environmental Rasters For Ecological Modeling
 envirem <- list.files(path = paste0(root, "/gap_analysis_landraces/Input_data/_maps/_envirem2_5"), full.names = T)
@@ -136,9 +136,15 @@ bioVars <- bioVars[grep(pattern = "*.tif$", x = bioVars)] %>% mixedsort
 bioVars <- raster::stack(bioVars)
 
 coord_envirem <- raster::extract(x = envirem, y = coord_df[,c("Longitude", "Latitude")])
+colnames(coord_envirem) <- gsub(pattern = "current_2.5arcmin_", replacement = "", x = colnames(coord_envirem))
+coord_envirem <- cbind(coord_df, coord_envirem)
+
 coord_bioVars <- raster::extract(x = bioVars, y = coord_df[,c("Longitude", "Latitude")])
+coord_bioVars <- cbind(coord_df, coord_bioVars)
 
-
+biophysicalVars <- dplyr::inner_join(x = coord_envirem, y = coord_bioVars,  by = c("ID", "Longitude", "Latitude"))
+rm(coord_envirem, coord_bioVars)
+saveRDS(object = biophysicalVars, file = paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/BEAN-GRP-COORDINATES-CLIMATE.RDS"))
 # # load world shapefile
 # shp_wld <- rgdal::readOGR(dsn = paste0(root, "/gap_analysis_landraces/Input_data/_maps/Global_administrative_unit_layers/gaul_2014"), layer = "G2014_2013_1")
 # 
