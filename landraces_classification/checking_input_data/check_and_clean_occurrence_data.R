@@ -267,3 +267,30 @@ ciat$Analysis <- as.numeric(is.na(over_res)); rm(over_res)
 ciat$Analysis[which(ciat$Analysis == "0")] <- "Americas"
 ciat$Analysis[which(ciat$Analysis == "1")] <- "World"
 rm(shp_ame)
+
+suppressMessages(library(corrplot))
+suppressMessages(library(FactoMineR))
+suppressMessages(library(factoextra))
+
+M <- cor(biophysicalVars[,-(1:2)], use = "complete.obs", method = "spearman")
+corrplot(M, method = "square", type = "lower")
+corrplot(M, method = "square", type = "lower", order = "hclust", addrect = 2)
+
+bio_pca <- FactoMineR::PCA(X = biophysicalVars[,-(1:2)], scale.unit = T, ncp = 3, graph = F)
+bio_pca$eig
+
+bio_hcpc <- FactoMineR::HCPC(bio_pca, nb.clust = -1, graph = F)
+
+fviz_dend(bio_hcpc, 
+          cex = 0.7,                     # Label size
+          palette = "jco",               # Color palette see ?ggpubr::ggpar
+          rect = TRUE, rect_fill = TRUE, # Add rectangle around groups
+          rect_border = "jco",           # Rectangle color
+          labels_track_height = 0.8      # Augment the room for labels
+)
+
+suppressMessages(library(Rtsne))
+bio_tsne <- Rtsne(biophysicalVars[complete.cases(biophysicalVars),-(1:2)] %>% unique, dims = 2, perplexity = 100, verbose = TRUE, max_iter = 500)
+bio_tsne <- Rtsne(biophysicalVars[complete.cases(biophysicalVars),-(1:2)] %>% unique, dims = 2, perplexity = 30, verbose = TRUE, max_iter = 500)
+bio_tsne <- Rtsne(biophysicalVars[complete.cases(biophysicalVars),-(1:2)] %>% unique, dims = 2, perplexity = 50, verbose = TRUE, max_iter = 500)
+plot(bio_tsne$Y, pch = 20, main = "tsne for biophysical variables")
