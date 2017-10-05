@@ -43,6 +43,26 @@ nrow(ciat) # 37987 (old and original), 23831 (new one with vernacular names)
 # Update columns names
 # ------------------------------------ #
 
+"ID"                                     "SOURCE"                                 "CLEANED_BY"                            
+[4] "Accession number"                       "Synonyms"                               "Common names"                          
+[7] "INTERPRETED_NAME_CSOSA"                 "TO_USE_ACID"                            "Common_name_ACID"                      
+[10] "Genepool_literature_ACID"               "Genepool_literature_ACID_1"             "Race_interpreted_ACID"                 
+[13] "Race_literature_ACID"                   "Subgroup_interpreted_ACID"              "Subgroup_literature_ACID"              
+[16] "Reference_ACID"                         "TEST_vernacular"                        "name_literature_vernacular"            
+[19] "Genepool_literature_vernacular"         "Race_interpreted_LITERATURE_vernacular" "Race_literature_vernacular"            
+[22] "Subgroup_literature_vernacular"         "Reference_vernacular"                   "Genus"                                 
+[25] "Species"                                "Subspecies"                             "Variety"                               
+[28] "Biological status"                      "Type of material"                       "CORE collection"                       
+[31] "Country"                                "Department"                             "County"                                
+[34] "Place"                                  "Altitude (masl)"                        "Latitude (decimal)"                    
+[37] "Longitude (decimal)"                    "lat_geor"                               "long_geor"                             
+[40] "coord_status"                           "Date of collection ( dd-mm-yyyy )"      "Name"                                  
+[43] "Name2"                                  "Institution"                            "Country3"                              
+[46] "Date of receipt ( dd-mm-yyyy )"         "Growth habit"                           "Seed color"                            
+[49] "Seed shape"                             "Seed brightness"                        "100 seed weight (g)"                   
+[52] "Protein"                                "Genepool_WEIGHT_fix"                    "GENEPOOL_PROTEIN"                      
+[55] "RACE_PROTEIN"                           "Responsible11"
+
 names(ciat) <- c("ID", "Source", "Cleaned.by", "Accession.number", "Synonyms", "Common.names",
                  "Interpreted.name", "Test", "Vernacular.name",
                  "Genepool", "Race.interpreted", "Race", "Subgroup",
