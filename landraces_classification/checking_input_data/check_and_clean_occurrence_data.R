@@ -272,7 +272,7 @@ suppressMessages(library(corrplot))
 suppressMessages(library(FactoMineR))
 suppressMessages(library(factoextra))
 
-M <- cor(biophysicalVars[,-(1:2)], use = "complete.obs", method = "spearman")
+M <- cor(biophysicalVars[,-(1)], use = "complete.obs", method = "spearman")
 corrplot(M, method = "square", type = "lower")
 corrplot(M, method = "square", type = "lower", order = "hclust", addrect = 2)
 
@@ -290,7 +290,7 @@ fviz_dend(bio_hcpc,
 )
 
 suppressMessages(library(Rtsne))
-bio_tsne <- Rtsne(biophysicalVars[complete.cases(biophysicalVars),-(1:2)] %>% unique, dims = 2, perplexity = 100, verbose = TRUE, max_iter = 500)
-bio_tsne <- Rtsne(biophysicalVars[complete.cases(biophysicalVars),-(1:2)] %>% unique, dims = 2, perplexity = 30, verbose = TRUE, max_iter = 500)
-bio_tsne <- Rtsne(biophysicalVars[complete.cases(biophysicalVars),-(1:2)] %>% unique, dims = 2, perplexity = 50, verbose = TRUE, max_iter = 500)
+bio_tsne <- Rtsne(biophysicalVars[complete.cases(biophysicalVars),-1] %>% unique, dims = 2, perplexity = 500, verbose = TRUE, max_iter = 500)
+bio_tsne <- Rtsne(biophysicalVars[complete.cases(biophysicalVars),-1] %>% unique, dims = 2, perplexity = 30, verbose = TRUE, max_iter = 500)
+bio_tsne <- Rtsne(biophysicalVars[complete.cases(biophysicalVars),-1] %>% unique, dims = 2, perplexity = 50, verbose = TRUE, max_iter = 500)
 plot(bio_tsne$Y, pch = 20, main = "tsne for biophysical variables")
