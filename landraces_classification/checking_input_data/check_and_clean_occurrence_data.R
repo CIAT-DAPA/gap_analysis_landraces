@@ -45,7 +45,7 @@ nrow(ciat) # 37987 (old and original), 23831 (new one with vernacular names)
 
 names(ciat) <- c("ID", "Source", "Cleaned.by", "Accession.number", "Synonyms", "Common.names",
                  "Interpreted.name.csosa", "To.use.ACID", "Common.name.ACID",
-                 "Genepool.ACID", "Genepool.literature.ACID","Race_interpreted_ACID",
+                 "Genepool.ACID", "Genepool.literature.ACID","Race.interpreted.ACID",
                  "Race.literature.ACID", "Subgroup.interpreted.ACID", "Subgroup.literature.ACID",
                  "Reference.ACID", "TEST.vernacular", "Name.literature.vernacular",
                  "Genepool.literature.vernacular", "Race.interpreted.vernacular", "Race.literature.vernacular",
