@@ -383,9 +383,11 @@ glmFit3
 #####################################################################
 
 genotypic_climate <- read.csv("C:/Users/acmendez/Google Drive/CIAT/ciat_beans_filtered_with_climate.csv") #read.csv("C:/Users/Usuario/Google Drive/CIAT/ciat_beans_filtered_by_altitude_by_predictors_by_americas.csv")
+rownames(genotypic_climate)<- genotypic_climate$ID
+genotypic_climate<-genotypic_climate[,-which(names(genotypic_climate)=="ID")  ]
 
 ui<-miniPage(
-  gadgetTitleBar("Shiny gadget example"),
+  gadgetTitleBar("Variable Selector"),
   miniContentPanel(padding = 0,
                    checkboxGroupInput("vars","Select Vars", choices=names(genotypic_climate ),selected = names(genotypic_climate ))
   )
@@ -402,7 +404,7 @@ server<- function(input,output,session){
 
 runGadget(shinyApp(ui, server),viewer = dialogViewer("Select Vars", width = 600, height = 600))
 
-genepool_predicted<- function(data_gen=genotypic_climate,y="Race.interpreted.lit",area="Americas"){
+genepool_predicted<- function(data_gen=genotypic_climate,y="Genepool.lit",area="Americas"){
   
   row.names(data_gen)<-data_gen$ID
   data_gen<- data_gen %>% filter(., Analysis==area) %>% select(., -ID,-Analysis)
@@ -418,7 +420,7 @@ genepool_predicted<- function(data_gen=genotypic_climate,y="Race.interpreted.lit
  }
 
   
-  eval(parse(text= paste0("data_gen$",y,"<-","factor(","data_gen$",y,")") )) 
+  eval(parse(text= paste0("data_gen$",y,"<-","as.factor(","data_gen$",y,")") )) 
 
   genepool_data<-data_gen
   
@@ -441,11 +443,12 @@ genepool_predicted<- function(data_gen=genotypic_climate,y="Race.interpreted.lit
     colinearity<-function(genepool_data){
       
       #detectar varibles altamente correlacionadas y quitarlas de la base de datos
-      numeric<-genepool_data %>% dplyr::select(.,bio_1:bio_19)
+      numeric<-genepool_data[,sapply(genepool_data,is.numeric)]
       descrCor<-cor(numeric)
       highlyCorDescr <- findCorrelation(descrCor, cutoff = .75)
       numeric  <- numeric[,-highlyCorDescr]
-      genepool_data <- cbind(genepool_data %>% select(1:(which(names(genepool_data)=="bio_1")-1)), numeric)
+      vec<-which( names(genepool_data)%in%names(numeric) )
+      genepool_data <-data.frame(genepool_data[, sapply(genepool_data,!is.numeric) ] , numeric)
       
       return(genepool_data)
     }
@@ -454,16 +457,16 @@ genepool_predicted<- function(data_gen=genotypic_climate,y="Race.interpreted.lit
     only_numeric<- function(genepool_data){
       
       genepool_data2<-genepool_data[,sapply(genepool_data, is.numeric)]
-      genepool_data<-eval(parse(text=paste0("data.frame(",y,"=","genepool_data$",y,",","genepool_data2",")")))
+      genepool_data<-eval(parse(text=paste0("data.frame(",y,"=","gencancer[epool_data$",y,",","genepool_data2",")")))
       return(genepool_data)
     }
     
     
     
-    
-    
     set.seed(825)
     ctrol2<-trainControl(method="LGOCV",p=0.8,number=1,savePredictions = T)
+    
+    
     #Bagged Flexible Discriminant Analysis
    
     data_in<-only_numeric(genepool_data)
@@ -580,47 +583,338 @@ genepool_predicted<- function(data_gen=genotypic_climate,y="Race.interpreted.lit
 
 
 predictions<-genepool_predicted(data_gen=genotypic_climate,y="Genepool.lit",area="Americas")
-df<-predictions[[1]]
+df<-predictions[[2]]
 
 
 
+
+
+###########################################################
+###### MULTINOMIAL LOGISTIC REGRESSION  "nnet" package#####
+###########################################################
 install.packages("nnet")
 library("nnet")
 
+genepool_data<-genepool_data[complete.cases(genepool_data$Race.interpreted.lit),]
+genepool_data$Race.interpreted.lit<-factor(genepool_data$Race.interpreted.lit)
+genepool_data$Race.interpreted.lit<-relevel(genepool_data$Race.interpreted.lit,ref="Durango-Jalisco")
+
+set.seed(1200)
+#genepool_data<- colinearity(genepool_data)
+folds<-modelr::crossv_kfold(genepool_data,k=6)
 
 
-genepool_data$Race.interpreted.lit<-relevel(genepool_data$Race.interpreted.lit,ref="Peru")
+multi<- folds %>% mutate(.,model=purrr::map(train, ~ nnet::multinom( Race.interpreted.lit~. , data=. ) ) )
 
-genepool_data<- colinearity(genepool_data)
-folds<-modelr::crossv_kfold(genepool_data,k=5)
+multi<- multi %>%  dplyr::mutate(.,tested= purrr::map2(model,test, ~predict(.x,newdata=.y) )  )
 
-model<- folds %>% mutate(.,model=purrr::map(train, ~multinom( Race.interpreted.lit~., data=. ) ) )
+multi<- multi %>% dplyr::mutate(., cm=purrr::map2(test,tested, ~table(data.frame(.x)$Race.interpreted.lit,.y)  )   )  %>% mutate(., accuracy=purrr::map(cm, function(x){ sum(diag(x))/sum(x)}  )  )
 
-testing<- folds %>% mutate(.,tested= purrr::map(test, ~predict(model$model$`1`,model$test$`1`,type="probs" ) )  )
-
-
-
-multi<-multinom(Race.interpreted.lit~.,data=genepool_data)
-
-tes<-folds$train$`1`$data
-
-predict(multi,tes,type="probs")
-
-str(genepool_data)
+#select the best model#
+multi.model<- multi[which(unlist(multi$accuracy)==max(unlist(multi$accuracy))),"model"]$model
+##global accuracy
+mean(unlist(multi$accuracy))
 
 
-validate<-data.frame(predict(model$model$`1`,model$test$`1`,type="probs" ), observados=data.frame(model$test$`1`)$Race.interpreted.lit )
 
-validate<- validate %>% mutate(., raze.predicted=  apply(validate[,1:6],1,function(x){ names(x)[which(x==max(x) )] }  )    ) %>% mutate_at(.,vars(raze.predicted),funs(factor) )
-cm<-table(validate$observados,validate$raze.predicted)
-
-levels(validate$observados)
-
-levels(validate$raze.predicted)
+####mediante un FDA
 
 
-(73+3+88+22+127+42)/sum(cm)
+genepool_data$Genepool.lit<- as.numeric(genepool_data$Genepool.lit)
+    #as.numeric(genepool_data$Race.interpreted.lit )
+
+  
+  genepool_data2<-genepool_data[,sapply(genepool_data, is.numeric)]
+  genepool_data2<-data.frame(Race.interpreted.lit=genepool_data$Race.interpreted.lit,genepool_data2)
+  genepool_data2$Race.interpreted.lit<-factor(genepool_data2$Race.interpreted.lit)
+  genepool_data2<- genepool_data2[complete.cases(genepool_data2$Race.interpreted.lit),]
+  
+  head(genepool_data2)
 
 
-accu<-sum(diag(cm))/sum(cm)
+set.seed(825)
+ctrol2<-trainControl(method="LGOCV",p=0.8,number=1,savePredictions = T)
+
+FDA.race<-train(Race.interpreted.lit~.,data=genepool_data2,method="bagFDA",trControl = ctrol2)
+mean(FDA.race$finalModel$oob[,1])
+
+
+
+genepool_data$Genepool.lit<- factor(genepool_data$Genepool.lit)
+vf<- only_numeric(genepool_data )
+vf$Genepool.lit<-as.numeric(vf$Genepool.lit)
+vf<-data.frame(Race.interpreted.lit=genepool_data$Race.interpreted.lit,vf)
+genepool_data$Race.interpreted.lit<-factor(genepool_data$Race.interpreted.lit)
+genepool_data$Genepool.lit<-factor(genepool_data$Genepool.lit)
+
+gam<-caret::train( Race.interpreted.lit  ~.,data=vf , method="nnet", trcontrol=ctrol2,
+           seed = 1)
+gam$results
+
+hist(vf$bio_19)
+
+hist(log(scale(vf$bio_19,center = T, scale = T)) )
+
+
+######  REDUCCION DE DIMENSIONALIDAD ###########
+
+OSys <- Sys.info()[1]
+OSysPath <- switch(OSys, "Linux" = "/mnt", "Windows" = "//dapadfs")
+root     <- switch(OSys, "Linux" = "/mnt/workspace_cluster_9", "Windows" = "//dapadfs/Workspace_cluster_9")
+
+
+suppressMessages(library(Rtsne))
+library(dplyr)
+suppressMessages(if(!require(corrplot)){install.packages("corrplot");library(corrplot)}else{library(corrplot)})
+
+
+biophysicalVars <- readRDS(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/BEAN-GRP-COORDINATES-CLIMATE.RDS"))
+names(biophysicalVars)
+biophysicalVars<-biophysicalVars[,-1]
+
+colinearity<-function(genepool_data,tol=0.75){
+  
+  #detectar varibles altamente correlacionadas y quitarlas de la base de datos
+  numeric<-genepool_data %>% dplyr::select(.,bio_1:bio_19)
+  descrCor<-cor(numeric)
+  highlyCorDescr <- findCorrelation(descrCor, cutoff = tol)
+  numeric  <- numeric[,-highlyCorDescr]
+  genepool_data <- cbind(genepool_data %>% select(1:(which(names(genepool_data)=="bio_1")-1)), numeric)
+  
+  return(genepool_data)
+}
+colinearity(biophysicalVars,tol=0.75)
+
+M<-cor(colinearity(biophysicalVars,tol=0.75), use = "complete.obs")
+corrplot(M)
+hist(M)
+biophysicalVars <-colinearity(biophysicalVars,tol=0.5)
+
+
+bio_tsne1 <- Rtsne(biophysicalVars[complete.cases(biophysicalVars),] %>% unique, dims = 2, perplexity = 400, verbose = TRUE, max_iter = 2000,pca=TRUE)
+bio_tsne2 <- Rtsne(biophysicalVars[complete.cases(biophysicalVars),] %>% unique, dims = 2, perplexity = 25, verbose = TRUE, max_iter = 2000,pca=TRUE)
+bio_tsne3 <- Rtsne(biophysicalVars[complete.cases(biophysicalVars),] %>% unique, dims = 2, perplexity = 10, verbose = TRUE, max_iter = 2000,pca=TRUE)
+
+par(mfrow=c(1,3))
+plot(bio_tsne1$Y, pch = 20, main = "tsne for biophysical variables")
+plot(bio_tsne2$Y, pch = 20, main = "tsne for biophysical variables")
+plot(bio_tsne3$Y, pch = 20, main = "tsne for biophysical variables")
+
+
+bio_tsne1$M
+M<-cor(biophysicalVars, use = "complete.obs")
+corrplot(M)
+hist(M)
+
+
+
+
+cancer<- read.table("C:/Users/ACMENDEZ/Desktop/cancer.txt",sep=",")
+
+cancer.dat<-cancer[,-(1:2)]
+
+can1<- Rtsne(cancer %>% unique, dims = 2, perplexity = 30, verbose = TRUE, max_iter = 1000,pca=TRUE)
+tsn<-as.data.frame(can1$Y)
+tsn.clust<-tsn
+cluster<-kmeans( scale( tsn ),4)
+tsn.clust$kmeans<-factor(cluster$cluster)
+clust.h<-stats::hclust(dist(scale(tsn) )  )
+tsn.clust$hierar<-factor(cutree(clust.h,4) )
+plot(clust.h)
+ggplot(tsn.clust,aes_string(x="V1",y="V2",color="kmeans") )+geom_point(size=0.25)  + guides(colour=guide_legend(override.aes=list(size=6))) +
+  xlab("") + ylab("") +
+  ggtitle("") +
+  theme_light(base_size=20) +
+  theme(axis.text.x=element_blank(),
+        axis.text.y=element_blank(),
+        legend.direction = "horizontal", 
+        legend.position = "bottom",
+        legend.box = "horizontal") +
+  scale_colour_brewer(palette = "Accent") 
+
+###################
+
+ciat <- gs_ls("Bean_landrace_name_table")
+ciat <- gs_title("Bean_landrace_name_table")
+ciat %>% gs_browse(ws = "Pvulgaris_CIATdb")
+ciat <- ciat %>% gs_read(ws = "Pvulgaris_CIATdb")
+
+names(ciat) <- c("ID", "Source", "Cleaned.by", "Accession.number", "Synonyms", "Common.names",
+                 "Interpreted.name.csosa", "To.use.ACID", "Common.name.ACID",
+                 "Genepool.ACID", "Genepool.literature.ACID","Race_interpreted_ACID",
+                 "Race.literature.ACID", "Subgroup.interpreted.ACID", "Subgroup.literature.ACID",
+                 "Reference.ACID", "TEST.vernacular", "Name.literature.vernacular",
+                 "Genepool.literature.vernacular", "Race.interpreted.vernacular", "Race.literature.vernacular",
+                 "Subgroup.literature.vernacular", "Reference.vernacular", "Genus", "Species", "Subspecies", "Variety",
+                 "Biological.status", "Material.type", "CORE.collection", "Country", "Department", "County", "Place",
+                 "Altitude", "Latitude", "Longitude", "Lat.geo", "Lon.geo", "Coord.status", "Collection.date", "Name",
+                 "Name2", "Institution", "Country3", "Receipt.date", "Growth.habit", "Seed.color",
+                 "Seed.shape", "Seed.brightness", "Seed.weight", "Protein", "Genepool.WEIGHT.fix",
+                 "Genepool.protein", "Race.protein", "Responsible11")
+
+ciat <- ciat %>% filter(Coord.status != "No coords") # 16038
+ciat$Latitude[which(!is.na(ciat$Lat.geo) & is.na(ciat$Latitude))] <- ciat$Lat.geo[which(!is.na(ciat$Lat.geo) & is.na(ciat$Latitude))]
+ciat$Longitude[which(!is.na(ciat$Lon.geo) & is.na(ciat$Longitude))] <- ciat$Lon.geo[which(!is.na(ciat$Lon.geo) & is.na(ciat$Longitude))]
+
+# ------------------------------------ #
+# Include altitude records from SRTM
+# ------------------------------------ #
+
+# Identify coordinates without altitude data
+which(!is.na(ciat$Latitude) & is.na(ciat$Altitude)) %>% length
+ciat %>% dplyr::filter(!is.na(Latitude) & is.na(Altitude)) %>% dplyr::select(Longitude, Latitude) %>% head
+
+
+srtm <- raster::raster(paste0(OSysPath, "/data_cluster_4/observed/gridded_products/srtm/Altitude_30s/alt"))
+srtm.vals <- raster::extract(x = srtm,
+                             y = ciat %>% dplyr::filter(!is.na(Latitude) & is.na(Altitude)) %>% dplyr::select(Longitude, Latitude))
+
+# Density plots before and after update altitude records
+ciat %>% ggplot(aes(x = Altitude)) + geom_density() # Before
+srtm.vals %>% data.frame %>% ggplot(aes(x = .)) + geom_density() # SRTM values
+
+ciat$Altitude[which(!is.na(ciat$Latitude) & is.na(ciat$Altitude))] <- srtm.vals
+
+
+
+
+
+
+rm(srtm.vals, srtm)
+
+ciat <- ciat %>% filter(Altitude <= 3500)
+
+biophysicalVars
+ciat<-ciat[complete.cases(ciat$Genepool.literature.ACID),]
+
+ciat <- ciat %>% filter(To.use.ACID == 1)
+ciat <- ciat %>% dplyr::filter(!is.na(Longitude) & !is.na(Altitude) &
+                                 !is.na(Growth.habit) & !is.na(Seed.color) &
+                                 !is.na(Seed.shape) & !is.na(Seed.brightness) &
+                                 !is.na(Seed.weight) & !is.na(Protein) &
+                                 !is.na(Genepool.protein))
+
+
+ciat.bio<-left_join(x=ciat,y=biophysicalVars,by="ID")
+ciat.bio<-as.data.frame(ciat.bio)
+if(all( (ciat.bio$Genepool.ACID == "Spain_Andeanean_I" )==FALSE )==FALSE ){
+  ciat.bio$Genepool.ACID[which(ciat.bio$Genepool.ACID=="Spain_Andeanean_I")]<-"Andean"
+  
+}
+ciat.bio$Genepool.ACID<-factor(ciat.bio$Genepool.ACID)
+table(ciat.bio$Race.literature.ACID)
+table(ciat$Race.literature.ACID)
+
+
+ciat.bio<-ciat.bio %>% select(.,ID,Race.interpreted.ACID,Seed.weight,Altitude,Latitude.x,Longitude.x,aridityIndexThornthwaite:bio_19)
+#Cambiar dependiendo de la raza
+
+ciat.bio<-ciat.bio[complete.cases(ciat.bio),]
+row.names(ciat.bio)<-ciat.bio$ID
+
+M<-cor(ciat.bio[,-1], use = "complete.obs")
+corrplot(M)
+hist(M)
+
+
+
+
+#detectar varibles altamente correlacionadas y quitarlas de la base de datos
+numeric<-ciat.bio[,sapply(ciat.bio,is.numeric)]
+numeric<-numeric[,-1]
+numeric<-na.omit(numeric)
+descrCor<-cor(numeric)
+highlyCorDescr <- findCorrelation(descrCor, cutoff = 0.85)
+numeric  <- numeric[,-highlyCorDescr]
+row.names(numeric)<-row.names(ciat.bio)
+numeric<-data.frame(Genepool.ACID=ciat.bio$Race.interpreted.ACID,numeric)#cambiar dependiendo de la raza
+
+#-----RACE
+levels(factor(numeric$Genepool.ACID))
+
+numeric$Genepool.ACID[which(numeric$Genepool.ACID=="N/A")]<-NA
+numeric<-na.omit(numeric)
+numeric$Genepool.ACID<-factor(numeric$Genepool.ACID)
+
+#--------end RACE
+numeric<- numeric[,] %>% unique
+bio_tsne3 <- Rtsne(numeric[,], dims = 2, perplexity =40, verbose = TRUE, max_iter = 1500,pca=TRUE)
+
+plot(bio_tsne3$Y, pch = 20, main = "tsne for biophysical variables")
+
+row.names(bio_tsne3$Y)<-row.names(numeric)
+tsn.clust<-data.frame(bio_tsne3$Y,Genepool.ACID=numeric$Genepool.ACID)
+
+
+ggplot(tsn.clust,aes_string(x="X1",y="X2",color="Genepool.ACID") )+geom_point(size=1.8)  + guides(colour=guide_legend(override.aes=list(size=6))) +
+  xlab("") + ylab("") +
+  ggtitle("") +
+  theme_light(base_size=20) +
+  theme(axis.text.x=element_blank(),
+        axis.text.y=element_blank(),
+        legend.direction = "horizontal", 
+        legend.position = "bottom",
+        legend.box = "horizontal") 
+################ DBSCAN CLUSTERING
+
+install.packages("dbscan")
+install.packages("factoextra")
+library(dbscan)
+library(factoextra)
+
+set.seed(123)
+cl<- dbscan::dbscan(tsn.clust[,1:2],eps=1.9, MinPts=10 )
+cl
+
+
+fviz_cluster(cl, data = tsn.clust[,1:2], stand = FALSE,
+             ellipse = F, show.clust.cent = F,
+             geom = "point",palette = "jco", ggtheme = theme_classic())
+
+###HIERARCHICAL CLUSTERING
+
+tsn<-as.data.frame(bio_tsne3$Y)
+tsn.clust<-tsn
+cluster<-kmeans( scale( tsn ),4)
+tsn.clust$kmeans<-factor(cluster$cluster)
+clust.h<-stats::hclust(dist(scale(tsn) )  )
+barplot(clust.h$height)
+tsn.clust$hierar<-factor(cutree(clust.h,4) )
+plot(clust.h)
+ggplot(tsn.clust,aes_string(x="V1",y="V2",color="hierar") )+geom_point(size=1.85)  + guides(colour=guide_legend(override.aes=list(size=6))) +
+  xlab("") + ylab("") +
+  ggtitle("") +
+  theme_light(base_size=20) +
+  theme(axis.text.x=element_blank(),
+        axis.text.y=element_blank(),
+        legend.direction = "horizontal", 
+        legend.position = "bottom",
+        legend.box = "horizontal") +
+  scale_colour_brewer(palette = "Accent") 
+
+
+### RANDOM FOREST
+
+ciat.tsne<- base::merge(bio_tsne3$Y,numeric,by="row.names" ,all.x=TRUE )
+row.names(ciat.tsne)<- ciat.tsne$Row.names
+ciat.tsne<-ciat.tsne[,-1]
+
+set.seed(250)
+trcont<- trainControl(method="LGOCV",p=0.8,number=1,savePredictions = T)
+grid <- expand.grid(mtry = round((ncol(ciat.tsne)-4)/3))
+
+##con TSNE
+rforest_1<-train(Genepool.ACID~.,   data=ciat.tsne ,method="rf",tuneGrid=grid, importance=T, ntree=2000, metric="Accuracy", trControl= trcont)
+
+accu.rforest_1<- mean(apply(gd<-data.frame(rforest_1$resampledCM[,1:4]),1,function(x){
+  (x[1] + x[4]) /sum(x)
+}) )
+
+#### sin TSNE
+rforest_2<-train(Genepool.ACID~.,   data=ciat.tsne[,-(1:2)] ,method="rf",tuneGrid=grid, importance=T, ntree=2000, metric="Accuracy", trControl= trcont)
+
+accu.rforest_2<- mean(apply(gd<-data.frame(rforest_2$resampledCM[,1:4]),1,function(x){
+  (x[1] + x[4]) /sum(x)
+}) )
+
 
