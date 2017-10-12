@@ -1,36 +1,31 @@
+# Explore and classify occurrence data
+# A. Mendez & H. Achicanoy
+# CIAT, 2017
 
-OSys <- Sys.info(); OSys <- OSys[names(OSys)=="sysname"]
-if(OSys == "Linux"){ root <- "/mnt/workspace_cluster_9" } else {
-  if(OSys == "Windows"){ root <- "//dapadfs/Workspace_cluster_9" }
-}; rm(OSys)
+# R options
+options(warn = -1); options(scipen = 999); g <- gc(reset = T); rm(list = ls())
 
-
-options(scipen=999)#numeros sin euler
+OSys <- Sys.info()[1]
+OSysPath <- switch(OSys, "Linux" = "/mnt", "Windows" = "//dapadfs")
+root     <- switch(OSys, "Linux" = "/mnt/workspace_cluster_9", "Windows" = "//dapadfs/Workspace_cluster_9")
 
 # Load packages
-suppressMessages(library(tidyverse))
-suppressMessages(library(readxl))
-suppressMessages(library(rgdal))
-suppressMessages(library(sp))
-suppressMessages(library(raster))
-suppressMessages(library(ncdf4))
-suppressMessages(library(rasterVis))
-suppressMessages(library(htmlwidgets))
-suppressMessages(library(compiler))
-suppressMessages(library(leaflet))
-suppressMessages(library(highcharter))
-suppressMessages(library(plotly))
-suppressMessages(library(d3heatmap))
-suppressMessages(library(cluster))
-suppressMessages(library(FactoMineR))
-suppressMessages(library(factoextra))
-suppressMessages(library(corrplot))
-suppressMessages(library(Rtsne))
-suppressMessages(library(randomForest))
-suppressMessages(library(caret))
-suppressMessages(library(modelr))
-suppressMessages(library(broom))
-suppressMessages(library(purrr))
+suppressMessages(if(!require(tidyverse)){install.packages("tidyverse");library(tidyverse)}else{library(tidyverse)})
+suppressMessages(if(!require(rgdal)){install.packages("rgdal");library(rgdal)}else{library(rgdal)})
+suppressMessages(if(!require(sp)){install.packages("sp");library(sp)}else{library(sp)})
+suppressMessages(if(!require(raster)){install.packages("raster");library(raster)}else{library(raster)})
+suppressMessages(if(!require(ncdf4)){install.packages("ncdf4");library(ncdf4)}else{library(ncdf4)})
+suppressMessages(if(!require(rasterVis)){install.packages("rasterVis");library(rasterVis)}else{library(rasterVis)})
+suppressMessages(if(!require(htmlwidgets)){install.packages("htmlwidgets");library(htmlwidgets)}else{library(htmlwidgets)})
+suppressMessages(if(!require(compiler)){install.packages("compiler");library(compiler)}else{library(compiler)})
+suppressMessages(if(!require(leaflet)){install.packages("leaflet");library(leaflet)}else{library(leaflet)})
+suppressMessages(if(!require(highcharter)){install.packages("highcharter");library(highcharter)}else{library(highcharter)})
+suppressMessages(if(!require(plotly)){install.packages("plotly");library(plotly)}else{library(plotly)})
+suppressMessages(if(!require(d3heatmap)){install.packages("d3heatmap");library(d3heatmap)}else{library(d3heatmap)})
+suppressMessages(if(!require(cluster)){install.packages("cluster");library(cluster)}else{library(cluster)})
+suppressMessages(if(!require(FactoMineR)){install.packages("FactoMineR");library(FactoMineR)}else{library(FactoMineR)})
+suppressMessages(if(!require(factoextra)){install.packages("factoextra");library(factoextra)}else{library(factoextra)})
+suppressMessages(if(!require(Rtsne)){install.packages("Rtsne");library(Rtsne)}else{library(Rtsne)})
 suppressMessages(if(!require(InformationValue)){install.packages("InformationValue");library(InformationValue)}else{library(InformationValue)})
 suppressMessages(if(!require(corrplot)){install.packages("corrplot");library(corrplot)}else{library(corrplot)})
 suppressMessages(if(!require(caTools)){install.packages("caTools");library(caTools)}else{library(caTools)})
@@ -38,110 +33,18 @@ suppressMessages(if(!require(caret)){install.packages("caret");library(caret)}el
 suppressMessages(if(!require(shiny)){install.packages("shiny");library(shiny)}else{library(shiny)})
 suppressMessages(if(!require(miniUI)){install.packages("miniUI");library(miniUI)}else{library(miniUI)})
 
+# Tables of interest
+ciat; biophysicalVars; humanFactors
+ciat$Genepool.interpreted.ACID[which(ciat$Genepool.interpreted.ACID == "Spain_Andean_I")] <- "Andean"
+ciat$Genepool.literature.ACID[which(ciat$Genepool.literature.ACID == "Spain_Andean_I")] <- "Andean"
 
-## =================================================================================================================== ##
-## CIAT information with climate data (with phaseolin data and race/genepool classification)
-## =================================================================================================================== ##
-
-phenotypic_data <- read_excel(path = paste0(root, "/gap_analysis_landraces/Input_data/_phenotypic_data/Bean/Blair_et_al_2009_races_subgroups_phenotypic.xlsx"), sheet = 2)
-
-par(mfrow = c(1,3))
-phenotypic_data %>% select(Meso.total, Andean.total) %>% cor(method = "pearson", use = "complete.obs") %>% corrplot.mixed()
-phenotypic_data %>% select(Meso.total, Andean.total) %>% cor(method = "spearman", use = "complete.obs") %>% corrplot.mixed()
-phenotypic_data %>% select(Meso.total, Andean.total) %>% cor(method = "kendall", use = "complete.obs") %>% corrplot.mixed()
-
-par(mfrow = c(1,3))
-phenotypic_data %>% select(D_J1, D_J2, G, M1, M2, NG1, NG2, P1, P2) %>% cor(method = "pearson", use = "complete.obs") %>% corrplot.mixed()
-phenotypic_data %>% select(D_J1, D_J2, G, M1, M2, NG1, NG2, P1, P2) %>% cor(method = "spearman", use = "complete.obs") %>% corrplot.mixed()
-phenotypic_data %>% select(D_J1, D_J2, G, M1, M2, NG1, NG2, P1, P2) %>% cor(method = "kendall", use = "complete.obs") %>% corrplot.mixed()
-# phenotypic_data %>% select(D_J1, D_J2, G, M1, M2, NG1, NG2, P1, P2) %>% cor(method = "kendall", use = "complete.obs") %>% corrplot(is.corr = T, method = "ellipse", type = "upper")
-
-par(mfrow = c(1,3))
-phenotypic_data %>% select(D_J.total, G, M.total, NG.total, P.total) %>% cor(method = "pearson", use = "complete.obs") %>% corrplot.mixed()
-phenotypic_data %>% select(D_J.total, G, M.total, NG.total, P.total) %>% cor(method = "spearman", use = "complete.obs") %>% corrplot.mixed()
-phenotypic_data %>% select(D_J.total, G, M.total, NG.total, P.total) %>% cor(method = "kendall", use = "complete.obs") %>% corrplot.mixed()
-rm(phenotypic_data)
-
+source("descriptive_analysis4cleanedDB.R")
 
 ####base de datos 
-genotypic_climate <- read.csv("C:/Users/acmendez/Google Drive/CIAT/ciat_beans_filtered_by_altitude_by_predictors_by_americas.csv")#readRDS("C:/Users/Usuario/Google Drive/CIAT/ciatOrganizedVariables_climate.RDS")
-genotypic_climate$Race.protein[genotypic_climate$Race.protein == "N/A"] <- NA
-genotypic_climate %>% glimpse
+# genotypic_climate <- read.csv("C:/Users/acmendez/Google Drive/CIAT/ciat_beans_filtered_by_altitude_by_predictors_by_americas.csv")#readRDS("C:/Users/Usuario/Google Drive/CIAT/ciatOrganizedVariables_climate.RDS")
+# genotypic_climate$Race.protein[genotypic_climate$Race.protein == "N/A"] <- NA
+# genotypic_climate %>% glimpse
 
-# ==================================== #
-# Univariate descriptive analysis
-# ==================================== #
-
-# Quantitative variables: histograms
-test <- genotypic_climate %>% dplyr::select(Genepool,Altitude, Longitude, Latitude, Seed.weight, bio_1:bio_19) %>%
-  gather(Variable, Value, -Genepool)
-test <- test[complete.cases(test),] %>% as.data.frame
-
-gg<-ggplot(data = test, aes(x = Value, alpha = .6, colour = factor(Genepool))) + # fill = Variable
-  geom_density() +
-  facet_wrap(~Variable, scales = "free") +
-  theme_bw() +
-  theme(legend.position = "bottom") +
-  theme(legend.title = element_text(face = "bold")) +
-  guides(alpha = F, fill = F) +
-  theme(strip.text = element_text(size = 12, face = "bold")) +
-  theme(axis.title.x = element_text(size = 13, face = 'bold'),
-        axis.title.y = element_text(size = 13, face = 'bold'),
-        axis.text = element_text(size = 12))
-if(!file.exists(paste0(root, "/gap_analysis_landraces/Results/density_quantitative_variables_by_genepool.png"))){
-  ggsave(paste0(root, "/gap_analysis_landraces/Results/density_quantitative_variables_by_genepool.png"), plot = gg, width = 22, height = 10, units = "in"); rm(gg)
-}; rm(gg)
-
-
-
-
-# Quantitative variables: descriptive statistics
-genotypic_climate %>% dplyr::select(Altitude, Longitude, Latitude, Seed.weight, bio_1:bio_19) %>%
-  psych::describe() %>% select(mean, sd, median, min, max, range) %>% as.data.frame %>%
-  round(., digits = 2) %>% write.csv(., file = paste0(root, "/gap_analysis_landraces/Results/descriptiveStats_quantitative_variables.csv"), row.names = T)
-
-# Qualitative variables: create a table of counts
-fqTable <- genotypic_climate %>% dplyr::select(Vernacular.name, Genepool, Race.interpreted, Subgroup, Growth.habit, Seed.shape, Seed.brightness, Race.protein) %>%
-  gather(measure, value) %>%
-  count(measure, value) %>%
-  spread(measure, n) %>%
-  gather(key = Variable, value = Count, Genepool:Vernacular.name)
-fqTable <- fqTable[complete.cases(fqTable),]; rownames(fqTable) <- 1:nrow(fqTable); colnames(fqTable)[1] <- "Category"
-fqTable <- fqTable %>% dplyr::mutate(Percentage = Count/nrow(genotypic_climate))
-fqTable <- fqTable %>% as.data.frame
-# Color variable
-fqTable <- rbind(fqTable, data.frame(Category = genotypic_climate[,grep(pattern = "^Color_", x = names(genotypic_climate))] %>% as.data.frame %>% apply(MARGIN = 2, FUN = sum) %>% names %>% gsub(pattern = "Color_", replacement = "", x = .),
-                                     Variable = "Color",
-                                     Count = genotypic_climate[,grep(pattern = "^Color_", x = names(genotypic_climate))] %>% as.data.frame %>% apply(MARGIN = 2, FUN = sum) %>% as.numeric,
-                                     Percentage = genotypic_climate[,grep(pattern = "^Color_", x = names(genotypic_climate))] %>% as.data.frame %>% apply(MARGIN = 2, FUN = sum) %>% as.numeric / nrow(genotypic_climate)))
-# Protein variable
-fqTable <- rbind(fqTable, data.frame(Category = genotypic_climate[,grep(pattern = "^Protein_", x = names(genotypic_climate))] %>% as.data.frame %>% apply(MARGIN = 2, FUN = sum) %>% names %>% gsub(pattern = "^Protein_", replacement = "", x = .),
-                                     Variable = "Protein",
-                                     Count = genotypic_climate[,grep(pattern = "^Protein_", x = names(genotypic_climate))] %>% as.data.frame %>% apply(MARGIN = 2, FUN = sum) %>% as.numeric,
-                                     Percentage = genotypic_climate[,grep(pattern = "^Protein_", x = names(genotypic_climate))] %>% as.data.frame %>% apply(MARGIN = 2, FUN = sum) %>% as.numeric / nrow(genotypic_climate)))
-
-# Qualitative variables: barplot per variable
-gg <- fqTable %>% ggplot(aes(x =  reorder(Category, Percentage), y = Percentage*100)) +
-  geom_bar(stat = "identity") +
-  xlab("") + ylab("Percentage (%)") +
-  coord_flip() +
-  facet_wrap(~ Variable, scales = "free") +
-  theme_bw() +
-  theme(strip.text = element_text(size = 12, face = "bold")) +
-  theme(axis.title.x = element_text(size = 13, face = 'bold'),
-        axis.title.y = element_text(size = 13, face = 'bold'),
-        axis.text = element_text(size = 12))
-if(!file.exists(paste0(root, "/gap_analysis_landraces/Results/barplot_qualitative_variables.png"))){
-  ggsave(paste0(root, "/gap_analysis_landraces/Results/barplot_qualitative_variables.png"), plot = gg, width = 22, height = 10, units = "in"); rm(fqTable, gg)
-}; rm(gg)
-
-# ==================================== #
-# Multivariate descriptive analysis
-# ==================================== #
-
-# Principal Component Analysis for mixed data
-
-# Cluster analysis
 
 # ==================================== #
 # Classification algorithms
@@ -378,11 +281,12 @@ glmFit3
 
 #####################################################################
 #####################################################################
-## FUNCION PARA HACER LA CLASIFICACIÓN PARA TODAS LAS METODOLOGIAS###
+## FUNCION PARA HACER LA CLASIFICACI?N PARA TODAS LAS METODOLOGIAS###
 #####################################################################
 #####################################################################
 
-genotypic_climate <- read.csv("C:/Users/acmendez/Google Drive/CIAT/ciat_beans_filtered_with_climate.csv") #read.csv("C:/Users/Usuario/Google Drive/CIAT/ciat_beans_filtered_by_altitude_by_predictors_by_americas.csv")
+# genotypic_climate <- read.csv("C:/Users/acmendez/Google Drive/CIAT/ciat_beans_filtered_with_climate.csv") #read.csv("C:/Users/Usuario/Google Drive/CIAT/ciat_beans_filtered_by_altitude_by_predictors_by_americas.csv")
+genotypic_climate <- ciat
 rownames(genotypic_climate)<- genotypic_climate$ID
 genotypic_climate<-genotypic_climate[,-which(names(genotypic_climate)=="ID")  ]
 
@@ -396,8 +300,8 @@ ui<-miniPage(
 server<- function(input,output,session){
   
   observeEvent(input$done,{
-    genotypic_climate <<-genotypic_climate [,input$vars]
-    stopApp(genotypic_climate )
+    genotypic_climate <<- genotypic_climate[,input$vars]
+    stopApp(genotypic_climate)
   })
   
 }
@@ -477,7 +381,7 @@ genepool_predicted<- function(data_gen=genotypic_climate,y="Genepool.lit",area="
     
     
 
-#Clasificación por Regresion Logistica
+#Clasificaci?n por Regresion Logistica
    vf<-colinearity(genepool_data)
    pos<-which(sapply(vf, is.factor))
    for(i in 1:length(pos)){
@@ -490,7 +394,7 @@ genepool_predicted<- function(data_gen=genotypic_climate,y="Genepool.lit",area="
   
   
 
-  #Clasificación Randon Forest
+  #Clasificaci?n Randon Forest
   
   grid <- expand.grid(mtry = round((ncol(genepool_data)-4)/3))
   

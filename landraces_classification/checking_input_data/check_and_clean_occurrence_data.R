@@ -10,23 +10,24 @@ OSysPath <- switch(OSys, "Linux" = "/mnt", "Windows" = "//dapadfs")
 root     <- switch(OSys, "Linux" = "/mnt/workspace_cluster_9", "Windows" = "//dapadfs/Workspace_cluster_9")
 
 # Load packages
-suppressMessages(library(tidyverse))
-suppressMessages(library(readxl))
-suppressMessages(library(rgdal))
-suppressMessages(library(sp))
-suppressMessages(library(raster))
-suppressMessages(library(ncdf4))
-suppressMessages(library(rasterVis))
-suppressMessages(library(htmlwidgets))
-suppressMessages(library(compiler))
-suppressMessages(library(leaflet))
-suppressMessages(library(highcharter))
-suppressMessages(library(plotly))
-suppressMessages(library(d3heatmap))
-suppressMessages(library(cluster))
-suppressMessages(library(factoextra))
-suppressMessages(library(gtools))
-suppressMessages(library(googlesheets))
+suppressMessages(if(!require(tidyverse)){install.packages("tidyverse");library(tidyverse)}else{library(tidyverse)})
+suppressMessages(if(!require(rgdal)){install.packages("rgdal");library(rgdal)}else{library(rgdal)})
+suppressMessages(if(!require(sp)){install.packages("sp");library(sp)}else{library(sp)})
+suppressMessages(if(!require(raster)){install.packages("raster");library(raster)}else{library(raster)})
+suppressMessages(if(!require(ncdf4)){install.packages("ncdf4");library(ncdf4)}else{library(ncdf4)})
+suppressMessages(if(!require(rasterVis)){install.packages("rasterVis");library(rasterVis)}else{library(rasterVis)})
+suppressMessages(if(!require(htmlwidgets)){install.packages("htmlwidgets");library(htmlwidgets)}else{library(htmlwidgets)})
+suppressMessages(if(!require(compiler)){install.packages("compiler");library(compiler)}else{library(compiler)})
+suppressMessages(if(!require(leaflet)){install.packages("leaflet");library(leaflet)}else{library(leaflet)})
+suppressMessages(if(!require(highcharter)){install.packages("highcharter");library(highcharter)}else{library(highcharter)})
+suppressMessages(if(!require(plotly)){install.packages("plotly");library(plotly)}else{library(plotly)})
+suppressMessages(if(!require(d3heatmap)){install.packages("d3heatmap");library(d3heatmap)}else{library(d3heatmap)})
+suppressMessages(if(!require(cluster)){install.packages("cluster");library(cluster)}else{library(cluster)})
+suppressMessages(if(!require(FactoMineR)){install.packages("FactoMineR");library(FactoMineR)}else{library(FactoMineR)})
+suppressMessages(if(!require(factoextra)){install.packages("factoextra");library(factoextra)}else{library(factoextra)})
+suppressMessages(if(!require(gtools)){install.packages("gtools");library(gtools)}else{library(gtools)})
+suppressMessages(if(!require(googlesheets)){install.packages("googlesheets");library(googlesheets)}else{library(googlesheets)})
+suppressMessages(if(!require(corrplot)){install.packages("corrplot");library(corrplot)}else{library(corrplot)})
 
 ## =================================================================================================================== ##
 ## CIAT database
@@ -45,7 +46,7 @@ nrow(ciat) # 37987 (old and original), 23831 (new one with vernacular names)
 
 names(ciat) <- c("ID", "Source", "Cleaned.by", "Accession.number", "Synonyms", "Common.names",
                  "Interpreted.name.csosa", "To.use.ACID", "Common.name.ACID",
-                 "Genepool.ACID", "Genepool.literature.ACID","Race.interpreted.ACID",
+                 "Genepool.interpreted.ACID", "Genepool.literature.ACID","Race.interpreted.ACID",
                  "Race.literature.ACID", "Subgroup.interpreted.ACID", "Subgroup.literature.ACID",
                  "Reference.ACID", "TEST.vernacular", "Name.literature.vernacular",
                  "Genepool.literature.vernacular", "Race.interpreted.vernacular", "Race.literature.vernacular",
@@ -156,6 +157,45 @@ if(!file.exists(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_dat
 }
 
 # ------------------------------------ #
+# Human factors
+# ------------------------------------ #
+
+if(!file.exists(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/BEAN-GRP-COORDINATES-HUMAN-FACTORS.RDS"))){
+  
+  coord_df <- readRDS(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/BEAN-GRP-COORDINATES-CLIMATE.RDS"))
+  coord_df <- coord_df %>% dplyr::select(ID, Longitude, Latitude)
+  
+  farm_size <- raster::raster(paste0(root, '/gap_analysis_landraces/Input_data/_maps/_farm_size/field_size_10_40_cropland.img'))
+  coord_farm_size <- raster::extract(x = farm_size, y = coord_df[,c("Longitude", "Latitude")])
+  
+  accessibility <- raster::raster(paste0(root, '/gap_analysis_landraces/Input_data/_maps/_accessibility/acc_50k'))
+  coord_accessibility <- raster::extract(x = accessibility, y = coord_df[,c("Longitude", "Latitude")])
+  
+  mapspam <- raster::stack(paste0(root, '/gap_analysis_landraces/Input_data/_maps/_crop_areas/MapSPAM/Bean/mapspam_bean.nc'))
+  names(mapspam) <- c("Harvested.area", "Physical.area", "Production", "Yield")
+  coord_mapspam <- raster::extract(x = mapspam, y = coord_df[,c("Longitude", "Latitude")])
+  
+  ppp <- raster::raster(paste0(root, '/gap_analysis_landraces/Input_data/_maps/_GDP/PPP2005/ppp2005sum.asc'))
+  coord_ppp <- raster::extract(x = ppp, y = coord_df[,c("Longitude", "Latitude")])
+  coord_ppp[which(coord_ppp < 0)] <- NA
+  
+  irrigation <- raster::raster(paste0(root, '/gap_analysis_landraces/Input_data/_maps/_irrigation/gmia_v5_aei_ha.asc'))
+  coord_irrigation <- raster::extract(x = irrigation, y = coord_df[,c("Longitude", "Latitude")])
+  
+  humanFactors <- data.frame(coord_df,
+                             Farm.size = coord_farm_size,
+                             Accessibility = coord_accessibility,
+                             coord_mapspam,
+                             Purchasing.power.parity = coord_ppp,
+                             Irrigation = coord_irrigation)
+  rm(coord_df, farm_size, coord_farm_size, accessibility, coord_accessibility, mapspam, coord_mapspam, ppp, coord_ppp, irrigation, coord_irrigation)
+  saveRDS(object = humanFactors, file = paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/BEAN-GRP-COORDINATES-HUMAN-FACTORS.RDS"))
+  
+} else {
+  humanFactors <- readRDS(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/BEAN-GRP-COORDINATES-HUMAN-FACTORS.RDS"))
+}
+
+# ------------------------------------ #
 # Filter database by physical descriptors
 # ------------------------------------ #
 
@@ -258,6 +298,15 @@ ciat$Protein <- ciat$Protein2 <- ciat$Protein3 <- ciat$Protein4 <- ciat$Protein5
 names(ciat)
 
 # ------------------------------------ #
+# Combine datasets
+# ------------------------------------ #
+
+all_df <- dplyr::left_join(x = ciat, y = biophysicalVars, by = c("ID", "Longitude", "Latitude"))
+all_df <- dplyr::left_join(x = all_df, y = humanFactors, by = c("ID", "Longitude", "Latitude"))
+
+write.csv(all_df, "/home/hachicanoy/all_df.csv", row.names = F)
+
+# ------------------------------------ #
 # Define analyses to do
 # ------------------------------------ #
 
@@ -267,10 +316,6 @@ ciat$Analysis <- as.numeric(is.na(over_res)); rm(over_res)
 ciat$Analysis[which(ciat$Analysis == "0")] <- "Americas"
 ciat$Analysis[which(ciat$Analysis == "1")] <- "World"
 rm(shp_ame)
-
-suppressMessages(library(corrplot))
-suppressMessages(library(FactoMineR))
-suppressMessages(library(factoextra))
 
 M <- cor(biophysicalVars[,-(1)], use = "complete.obs", method = "spearman")
 corrplot(M, method = "square", type = "lower")
