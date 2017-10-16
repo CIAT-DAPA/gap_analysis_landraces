@@ -98,7 +98,7 @@ ciat$Altitude[which(!is.na(ciat$Latitude) & is.na(ciat$Altitude))] <- srtm.vals
 
 rm(srtm.vals, srtm)
 
-ciat <- ciat %>% filter(Altitude <= 3500)
+ciat <- ciat %>% filter(Altitude <= 3500) # accessions: 15878
 
 # ------------------------------------ #
 # Counts
@@ -182,13 +182,17 @@ if(!file.exists(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_dat
   irrigation <- raster::raster(paste0(root, '/gap_analysis_landraces/Input_data/_maps/_irrigation/gmia_v5_aei_ha.asc'))
   coord_irrigation <- raster::extract(x = irrigation, y = coord_df[,c("Longitude", "Latitude")])
   
+  dGP1 <- raster::raster(paste0(root, '/gap_analysis_landraces/Input_data/_maps/_distance_GP1/distance_gp1.asc'))
+  coord_dGP1 <- raster::extract(x = dGP1, y = coord_df[,c("Longitude", "Latitude")])
+  
   humanFactors <- data.frame(coord_df,
                              Farm.size = coord_farm_size,
                              Accessibility = coord_accessibility,
                              coord_mapspam,
                              Purchasing.power.parity = coord_ppp,
-                             Irrigation = coord_irrigation)
-  rm(coord_df, farm_size, coord_farm_size, accessibility, coord_accessibility, mapspam, coord_mapspam, ppp, coord_ppp, irrigation, coord_irrigation)
+                             Irrigation = coord_irrigation,
+                             Distance.to.GP1 = coord_dGP1)
+  rm(coord_df, farm_size, coord_farm_size, accessibility, coord_accessibility, mapspam, coord_mapspam, ppp, coord_ppp, irrigation, coord_irrigation, dGP1, coord_dGP1)
   saveRDS(object = humanFactors, file = paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/BEAN-GRP-COORDINATES-HUMAN-FACTORS.RDS"))
   
 } else {
@@ -199,7 +203,6 @@ if(!file.exists(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_dat
 # Filter database by physical descriptors
 # ------------------------------------ #
 
-ciat <- ciat %>% filter(To.use.ACID == 1)
 ciat <- ciat %>% dplyr::filter(!is.na(Longitude) & !is.na(Altitude) &
                                  !is.na(Growth.habit) & !is.na(Seed.color) &
                                  !is.na(Seed.shape) & !is.na(Seed.brightness) &
@@ -298,24 +301,43 @@ ciat$Protein <- ciat$Protein2 <- ciat$Protein3 <- ciat$Protein4 <- ciat$Protein5
 names(ciat)
 
 # ------------------------------------ #
-# Combine datasets
-# ------------------------------------ #
-
-all_df <- dplyr::left_join(x = ciat, y = biophysicalVars, by = c("ID", "Longitude", "Latitude"))
-all_df <- dplyr::left_join(x = all_df, y = humanFactors, by = c("ID", "Longitude", "Latitude"))
-
-write.csv(all_df, "/home/hachicanoy/all_df.csv", row.names = F)
-
-# ------------------------------------ #
 # Define analyses to do
 # ------------------------------------ #
 
 shp_ame <- rgdal::readOGR(dsn = paste0(root, "/gap_analysis_landraces/Input_data/_maps/_shp_americas"), layer = "AMERICAS")
-over_res <- sp::over(SpatialPoints(coords = data.frame(lon = ciat$Longitude, lat = ciat$Latitude), proj4string = CRS(projargs = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")), as(shp_ame, "SpatialPolygons"))
-ciat$Analysis <- as.numeric(is.na(over_res)); rm(over_res)
-ciat$Analysis[which(ciat$Analysis == "0")] <- "Americas"
-ciat$Analysis[which(ciat$Analysis == "1")] <- "World"
+over_res <- sp::over(SpatialPoints(coords = data.frame(lon = biophysicalVars$Longitude, lat = biophysicalVars$Latitude), proj4string = CRS(projargs = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")), as(shp_ame, "SpatialPolygons"))
+biophysicalVars$Analysis <- as.numeric(is.na(over_res)); rm(over_res)
+biophysicalVars$Analysis[which(biophysicalVars$Analysis == "0")] <- "Americas"
+biophysicalVars$Analysis[which(biophysicalVars$Analysis == "1")] <- "World"
 rm(shp_ame)
+
+# ------------------------------------ #
+# Combine datasets
+# ------------------------------------ #
+
+all_df2 <- dplyr::left_join(x = ciat, y = biophysicalVars, by = c("ID", "Longitude", "Latitude"))
+all_df2 <- dplyr::left_join(x = all_df2, y = humanFactors, by = c("ID", "Longitude", "Latitude"))
+
+write.csv(all_df2, "/home/hachicanoy/bean_landraces/ciat_descriptors_climate_hfactors.csv", row.names = F)
+
+#all_df2 <- all_df %>% dplyr::select(Genepool.interpreted.ACID, annualPET:bio_19)
+all_df2 <- all_df %>% dplyr::select(Race.interpreted.ACID, annualPET:bio_19) #Altitude: Latitude, 
+all_df2 <- all_df2[complete.cases(all_df2),]
+
+# Reference: 68%
+bean_pca <- FactoMineR::PCA(X = all_df2[,-1], scale.unit = T, graph = F)
+head(bean_pca$eig)
+test <- bean_pca$ind$coord
+#test <- data.frame(test, Genepool = all_df2$Genepool.interpreted.ACID)
+test <- data.frame(test, Race = all_df2$Race.interpreted.ACID)
+#test %>% ggplot(aes(x = Dim.1, colour = Genepool)) + geom_rug() + geom_density()
+#test %>% ggplot(aes(x = Dim.1, y = Dim.2, colour = Genepool)) + geom_point() + geom_density2d()
+test %>% ggplot(aes(x = Dim.1, colour = Race)) + geom_rug() + geom_density()
+test %>% ggplot(aes(x = Dim.1, y = Dim.2, colour = Race)) + geom_point() + geom_density2d()
+
+
+
+
 
 M <- cor(biophysicalVars[,-(1)], use = "complete.obs", method = "spearman")
 corrplot(M, method = "square", type = "lower")
