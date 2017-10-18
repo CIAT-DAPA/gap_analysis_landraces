@@ -917,4 +917,36 @@ accu.rforest_2<- mean(apply(gd<-data.frame(rforest_2$resampledCM[,1:4]),1,functi
   (x[1] + x[4]) /sum(x)
 }) )
 
+##### PRINCIPAL COMPONENTS ANALYSIS
+pca<-PCA(ciat.bio[,-(1:3)],ncp=4)
+View(pca$var$cos2)
+df<-data.frame(pca$ind$coord[,1:2],ciat.bio$Race.interpreted.ACID)
+plot(pca)
+ggplot(df,aes_string(x="Dim.1",y="Dim.2",color="ciat.bio.Race.interpreted.ACID", shape="ciat.bio.Race.interpreted.ACID")) + geom_point(size=1.85)  + guides(colour=guide_legend(override.aes=list(size=6))) +
+  xlab("") + ylab("") +
+  ggtitle("") +
+  theme_light(base_size=20) +
+  theme(axis.text.x=element_blank(),
+        axis.text.y=element_blank(),
+        legend.direction = "horizontal", 
+        legend.position = "bottom",
+        legend.box = "horizontal") +
+  scale_colour_brewer(palette = "Accent")
+
+nrow(ciat.bio)
+nrow(pca$ind$coord)
+
+df<-data.frame(pca$ind$coord, ciat.bio$Genepool.ACID )
+
+plot(density(df[which(df$ciat.bio.Genepool.ACID=="Mesoamerican"),2]),ylim=c(0,0.2))
+lines(density(df[which(df$ciat.bio.Genepool.ACID=="Andean"),2]),col="red")
+
+
+vect<-which( names(ciat.bio)%in%names(numeric) )
+
+
+ciat.bio[,sapply(ciat.bio,is.character)]
+
+suppressMessages(if(!require(rdrop2)){install.packages("rdrop2");library(rdrop2)}else{library(rdrop2)})
+drop_auth()
 

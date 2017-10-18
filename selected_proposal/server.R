@@ -11,6 +11,7 @@
 
 #import packages
 suppressMessages(if(!require(shiny)){install.packages("shiny");library(shiny)}else{library(shiny)})
+suppressMessages(if(!require(dplyr)){install.packages("dplyr");library(dplyr)}else{library(dplyr)})
 suppressMessages(if(!require(shinydashboard)){install.packages("shinydashboard");library(shinydashboard)}else{library(shinydashboard)})
 suppressMessages(if(!require(leaflet)){install.packages("leaflet");library(leaflet)}else{library(leaflet)})
 suppressMessages(if(!require(curl)){install.packages("curl");library(curl)}else{library(curl)})
@@ -22,34 +23,36 @@ suppressMessages( if (!require(rleafmap)) { install.packages("rleafmap");library
 suppressMessages( if (!require(leaflet.extras)) { devtools::install_github('bhaskarvk/leaflet.extras',force=TRUE);library(leaflet.extras)}else{library(leaflet.extras)})
 suppressMessages(if(!require(sf)){install.packages("sf");library(sf)}else{library(sf)})
 suppressMessages(if(!require(digest)){install.packages("digest");library(digest)}else{library(digest)})
-suppressMessages(if(!require(rdrop2)){install.packages("rdrop2");library(rdrop2)}else{library(rdrop2)})
+suppressMessages(if(!require(rdrop2)){devtools::install_github('karthik/rdrop2');library(rdrop2)}else{library(rdrop2)})
 suppressMessages(if(!require(zip)){install.packages("zip");library(zip)}else{library(zip)})
 suppressMessages(if(!require(rsconnect)){install.packages("rsconnect");library(rsconnect)}else{library(rsconnect)})
 suppressMessages(if(!require(shinyBS)){install.packages("shinyBS");library(shinyBS)}else{library(shinyBS)})
 suppressMessages(if(!require(rgdal)){install.packages('rgdal'); library(rgdal)} else {library(rgdal)})
 suppressMessages(if(!require(dplyr)){install.packages('dplyr'); library(dplyr)} else {library(dplyr)})
 suppressMessages(if(!require(ggplot2)){install.packages('ggplot2'); library(ggplot2)} else {library(ggplot2)})
-suppressMessages(if(!require(plotly)){install.packages('plotly'); library(plotly)} else {library(plotly)})
+#suppressMessages(if(!require(plotly)){install.packages('plotly'); library(plotly)} else {library(plotly)})
 
 
 # Define server logic required to draw map whit leaflet option
 
 
 ####importantisisismo
-
+#options("httr_oauth_cache" = TRUE)
 #token <- drop_auth()
 #saveRDS(token, "droptoken.rds")
 
 #setwd("C:/Users/acmendez/Google Drive/CIAT/gap_analysis_landraces/selected_proposal")
 
 harvest<-readOGR(dsn="harvest_area_shapefile_simplify",layer="harvest_area")
-presence<-read.csv("presence_data/presence_beans_cleaned.csv")
+presence<-readRDS("presence_data/genepool_predictions.RDS")
+presence<-presence[[1]]
 #harvest2<-ms_simplify(harvest, keep = 0.2)
 #leaflet("apita")%>% addTiles()%>% addPolygons(data=harvest2)
 #writeOGR(harvest2,dsn="C:/Users/acmendez/Google Drive/CIAT/gap_analysis_landraces/selected_proposal/harvest_area_shapefile_simplify",layer="harvest_area",driver ="ESRI Shapefile" )
 token <- readRDS("droptoken.rds")
 
 saveData_1<-function(data,nombre,n.quest,n.clicks,crop,texto){
+  
   
   if(length(data)!= 0){
  
@@ -83,7 +86,7 @@ saveData_1<-function(data,nombre,n.quest,n.clicks,crop,texto){
   
   
   
-  st_write((data),filePath)
+  sf::st_write((data),filePath)
   
   
   files<-list.files(create)
@@ -91,7 +94,7 @@ saveData_1<-function(data,nombre,n.quest,n.clicks,crop,texto){
   drop_acc(dtoken = token)    
   for(i in 1:length(files)){
     
-    drop_upload(file.path(create,files[i]), dest = paste("survey","_",nombre,"_",crop,"/",n.quest,sep=""),dtoken=token) 
+    drop_upload(file.path(create,files[i]), path = paste("survey","_",nombre,"_",crop,"/",n.quest,sep=""),dtoken=token) 
     
     
   }
@@ -132,1409 +135,134 @@ savePlots<-function(data,nombre,countries=countries2,col="red",n.quest,crop){
 
 
 
-
-
 function(input, output,session) {
+  
+  
+  ###FUNCTION THAT ALLOW CONVERT THE DRAWN OBJECTS TO SPATIALOBJECTS
+  combine_list_of_sf <- function(sf_list) {
+    if(length(sf_list) == 0) {return(NULL)}
+    props <- dplyr::bind_rows(
+      lapply(
+        sf_list,
+        function(x) {
+          dplyr::select_(
+            as.data.frame(x, stringsAsFactors=FALSE),
+            paste0("-",attr(x, "sf_column", exact=TRUE))
+          )
+        }
+      )
+    )
+    
+    sf::st_sf(
+      props,
+      geometry <- sf::st_sfc(
+        unlist(lapply(sf_list, function(x) sf::st_geometry(x)), recursive=FALSE)
+      ),
+      crs = sf::st_crs(4326)
+    )
+  }
+  
+  st_as_sf.geo_list = function(x, ...) {
+    if(x$type != "Feature") {
+      stop("should be of type 'Feature'", call.=FALSE)
+    }
+    
+    x <- fix_geojson_coords(x)
+    
+    #props <- do.call(
+    #  data.frame,
+    #  modifyList(
+    #    Filter(Negate(is.null), x$properties),
+    #    list(stringsAsFactors=FALSE)
+    #  )
+    #)
+    
+    geom_sf <- st_as_sfc.geo_list(x)
+    # if props are empty then we need to handle differently
+    #if(nrow(props) == 0 ) {
+    #  return(sf::st_sf(feature=geom_sf, crs = sf::st_crs(4326)))
+    #} else {
+    #  return(sf::st_sf(props, feature=geom_sf, crs = sf::st_crs(4326)))
+    #}
+  }
+  
+  fix_geojson_coords <- function(ft) {
+    
+    if(ft$geometry$type == "Point") {
+      ft$geometry$coordinates <- unlist(ft$geometry$coordinates)
+    }
+    
+    if(ft$geometry$type == "LineString") {
+      ft$geometry$coordinates <- matrix(
+        unlist(ft$geometry$coordinates),
+        ncol = 2,
+        byrow = TRUE
+      )
+    }
+    
+    if(!(ft$geometry$type %in% c("Point", "LineString"))) {
+      
+      
+      
+      ft$geometry$coordinates <- list(
+        matrix(
+          unlist(ft$geometry$coordinates),
+          ncol = 2,
+          byrow = TRUE
+        )
+      )
+    }
+    
+    ft
+  }
+  st_as_sfc.geo_list = function(x, ...) {
+    sf::read_sf(
+      jsonlite::toJSON(x, auto_unbox=TRUE, force=TRUE)
+    )
+  }
+  
+  #####3 END FUNCTIONS THAT ALLOW CONVERT TO SPATIAL OBJECTS
+  
   
   
   
   observeEvent(input$intro,{
     
-    updateTabsetPanel(session, "tabset1",
-                      selected = "Crops and expert name")
-    
-  })
-
- 
-  
-  observeEvent(input$keep,{
-   
-     if(input$crop!="-- Please select crop --" && nchar(input$nombre)!=0 ){
-    updateTabsetPanel(session, "tabset1",
-                      selected = "Occurrence")
-    
-    }else{showModal(modalDialog(
-      title = "Oops something went wrong:",
-      h3("May be you forgot to select a crop variety or  write a name"),footer = modalButton("OK"),easyClose = TRUE
-    ))}
-    
-    
-    
+    newtab<-switch(input$menu,"intro"="Andean")
+    updateTabItems(session,"menu",newtab)
+    # updateTabsetPanel(session, "tabset1",
+    #                   selected = "Crops and expert name")
     
   })
   
   
   
-  #=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  ################------  PREGUNTA CERO------ -############
-  #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  
-  
- beanIcon <- makeIcon(
-    iconUrl = "https://cdn0.iconfinder.com/data/icons/different-types-of-legumes/32/kidney-beans-512.png",
-    iconWidth = 25, iconHeight = 25,
-    iconAnchorX = 0, iconAnchorY = 0
-  )
-  
-  output$mymap4<-renderLeaflet({
-    leaflet("mymap4") %>%
-      addProviderTiles(providers$OpenStreetMap.BlackAndWhite, #map type or map theme. -default($Stame.TonerLite)
-                       options = providerTileOptions(noWrap = TRUE) 
-                       
-      )%>% addScaleBar(position="bottomleft")%>%  addSearchOSM( ) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                                                                                                                                opacity = 0.5, fillOpacity = 0.5,
-                                                                                                                                fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F))   %>%
-                                                                                                                    addMarkers(lng=presence$long,lat=presence$lat,icon=beanIcon,label=(as.character(presence$full_taxa)),clusterOptions=markerClusterOptions(spiderfyOnMaxZoom= F,
-                                                                                                                                                                                                                                                                       showCoverageOnHover= T,
-                                                                                                                                                                                                                                                                       zoomToBoundsOnClick= T,
-                                                                                                                                                                                                                                                                       animate=T,
-                                                                                                                                                                                                                                                                       disableClusteringAtZoom=8 ,
-                                                                                                                                                                                                                                                             animateAddingMarkers=T )) %>%
+  observeEvent(input$menu,{
+    
+    
+    
+    if(input$menu=="Andean"){
       
-                                                                                                                                  addDrawToolbar(
-                                                                                                                                  targetGroup= NULL,
-                                                                                                                                  polylineOptions = FALSE,
-                                                                                                                                  polygonOptions = drawPolygonOptions(repeatMode = TRUE,shapeOptions = drawShapeOptions(color = "#63446a", weight = 1, opacity = 1,
-                                                                                                                                                                      fill = TRUE, fillColor = "#63446a", fillOpacity = 0.4)),
-                                                                                                                                  circleOptions = FALSE,
-                                                                                                                                  rectangleOptions = drawRectangleOptions(repeatMode=TRUE,shapeOptions = drawShapeOptions(color = "#63446a", weight = 1, opacity = 1,
-                                                                                                                                                                          fill = TRUE, fillColor = "#63446a", fillOpacity = 0.4)),
-                                                                                                                                  markerOptions = FALSE,
-                                                                                                                                  editOptions = editToolbarOptions(selectedPathOptions = selectedPathOptions()))  %>% setView(10,10,zoom=2)
-    
-  })
+      source("source/server_scripts/server_andean.R",local=TRUE)
   
-  
-  
-  
-
-  #create a reactives list to store drawn objects in environmental obrserver (critical step)
-  featurelist0 <- reactiveValues(
-    drawn = list(),
-    edited_all = list(),
-    deleted_all = list(),
-    finished = list()
-  )
-  
-  
-  
-  recorder0 <- list()
-  #set the names of objects where polygons coordinates are stored 
-  
-  EVT_DRAW0 <- "mymap4_draw_new_feature"
-  EVT_EDIT0<- "mymap4_draw_edited_features"
-  EVT_DELETE0 <- "mymap4_draw_deleted_features"
-  
-  
-  #call the objects whit the input[[]] function in a observer environment
-  #this function store the drawn polygons in the reactives lists
-  observeEvent(input[[EVT_DRAW0]], {
-    featurelist0$drawn <- c(featurelist0$drawn, list(input[[EVT_DRAW0]]))
-    featurelist0$finished <- c(featurelist0$finished, list(input[[EVT_DRAW0]]))
+      
+          }
    
-  })
-  #this function store edited polygons
-  observeEvent(input[[EVT_EDIT0]], {
-    edited <- input[[EVT_EDIT0]]
-    # find the edited features and update drawn
-    # start by getting the leaflet ids to do the match
-    ids <- unlist(lapply(featurelist0$finished, function(x){x$properties$`_leaflet_id`}))
-    # now modify drawn to match edited
-    lapply(edited$features, function(x) {
-      loc <- match(x$properties$`_leaflet_id`, ids)
-      if(length(loc) > 0) {
-        featurelist0$finished[loc] <<- list(x)
-      }
+    
+ 
+    
+    if(input$menu=="Mesoamerican"){
+      
+      source("source/server_scripts/server_meso.R",local=TRUE)
+    }
+    
     })
-    
-    featurelist0$edited_all <- c(featurelist0$edited_all, list(edited))
-    
-  })
-  
-  #this function estore the objects deleted
-  observeEvent(input[[EVT_DELETE0]], {
-    
-    deleted <- input[[EVT_DELETE0]]
-    # find the deleted features and update finished
-    # start by getting the leaflet ids to do the match
-    
-    ids <- unlist(lapply(featurelist0$finished, function(x){x$properties$`_leaflet_id`}))
-    
-    # now modify finished to match edited
-    
-    
-    feat2delete <- unlist(lapply(deleted$features, function(x){
-      return(x$properties$`_leaflet_id`)
-    }))
-    
-    grep2 <- Vectorize(FUN = grep, vectorize.args = "pattern")
-    loc <- grep2(pattern = feat2delete, x = ids, fixed = T)
-    
-    if(length(loc) > 0) {
-      featurelist0$finished <<- featurelist0$finished[-loc]
-    }
-    
-    
-    #print(featurelist$finished)
-    # lapply(deleted$features, function(x) {
-    #   # loc <- base::match(x$properties$`_leaflet_id`, ids)
-    #   loc <- grep(pattern = x$properties$`_leaflet_id`, x = ids, fixed = T)
-    #  
-    #   if(length(loc) > 0) {
-    #     featurelist$finished <<- featurelist$finished[-loc]  
-    #   }
-    # })
-    
-    
-    featurelist0$deleted_all <- c(featurelist0$deleted_all, list(deleted))
-    
-  })
-  
-  
-  
-  returnlist0 <- reactive({
-    
-    workinglist <- list(
-      drawn = featurelist0$drawn,
-      edited = featurelist0$edited_all,
-      deleted = featurelist0$deleted_all,
-      finished = featurelist0$finished
-    )
-    
-    # convert the lists to simple features files througth functions created above
-    
-    workinglist <- lapply(
-      workinglist,
-      function(action) {
-        # ignore empty action types to prevent error
-        #   handle in the helper functions?
-        if(length(action) == 0) { return() }
-        
-        # FeatureCollection requires special treatment
-        #  and we need to extract features
-        features <- Reduce(
-          function(left,right) {
-            if(right$type == "FeatureCollection") {
-              right <- lapply(right$features, identity)
-            } else {
-              right <- list(right)
-            }
-            c(left,right)
-          },
-          action,
-          init = NULL
-        )
-        
-        
-        
-        combine_list_of_sf(
-          lapply(features, st_as_sf.geo_list)
-        )
-      }
-    )
-    
-    
-    return(workinglist)
-    
-  })
-  
-  
-
-  observeEvent(input$done0,{
-    
-print(returnlist0()$finished)
-    saveData_1(returnlist0()$finished,gsub(" ", "", input$nombre),gsub(" ", "",input$tabset1),(input$done), gsub(" ", "",input$crop),input$txt0)
-    
-    if(length(returnlist0()$finished)!=0){
-      updateButton(session, "done0",label = " Save",style = "success",icon("check-circle"))
-      saveData_1(returnlist0()$finished,gsub(" ", "", input$nombre),gsub(" ", "",input$tabset1),(input$done), gsub(" ", "",input$crop),input$txt0)
-    }
-    
-  })
-  
-  observeEvent(input$next0,{
-    updateTabsetPanel(session, "tabset1",
-                      selected = "1. Cultivars")
-    
-  })
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-####  PRIMERA PREGUNTAAA----########
-  #####=-=-=-=-=-=-=###########
-  
- #Create the lefletmap object and add drawToolbar to edit maps
-output$mymap5<-renderLeaflet({
- leaflet("mymap5") %>%
-   addProviderTiles(providers$OpenStreetMap.BlackAndWhite, #map type or map theme. -default($Stame.TonerLite)
-                    options = providerTileOptions(noWrap = TRUE) 
-                    
-   )%>% addScaleBar(position="bottomleft")%>%  addSearchOSM() %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                    opacity = 0.5, fillOpacity = 0.5,
-                    fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F))   %>%addDrawToolbar(
-     targetGroup= NULL,
-     polylineOptions = FALSE,
-     polygonOptions = drawPolygonOptions(repeatMode = TRUE),
-     circleOptions = FALSE,
-     rectangleOptions = drawRectangleOptions(repeatMode=TRUE),
-     markerOptions = FALSE,
-     editOptions = editToolbarOptions(selectedPathOptions = selectedPathOptions()))  %>% setView(10,10,zoom=2)
- 
-})
-
- #create a reactives list to store drawn objects in environmental obrserver (critical step)
-featurelist <- reactiveValues(
-  drawn = list(),
-  edited_all = list(),
-  deleted_all = list(),
-  finished = list()
-)
-
-
-recorder <- list()
-#set the names of objects where polygons coordinates are stored 
-
-EVT_DRAW <- "mymap5_draw_new_feature"
-EVT_EDIT <- "mymap5_draw_edited_features"
-EVT_DELETE <- "mymap5_draw_deleted_features"
-
-
-#call the objects whit the input[[]] function in a observer environment
-#this function store the drawn polygons in the reactives lists
-observeEvent(input[[EVT_DRAW]], {
-  featurelist$drawn <- c(featurelist$drawn, list(input[[EVT_DRAW]]))
-  featurelist$finished <- c(featurelist$finished, list(input[[EVT_DRAW]]))
-  
-})
-#this function store edited polygons
-observeEvent(input[[EVT_EDIT]], {
-  edited <- input[[EVT_EDIT]]
-  # find the edited features and update drawn
-  # start by getting the leaflet ids to do the match
-  ids <- unlist(lapply(featurelist$finished, function(x){x$properties$`_leaflet_id`}))
-  # now modify drawn to match edited
-  lapply(edited$features, function(x) {
-    loc <- match(x$properties$`_leaflet_id`, ids)
-    if(length(loc) > 0) {
-      featurelist$finished[loc] <<- list(x)
-    }
-  })
-
-  featurelist$edited_all <- c(featurelist$edited_all, list(edited))
-  
-})
-
-#this function estore the objects deleted
-observeEvent(input[[EVT_DELETE]], {
- 
-   deleted <- input[[EVT_DELETE]]
-  # find the deleted features and update finished
-  # start by getting the leaflet ids to do the match
-
-  ids <- unlist(lapply(featurelist$finished, function(x){x$properties$`_leaflet_id`}))
-
-  # now modify finished to match edited
-  
-  
-  feat2delete <- unlist(lapply(deleted$features, function(x){
-    return(x$properties$`_leaflet_id`)
-  }))
-  
-  grep2 <- Vectorize(FUN = grep, vectorize.args = "pattern")
-  loc <- grep2(pattern = feat2delete, x = ids, fixed = T)
-  
-  if(length(loc) > 0) {
-    featurelist$finished <<- featurelist$finished[-loc]
-  }
-
-  
-  #print(featurelist$finished)
-  # lapply(deleted$features, function(x) {
-  #   # loc <- base::match(x$properties$`_leaflet_id`, ids)
-  #   loc <- grep(pattern = x$properties$`_leaflet_id`, x = ids, fixed = T)
-  #  
-  #   if(length(loc) > 0) {
-  #     featurelist$finished <<- featurelist$finished[-loc]  
-  #   }
-  # })
-  
-  
-  featurelist$deleted_all <- c(featurelist$deleted_all, list(deleted))
-  
-})
-
-###FUNCTION THAT ALLOW CONVERT THE DRAWN OBJECTS TO SPATIALOBJECTS
-combine_list_of_sf <- function(sf_list) {
-  if(length(sf_list) == 0) {return(NULL)}
-  props <- dplyr::bind_rows(
-    lapply(
-      sf_list,
-      function(x) {
-        dplyr::select_(
-          as.data.frame(x, stringsAsFactors=FALSE),
-          paste0("-",attr(x, "sf_column", exact=TRUE))
-        )
-      }
-    )
-  )
-  
-  sf::st_sf(
-    props,
-    geometry <- sf::st_sfc(
-      unlist(lapply(sf_list, function(x) sf::st_geometry(x)), recursive=FALSE)
-    ),
-    crs = sf::st_crs(4326)
-  )
-}
-
-st_as_sf.geo_list = function(x, ...) {
-  if(x$type != "Feature") {
-    stop("should be of type 'Feature'", call.=FALSE)
-  }
-  
-  x <- fix_geojson_coords(x)
-  
-  #props <- do.call(
-  #  data.frame,
-  #  modifyList(
-  #    Filter(Negate(is.null), x$properties),
-  #    list(stringsAsFactors=FALSE)
-  #  )
-  #)
-  
-  geom_sf <- st_as_sfc.geo_list(x)
-  # if props are empty then we need to handle differently
-  #if(nrow(props) == 0 ) {
-  #  return(sf::st_sf(feature=geom_sf, crs = sf::st_crs(4326)))
-  #} else {
-  #  return(sf::st_sf(props, feature=geom_sf, crs = sf::st_crs(4326)))
-  #}
-}
-
-fix_geojson_coords <- function(ft) {
-  
-  if(ft$geometry$type == "Point") {
-    ft$geometry$coordinates <- unlist(ft$geometry$coordinates)
-  }
-  
-  if(ft$geometry$type == "LineString") {
-    ft$geometry$coordinates <- matrix(
-      unlist(ft$geometry$coordinates),
-      ncol = 2,
-      byrow = TRUE
-    )
-  }
-  
-  if(!(ft$geometry$type %in% c("Point", "LineString"))) {
-   
-   
-     
-    ft$geometry$coordinates <- list(
-      matrix(
-       unlist(ft$geometry$coordinates),
-       ncol = 2,
-        byrow = TRUE
-      )
-    )
-  }
-  
-  ft
-}
-st_as_sfc.geo_list = function(x, ...) {
-  sf::read_sf(
-    jsonlite::toJSON(x, auto_unbox=TRUE, force=TRUE)
-  )
-}
-
-#####3 END FUNCTIONS THAT ALLOW CONVERT TO SPATIAL OBJECTS
-
-#when the buttom "done" is clicked this function
-#Create a list containing the objectes drawn, edited and delted  from the leaflet.drawn map
-
-returnlist <- reactive({
-  
-  workinglist <- list(
-    drawn = featurelist$drawn,
-    edited = featurelist$edited_all,
-    deleted = featurelist$deleted_all,
-    finished = featurelist$finished
-  )
-
-  # convert the lists to simple features files througth functions created above
-  
-  workinglist <- lapply(
-    workinglist,
-    function(action) {
-      # ignore empty action types to prevent error
-      #   handle in the helper functions?
-      if(length(action) == 0) { return() }
-      
-      # FeatureCollection requires special treatment
-      #  and we need to extract features
-      features <- Reduce(
-        function(left,right) {
-          if(right$type == "FeatureCollection") {
-            right <- lapply(right$features, identity)
-          } else {
-            right <- list(right)
-          }
-          c(left,right)
-        },
-        action,
-        init = NULL
-      )
       
       
-      
-      combine_list_of_sf(
-        lapply(features, st_as_sf.geo_list)
-      )
-    }
-  )
-  
-  
-  return(workinglist)
-  
-})
-
-
-
-
-
-
-
-
-
-observeEvent(input$done,{
- 
 
  
- 
-  saveData_1(returnlist()$finished,gsub(" ", "", input$nombre),gsub(" ", "",input$tabset1),(input$done), gsub(" ", "",input$crop),input$txt1)
   
-  if(length(returnlist()$finished)!=0){
-    updateButton(session, "done",label = " Save",style = "success",icon("check-circle"))
-    saveData_1(returnlist()$finished,gsub(" ", "", input$nombre),gsub(" ", "",input$tabset1),(input$done), gsub(" ", "",input$crop),input$txt1)
-    }
-
-})
-
-observeEvent(input$next1,{
-    updateTabsetPanel(session, "tabset1",
-                      selected = "2. Landraces")
   
-})
-
-
-
-
-# Then pass the token to each drop_ function
-
-
-
-  
-
- 
-
-
-
-output$plot1<-renderLeaflet({
- 
-  if(length(returnlist()$finished)!=0){
-    
-    leaflet("plot1") %>%
-      addProviderTiles(providers$Esri.WorldGrayCanvas, #map type or map theme. -default($Stamen.TonerLite)
-                       options = providerTileOptions(noWrap = TRUE) 
-                       
-      )%>% addPolygons(data=returnlist()$finished, color = "blue", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                       opacity = 0.5, fillOpacity = 0.5) 
-    
-  }else{leaflet("plot1") %>%
-      addProviderTiles(providers$Esri.WorldGrayCanvas, #map type or map theme. -default($Stamen.TonerLite)
-                       options = providerTileOptions(noWrap = TRUE) 
-                       
-      )}
-  
-  
-})
-
-
-######SEGUNDA PREGUNTA###########
-
-output$mymap6<-renderLeaflet({
- 
-  isolate({
-    
-    if(length(returnlist()$finished)!=0){
-      
-      
-      
-      leaflet("mymap6") %>%
-        addProviderTiles(providers$OpenStreetMap.BlackAndWhite, #map type or map theme. -default($Stame.TonerLite)
-                         options = providerTileOptions(noWrap = TRUE) 
-                         
-        ) %>%  addPolygons(data=returnlist()$finished,color = "darkgray", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                           opacity = 0.5, fillOpacity = 0.05,
-                           fillColor = colorQuantile("Blues", domain=NULL)) %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( ) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                                                                                                                                                                                                     opacity = 0.5, fillOpacity = 0.5,
-                                                                                                                                                                                                     fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F))   %>% addDrawToolbar(
-                             targetGroup= NULL,
-                             polylineOptions = FALSE,
-                             
-                             polygonOptions = drawPolygonOptions(repeatMode = TRUE,shapeOptions = drawShapeOptions(color = "red", weight = 1, opacity = 1,
-                                                                                                                   fill = TRUE, fillColor = "red", fillOpacity = 0.4)),
-                             circleOptions = FALSE,
-                             rectangleOptions = drawRectangleOptions(repeatMode=TRUE,shapeOptions = drawShapeOptions(color = "red", weight = 1, opacity = 1,
-                                                                                                                     fill = TRUE, fillColor = "red", fillOpacity = 0.4)),
-                             markerOptions = FALSE,
-                             editOptions = editToolbarOptions(selectedPathOptions = selectedPathOptions()))  %>% setView(10,10,zoom=2)
-      
-      
-      
-    }else{
-  
-  
-  
-    leaflet("mymap6") %>%
-      addProviderTiles(providers$OpenStreetMap.BlackAndWhite, #map type or map theme. -default($Stame.TonerLite)
-                       options = providerTileOptions(noWrap = TRUE) 
-                       
-      )%>% addScaleBar(position="bottomleft")%>%  addSearchOSM( ) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                                                                                                                                opacity = 0.5, fillOpacity = 0.5,
-                                                                                                                                fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F))  %>% addDrawToolbar(
-        targetGroup= NULL,
-        polylineOptions = FALSE,
-        
-        polygonOptions = drawPolygonOptions(repeatMode = TRUE,shapeOptions = drawShapeOptions(color = "red", weight = 1, opacity = 1,
-                                                                                              fill = TRUE, fillColor = "red", fillOpacity = 0.4)),
-        circleOptions = FALSE,
-        rectangleOptions = drawRectangleOptions(repeatMode=TRUE,shapeOptions = drawShapeOptions(color = "red", weight = 1, opacity = 1,
-                                                                                                fill = TRUE, fillColor = "red", fillOpacity = 0.4)),
-        markerOptions = FALSE,
-        editOptions = editToolbarOptions(selectedPathOptions = selectedPathOptions()))  %>% setView(10,10,zoom=2)
-    
- 
-    }
-    
-    
-  })#end isolate
-  
-  
-
-    
-}) 
-
-#To avoid when drawing new polygon, editing a existing polygon and deleting any polygons that being affec the next map
-observeEvent(input$mymap5_draw_new_feature,{
-  
-  proxy<-leafletProxy("mymap6")
-  if(length(returnlist()$finished)!=0){
-  proxy %>%  clearShapes()%>% addScaleBar(position="bottomleft")%>%  addSearchOSM() %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                                                                                                                                                   opacity = 0.5, fillOpacity = 0.5,
-                                                                                                                                                   fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F)) %>%addPolygons(data = returnlist()$finished,
-                                          color = "darkgray", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                                          opacity = 0.5, fillOpacity = 0.05,
-                                          fillColor = colorQuantile("Blues", domain=NULL)
-                        )
-  
-  }
-  
-})
-observeEvent(input$mymap5_draw_edited_features,{
-  proxy<-leafletProxy("mymap6")
-  if(length(returnlist()$finished)!=0){
- 
-  
-  proxy %>%  clearShapes()%>% addScaleBar(position="bottomleft")%>%  addSearchOSM( ) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                                                                                                                                                   opacity = 0.5, fillOpacity = 0.5,
-                                                                                                                                                   fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F)) %>% addPolygons(data = returnlist()$finished,color = "darkgray", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                                           opacity = 0.5, fillOpacity = 0.05,
-                                           fillColor = colorQuantile("Blues", domain=NULL)
-  )
-  
-  }
-  
-})
-
-observeEvent(input$mymap5_draw_deleted_features,{
-  proxy<-leafletProxy("mymap6")
-  if(length(returnlist()$finished)!=0){
-  
-  
-  proxy %>%  clearShapes()%>% addScaleBar(position="bottomleft")%>%  addSearchOSM( ) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                                                                                                                                                   opacity = 0.5, fillOpacity = 0.5,
-                                                                                                                                                   fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F)) %>% addPolygons(data = returnlist()$finished,color = "darkgray", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                                           opacity = 0.5, fillOpacity = 0.05,
-                                           fillColor = colorQuantile("Blues", domain=NULL)
-  )
-  
-  }else{  proxy %>%  clearShapes()  %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( ) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                                                                                                                                                             opacity = 0.5, fillOpacity = 0.5,
-                                                                                                                                                             fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F))  }
-  
-})
-featurelist2 <- reactiveValues(
-  drawn = list(),
-  edited_all = list(),
-  deleted_all = list(),
-  finished = list()
-)
-
-
-
-
-recorder2 <- list()
-
-EVT_DRAW2 <- "mymap6_draw_new_feature"
-EVT_EDIT2 <- "mymap6_draw_edited_features"
-EVT_DELETE2 <- "mymap6_draw_deleted_features"
-
-
-
-
-#call the objects whit the input[[]] function in a observer environment
-#this function store the drawn polygons in the reactives lists
-observeEvent(input[[EVT_DRAW2]], {
-  featurelist2$drawn <- c(featurelist2$drawn, list(input[[EVT_DRAW2]]))
-  featurelist2$finished <- c(featurelist2$finished, list(input[[EVT_DRAW2]]))
-  
-})
-#this function store edited polygons
-observeEvent(input[[EVT_EDIT2]], {
-  edited <- input[[EVT_EDIT2]]
-  # find the edited features and update drawn
-  # start by getting the leaflet ids to do the match
-  ids <- unlist(lapply(featurelist2$finished, function(x){x$properties$`_leaflet_id`}))
-  # now modify drawn to match edited
-  lapply(edited$features, function(x) {
-    loc <- match(x$properties$`_leaflet_id`, ids)
-    if(length(loc) > 0) {
-      featurelist2$finished[loc] <<- list(x)
-    }
-  })
-  
-  featurelist2$edited_all <- c(featurelist2$edited_all, list(edited))
-  
-})
-
-#this function estore the objects deleted
-observeEvent(input[[EVT_DELETE2]], {
-  deleted <- input[[EVT_DELETE2]]
-  # find the deleted features and update finished
-  # start by getting the leaflet ids to do the match
-  ids <- unlist(lapply(featurelist2$finished, function(x){x$properties$`_leaflet_id`}))
-  # now modify finished to match edited
-  feat2delete <- unlist(lapply(deleted$features, function(x){
-    return(x$properties$`_leaflet_id`)
-  }))
-  
-  grep2 <- Vectorize(FUN = grep, vectorize.args = "pattern")
-  loc <- grep2(pattern = feat2delete, x = ids, fixed = T)
-  
-  if(length(loc) > 0) {
-    featurelist2$finished <<- featurelist2$finished[-loc]
-  }
-  
-  featurelist2$deleted_all <- c(featurelist2$deleted_all, list(deleted))
-  
-})
-
-
-
-returnlist2 <- reactive({
-  
-  workinglist <- list(
-    drawn = featurelist2$drawn,
-    edited = featurelist2$edited_all,
-    deleted = featurelist2$deleted_all,
-    finished = featurelist2$finished
-  )
-  
-  # convert the lists to simple features files througth functions created above
-  
-  workinglist <- lapply(
-    workinglist,
-    function(action) {
-      # ignore empty action types to prevent error
-      #   handle in the helper functions?
-      if(length(action) == 0) { return() }
-      
-      # FeatureCollection requires special treatment
-      #  and we need to extract features
-      features <- Reduce(
-        function(left,right) {
-          if(right$type == "FeatureCollection") {
-            right <- lapply(right$features, identity)
-          } else {
-            right <- list(right)
-          }
-          c(left,right)
-        },
-        action,
-        init = NULL
-      )
-      
-      
-      
-      combine_list_of_sf(
-        lapply(features, st_as_sf.geo_list)
-      )
-    }
-  )
-  
-  
-  return(workinglist)
-  
-})
-
-
-
-
-
-observeEvent(input$done2,{
-  
-  
-  saveData_1(returnlist2()$finished,gsub(" ", "", input$nombre),gsub(" ", "", input$tabset1),(input$done2), gsub(" ", "",input$crop),input$txt2)
-  
-  if(length(returnlist2()$finished)!=0){
-    updateButton(session, "done2",label = " Save",style = "success",icon("check-circle"))
-    
-                                       }
-  
-
-})
-
-observeEvent(input$next2,{
-  updateTabsetPanel(session, "tabset1",
-                    selected = "3. Collecting")
-  
-})
-observeEvent(input$back2,{
-  
-  updateTabsetPanel(session, "tabset1",
-                    selected = "1. Cultivars")
-  
-})
-
-
-output$plot2<-renderLeaflet({
-  
-  if(length(returnlist2()$finished)!=0){
-    
-    leaflet("plot2") %>%
-      addProviderTiles(providers$Esri.WorldGrayCanvas, #map type or map theme. -default($Stamen.TonerLite)
-                       options = providerTileOptions(noWrap = TRUE) 
-                       
-      )%>% addPolygons(data=returnlist2()$finished, color = "red", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                       opacity = 0.5, fillOpacity = 0.5) 
-    
-  }else{leaflet("plot2") %>%
-      addProviderTiles(providers$Esri.WorldGrayCanvas, #map type or map theme. -default($Stamen.TonerLite)
-                       options = providerTileOptions(noWrap = TRUE) 
-                       
-      )}
-  
-  
-})
-
-####-----TERCERA PREGUNTA ---------####
-##-----------------------------------##
-###                                 ###
-##                                   ## 
-#-------------------------------------#
-
-output$mymap7<-renderLeaflet({
- isolate({
-  if(length(returnlist2()$finished)!=0){
-  
-   leaflet("mymap7") %>%
-    addProviderTiles(providers$OpenStreetMap.BlackAndWhite, #map type or map theme. -default($Stamen.TonerLite)
-                     options = providerTileOptions(noWrap = TRUE) 
-                     
-    )%>% addPolygons(data=returnlist2()$finished,color = "darkgray", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                                                            opacity = 0.5, fillOpacity = 0.05,
-                                                            fillColor = colorQuantile("Blues", domain=NULL)) %>% addScaleBar(position="bottomleft")%>%  addSearchOSM() %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                                                                                                                                                                                                                                      opacity = 0.5, fillOpacity = 0.5,
-                                                                                                                                                                                                                                      fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F))   %>% 
-    
-  
-    
-    addDrawToolbar(
-      targetGroup= NULL,
-      polylineOptions = FALSE,
-      
-      polygonOptions = drawPolygonOptions(repeatMode = TRUE,shapeOptions = drawShapeOptions(color = "orange", weight = 1, opacity = 1,
-                                                                                            fill = TRUE, fillColor = "orange", fillOpacity = 0.4)),
-      circleOptions = FALSE,
-      rectangleOptions = drawRectangleOptions(repeatMode=TRUE,shapeOptions = drawShapeOptions(color = "orange", weight = 1, opacity = 1,
-                                                                                              fill = TRUE, fillColor = "orange", fillOpacity = 0.4)),
-      markerOptions = FALSE,
-      editOptions = editToolbarOptions(selectedPathOptions = selectedPathOptions()))  %>% setView(10,10,zoom=2)
- 
-  }else{leaflet("mymap7") %>%
-      addProviderTiles(providers$OpenStreetMap.BlackAndWhite, #map type or map theme. -default($Stamen.TonerLite)
-                       options = providerTileOptions(noWrap = TRUE) 
-                       
-      )%>% addScaleBar(position="bottomleft")%>%  addSearchOSM() %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                                                                                                                                opacity = 0.5, fillOpacity = 0.5,
-                                                                                                                                fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F))  %>% 
-      addDrawToolbar(
-        targetGroup= NULL,
-        polylineOptions = FALSE,
-        
-        polygonOptions = drawPolygonOptions(repeatMode = TRUE,shapeOptions = drawShapeOptions(color = "orange", weight = 1, opacity = 1,
-                                                                                              fill = TRUE, fillColor = "orange", fillOpacity = 0.5)),
-        circleOptions = FALSE,
-        rectangleOptions = drawRectangleOptions(repeatMode=TRUE,shapeOptions = drawShapeOptions(color = "orange", weight = 1, opacity = 1,
-                                                                                                fill = TRUE, fillColor = "orange", fillOpacity = 0.5)),
-        markerOptions = FALSE,
-        editOptions = editToolbarOptions(selectedPathOptions = selectedPathOptions()))  %>% setView(10,10,zoom=2)} 
- })
-   
-  })
-
-observeEvent(input$mymap6_draw_new_feature,{
-  
-  proxy<-leafletProxy("mymap7")
-  if(length(returnlist2()$finished)!=0){
-  
-  
-  proxy %>%  clearShapes() %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( ) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                                                                                                                                                    opacity = 0.5, fillOpacity = 0.5,
-                                                                                                                                                    fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F))   %>% addPolygons(data = returnlist2()$finished,
-                                          color = "darkgray", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                                          opacity = 0.5, fillOpacity = 0.05,
-                                          fillColor = colorQuantile("Blues", domain=NULL)
-  )
-  
-  }
-  
-})
-observeEvent(input$mymap6_draw_edited_features,{
-  
-  proxy<-leafletProxy("mymap7")
-  if(length(returnlist2()$finished)!=0){
-  
-  
-  proxy %>%  clearShapes() %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( ) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                                                                                                                                                    opacity = 0.5, fillOpacity = 0.5,
-                                                                                                                                                    fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F))  %>% addPolygons(data = returnlist2()$finished,color = "darkgray", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                                           opacity = 0.5, fillOpacity = 0.05,
-                                           fillColor = colorQuantile("Blues", domain=NULL)
-  )
-  
-  }
-  
-})
-
-observeEvent(input$mymap6_draw_deleted_features,{
-  
-  proxy<-leafletProxy("mymap7")
-  if(length(returnlist2()$finished)!=0){
-  
-  
-  proxy %>%  clearShapes()  %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( ) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                                                                                                                                                     opacity = 0.5, fillOpacity = 0.5,
-                                                                                                                                                     fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F)) %>% addPolygons(data = returnlist2()$finished,color = "darkgray", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                                           opacity = 0.5, fillOpacity = 0.05,
-                                           fillColor = colorQuantile("Blues", domain=NULL))
-  
-  }else{  proxy %>%  clearShapes() %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( ) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                                                                                                                                                            opacity = 0.5, fillOpacity = 0.5,
-                                                                                                                                                            fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F))    }
-  })
-  
-  
-
-
-featurelist3 <- reactiveValues(
-  drawn = list(),
-  edited_all = list(),
-  deleted_all = list(),
-  finished = list()
-)
-
-
-recorder3 <- list()
-
-EVT_DRAW3 <- "mymap7_draw_new_feature"
-EVT_EDIT3 <- "mymap7_draw_edited_features"
-EVT_DELETE3 <- "mymap7_draw_deleted_features"
-
-
-#call the objects whit the input[[]] function in a observer environment
-#this function store the drawn polygons in the reactives lists
-observeEvent(input[[EVT_DRAW3]], {
-  featurelist3$drawn <- c(featurelist3$drawn, list(input[[EVT_DRAW3]]))
-  featurelist3$finished <- c(featurelist3$finished, list(input[[EVT_DRAW3]]))
-  
-})
-#this function store edited polygons
-observeEvent(input[[EVT_EDIT3]], {
-  edited <- input[[EVT_EDIT3]]
-  # find the edited features and update drawn
-  # start by getting the leaflet ids to do the match
-  ids <- unlist(lapply(featurelist3$finished, function(x){x$properties$`_leaflet_id`}))
-  # now modify drawn to match edited
-  lapply(edited$features, function(x) {
-    loc <- match(x$properties$`_leaflet_id`, ids)
-    if(length(loc) > 0) {
-      featurelist3$finished[loc] <<- list(x)
-    }
-  })
-  
-  featurelist3$edited_all <- c(featurelist3$edited_all, list(edited))
-  
-})
-
-#this function estore the objects deleted
-observeEvent(input[[EVT_DELETE3]], {
-  deleted <- input[[EVT_DELETE3]]
-  # find the deleted features and update finished
-  # start by getting the leaflet ids to do the match
-  ids <- unlist(lapply(featurelist3$finished, function(x){x$properties$`_leaflet_id`}))
-  # now modify finished to match edited
-  feat2delete <- unlist(lapply(deleted$features, function(x){
-    return(x$properties$`_leaflet_id`)
-  }))
-  
-  grep2 <- Vectorize(FUN = grep, vectorize.args = "pattern")
-  loc <- grep2(pattern = feat2delete, x = ids, fixed = T)
-  
-  if(length(loc) > 0) {
-    featurelist3$finished <<- featurelist3$finished[-loc]
-  }
-  
-  featurelist3$deleted_all <- c(featurelist3$deleted_all, list(deleted))
-  
-})
-
-
-
-returnlist3 <- reactive({
-  
-  workinglist <- list(
-    drawn = featurelist3$drawn,
-    edited = featurelist3$edited_all,
-    deleted = featurelist3$deleted_all,
-    finished = featurelist3$finished
-  )
-  
-  # convert the lists to simple features files througth functions created above
-  
-  workinglist <- lapply(
-    workinglist,
-    function(action) {
-      # ignore empty action types to prevent error
-      #   handle in the helper functions?
-      if(length(action) == 0) { return() }
-      
-      # FeatureCollection requires special treatment
-      #  and we need to extract features
-      features <- Reduce(
-        function(left,right) {
-          if(right$type == "FeatureCollection") {
-            right <- lapply(right$features, identity)
-          } else {
-            right <- list(right)
-          }
-          c(left,right)
-        },
-        action,
-        init = NULL
-      )
-      
-      
-      
-      combine_list_of_sf(
-        lapply(features, st_as_sf.geo_list)
-      )
-    }
-  )
-  
-  
-  return(workinglist)
-  
-})
-
-
-
-
-
-
-observeEvent(input$done3,{
-  
-  
-  saveData_1(returnlist3()$finished,gsub(" ", "", input$nombre),gsub(" ", "", input$tabset1),(input$done3), gsub(" ", "",input$crop),input$txt3)
-  if(length(returnlist3()$finished)!=0){
-    updateButton(session, "done3",label = " Save",style = "success",icon("check-circle"))
-    
-    
-    }
-  
-  
-})
-
-
-observeEvent(input$next3,{
-  updateTabsetPanel(session, "tabset1",
-                    selected = "4. Already conserved")
-  
-})
-observeEvent(input$back3,{
-  
-  updateTabsetPanel(session, "tabset1",
-                    selected = "2. Landraces")
-  
-})
-
-
-output$plot3<-renderLeaflet({
-  
-  if(length(returnlist3()$finished)!=0){
-    
-    leaflet("plot3") %>%
-      addProviderTiles(providers$Esri.WorldGrayCanvas, #map type or map theme. -default($Stamen.TonerLite)
-                       options = providerTileOptions(noWrap = TRUE) 
-                       
-      )%>% addPolygons(data=returnlist3()$finished, color = "orange", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                       opacity = 0.5, fillOpacity = 0.5) 
-    
-  }else{leaflet("plot3") %>%
-      addProviderTiles(providers$Esri.WorldGrayCanvas, #map type or map theme. -default($Stamen.TonerLite)
-                       options = providerTileOptions(noWrap = TRUE) 
-                       
-      )}
-  
-  
-})
-
- #####-------PREGUNTA 4-----------######
- ####--------##########-----------######
- ###_________#########____________######
-
-output$mymap8<-renderLeaflet({
-isolate({
-  
-  if(length(returnlist2()$finished)!=0){
-    
-    leaflet("mymap8") %>%
-      addProviderTiles(providers$OpenStreetMap.BlackAndWhite, #map type or map theme. -default($Stamen.TonerLite)
-                       options = providerTileOptions(noWrap = TRUE) 
-                       
-      )%>% addScaleBar(position="bottomleft")%>%  addSearchOSM( ) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                                                                                                                                opacity = 0.5, fillOpacity = 0.5,
-                                                                                                                                fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F))   %>%  addPolygons(data=returnlist2()$finished,color = "darkgray", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                        opacity = 0.5, fillOpacity = 0.05,
-                        fillColor = colorQuantile("Blues", domain=NULL))    %>% 
-      
-      addDrawToolbar(
-        targetGroup= NULL,
-        polylineOptions = FALSE,
-        
-        polygonOptions = drawPolygonOptions(repeatMode = TRUE,shapeOptions = drawShapeOptions(color = "green", weight = 1, opacity = 1,
-                                                                                              fill = TRUE, fillColor = "green", fillOpacity = 0.4)),
-        circleOptions = FALSE,
-        rectangleOptions = drawRectangleOptions(repeatMode=TRUE,shapeOptions = drawShapeOptions(color = "green", weight = 1, opacity = 1,
-                                                                                                fill = TRUE, fillColor = "green", fillOpacity = 0.4)),
-        markerOptions = FALSE,
-        editOptions = editToolbarOptions(selectedPathOptions = selectedPathOptions()))  %>% setView(10,10,zoom=2)
-    
-  
-  
-}else{
-  
-  
-    leaflet("mymap8") %>%
-      addProviderTiles(providers$OpenStreetMap.BlackAndWhite, #map type or map theme. -default($Stamen.TonerLite)
-                       options = providerTileOptions(noWrap = TRUE) 
-                       
-      )  %>% addScaleBar(position="bottomleft")%>%  addSearchOSM() %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                                                                                                                                  opacity = 0.5, fillOpacity = 0.5,
-                                                                                                                                  fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F)) %>% addDrawToolbar(
-        targetGroup= NULL,
-        polylineOptions = FALSE,
-        
-        polygonOptions = drawPolygonOptions(repeatMode = TRUE,shapeOptions = drawShapeOptions(color = "green", weight = 1, opacity = 1,
-                                                                                              fill = TRUE, fillColor = "green", fillOpacity = 0.4)),
-        circleOptions = FALSE,
-        rectangleOptions = drawRectangleOptions(repeatMode=TRUE,shapeOptions = drawShapeOptions(color = "green", weight = 1, opacity = 1,
-                                                                                                fill = TRUE, fillColor = "green", fillOpacity = 0.4)),
-        markerOptions = FALSE,
-        editOptions = editToolbarOptions(selectedPathOptions = selectedPathOptions()))  %>% setView(10,10,zoom=2)
-    
-
-  
-  
-  
-}
-  
-  
-  
-})
-
-})
-
-
-observeEvent(input$mymap6_draw_new_feature,{
-  
-  proxy<-leafletProxy("mymap8")
-  if(length(returnlist2()$finished)!=0){
-  
-  
-  proxy %>%  clearShapes() %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( ) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                                                                                                                                                    opacity = 0.5, fillOpacity = 0.5,
-                                                                                                                                                    fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F)) %>%addPolygons(data = returnlist2()$finished,
-                                          color = "darkgray", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                                          opacity = 0.5, fillOpacity = 0.05,
-                                          fillColor = colorQuantile("Blues", domain=NULL)
-  )
-  
-  }
-  
-})
-observeEvent(input$mymap6_draw_edited_features,{
-  
-  proxy<-leafletProxy("mymap8")
-  if(length(returnlist2()$finished)!=0){
- 
-  
-  proxy %>%  clearShapes() %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( ) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                                                                                                                                                    opacity = 0.5, fillOpacity = 0.5,
-                                                                                                                                                    fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F)) %>% addPolygons(data = returnlist2()$finished,color = "darkgray", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                                           opacity = 0.5, fillOpacity = 0.05,
-                                           fillColor = colorQuantile("Blues", domain=NULL)
-  )
-  
-  }
-  
-})
-
-observeEvent(input$mymap6_draw_deleted_features,{
-  proxy<-leafletProxy("mymap8")
-  if(length(returnlist2()$finished)!=0){
-  
-  
-  proxy %>%  clearShapes() %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( ) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                                                                                                                                                    opacity = 0.5, fillOpacity = 0.5,
-                                                                                                                                                    fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F)) %>% addPolygons(data = returnlist2()$finished,color = "darkgray", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                                           opacity = 0.5, fillOpacity = 0.05,
-                                           fillColor = colorQuantile("Blues", domain=NULL))
-  }else{  proxy %>%  clearShapes() %>% addScaleBar(position="bottomleft")%>%  addSearchOSM( ) %>% addPolygons(data=harvest, group="Harvested area" ,stroke = T,color = "#f7ba94", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                                                                                                                                                            opacity = 0.5, fillOpacity = 0.5,
-                                                                                                                                                            fillColor = "#dd9e87") %>%  addLayersControl(overlayGroups="Harvested area",options=layersControlOptions(collapsed=F))   }
-  })
-
-
-
-
-
-
-
-
-
-featurelist4 <- reactiveValues(
-  drawn = list(),
-  edited_all = list(),
-  deleted_all = list(),
-  finished = list()
-)
-
-
-recorder4 <- list()
-
-EVT_DRAW4 <- "mymap8_draw_new_feature"
-EVT_EDIT4 <- "mymap8_draw_edited_features"
-EVT_DELETE4 <- "mymap8_draw_deleted_features"
-
-
-#call the objects whit the input[[]] function in a observer environment
-#this function store the drawn polygons in the reactives lists
-observeEvent(input[[EVT_DRAW4]], {
-  featurelist4$drawn <- c(featurelist4$drawn, list(input[[EVT_DRAW4]]))
-  featurelist4$finished <- c(featurelist4$finished, list(input[[EVT_DRAW4]]))
-  
-})
-#this function store edited polygons
-observeEvent(input[[EVT_EDIT4]], {
-  edited <- input[[EVT_EDIT4]]
-  # find the edited features and update drawn
-  # start by getting the leaflet ids to do the match
-  ids <- unlist(lapply(featurelist3$finished, function(x){x$properties$`_leaflet_id`}))
-  # now modify drawn to match edited
-  lapply(edited$features, function(x) {
-    loc <- match(x$properties$`_leaflet_id`, ids)
-    if(length(loc) > 0) {
-      featurelist4$finished[loc] <<- list(x)
-    }
-  })
-  
-  featurelist4$edited_all <- c(featurelist4$edited_all, list(edited))
-  
-})
-
-#this function estore the objects deleted
-observeEvent(input[[EVT_DELETE4]], {
-  deleted <- input[[EVT_DELETE4]]
-  # find the deleted features and update finished
-  # start by getting the leaflet ids to do the match
-  ids <- unlist(lapply(featurelist4$finished, function(x){x$properties$`_leaflet_id`}))
-  # now modify finished to match edited
-  feat2delete <- unlist(lapply(deleted$features, function(x){
-    return(x$properties$`_leaflet_id`)
-  }))
-  
-  grep2 <- Vectorize(FUN = grep, vectorize.args = "pattern")
-  loc <- grep2(pattern = feat2delete, x = ids, fixed = T)
-  
-  if(length(loc) > 0) {
-    featurelist4$finished <<- featurelist4$finished[-loc]
-  }
-  
-  featurelist4$deleted_all <- c(featurelist4$deleted_all, list(deleted))
-  
-})
-
-
-
-returnlist4 <- reactive({
-  
-  workinglist <- list(
-    drawn = featurelist4$drawn,
-    edited = featurelist4$edited_all,
-    deleted = featurelist4$deleted_all,
-    finished = featurelist4$finished
-  )
-  
-  # convert the lists to simple features files througth functions created above
-  
-  workinglist <- lapply(
-    workinglist,
-    function(action) {
-      # ignore empty action types to prevent error
-      #   handle in the helper functions?
-      if(length(action) == 0) { return() }
-      
-      # FeatureCollection requires special treatment
-      #  and we need to extract features
-      features <- Reduce(
-        function(left,right) {
-          if(right$type == "FeatureCollection") {
-            right <- lapply(right$features, identity)
-          } else {
-            right <- list(right)
-          }
-          c(left,right)
-        },
-        action,
-        init = NULL
-      )
-      
-      
-      
-      combine_list_of_sf(
-        lapply(features, st_as_sf.geo_list)
-      )
-    }
-  )
-  
-  
-  return(workinglist)
-  
-})
-
-
-
-
-
-
-observeEvent(input$done4,{
-  
-  
-  saveData_1(returnlist4()$finished,gsub(" ", "", input$nombre),gsub(" ", "", input$tabset1),(input$done4), gsub(" ", "",input$crop),input$txt4)
-  if(length(returnlist4()$finished)!=0){
-    updateButton(session, "done4",label = " Save",style = "success",icon("check-circle"))
- 
-    }
-  
-  
-})
-
-
-observeEvent(input$next4,{
-  updateTabsetPanel(session, "tabset1",
-                    selected = "Results")
-  
-})
-observeEvent(input$back4,{
-  
-  updateTabsetPanel(session, "tabset1",
-                    selected = "3. Collecting")
-  
-})
-
-
-
-observeEvent(input$back5,{
-  
-  updateTabsetPanel(session, "tabset1",
-                    selected = "4. Already conserved")
-  
-})
-
-
-observeEvent(input$close,{
-  
-  
-  # if(length(returnlist()$finished)!=0) savePlots(returnlist()$finished,gsub(" ","",input$nombre),countries2,col="blue",n.quest=1,gsub(" ", "",input$crop))
-  # if(length(returnlist2()$finished)!=0)savePlots(returnlist2()$finished,gsub(" ","",input$nombre),countries2,col="red",n.quest=2,gsub(" ", "",input$crop))
-  # if(length(returnlist3()$finished)!=0) savePlots(returnlist3()$finished,gsub(" ","",input$nombre),countries2,col="green",n.quest=3,gsub(" ", "",input$crop))
-  # if(length(returnlist4()$finished)!=0)savePlots(returnlist4()$finished,gsub(" ","",input$nombre),countries2,col="orange",n.quest=4,gsub(" ", "",input$crop))
-  
-  
-  
-  
-  Sys.sleep(2)
- showModal(modalDialog(
-   title = "Important message:",
-   h3("Thank you very much for your time!"),h3("Your work has already been saved, now you can close the app."),footer = NULL,easyClose = TRUE
- ))
- Sys.sleep(4)
-
-session$close()
-
-})
-
-output$plot4<-renderLeaflet({
-  
-  if(length(returnlist4()$finished)!=0){
-  
-    leaflet("plot4") %>%
-      addProviderTiles(providers$Esri.WorldGrayCanvas, #map type or map theme. -default($Stamen.TonerLite)
-                       options = providerTileOptions(noWrap = TRUE) 
-                       
-      )%>% addPolygons(data=returnlist4()$finished, color = "green", weight = 1, smoothFactor = 0.2,  #adicionar el archivo .shp al mapa y hacer que brillen cuadno son seleccionados
-                       opacity = 0.5, fillOpacity = 0.5) 
-    
-  }else{leaflet("plot4") %>%
-      addProviderTiles(providers$Esri.WorldGrayCanvas, #map type or map theme. -default($Stamen.TonerLite)
-                       options = providerTileOptions(noWrap = TRUE) 
-                       
-      )}
-  
-  
-})
-
-
-
 
 
 
