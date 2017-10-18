@@ -45,7 +45,7 @@ nrow(ciat) # 37987 (old and original), 23831 (new one with vernacular names)
 # ------------------------------------ #
 
 names(ciat) <- c("ID", "Source", "Cleaned.by", "Accession.number", "Synonyms", "Common.names",
-                 "Interpreted.name.csosa", "To.use.ACID", "Common.name.ACID",
+                 "Interpreted.name.csosa", "AC.ACID", "To.use.ACID", "Common.name.ACID",
                  "Genepool.interpreted.ACID", "Genepool.literature.ACID","Race.interpreted.ACID",
                  "Race.literature.ACID", "Subgroup.interpreted.ACID", "Subgroup.literature.ACID",
                  "Reference.ACID", "TEST.vernacular", "Name.literature.vernacular",
@@ -150,6 +150,15 @@ if(!file.exists(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_dat
   
   biophysicalVars <- dplyr::inner_join(x = coord_envirem, y = coord_bioVars,  by = c("ID", "Longitude", "Latitude"))
   rm(coord_envirem, coord_bioVars)
+  
+  # Define analyses to do
+  shp_ame <- rgdal::readOGR(dsn = paste0(root, "/gap_analysis_landraces/Input_data/_maps/_shp_americas"), layer = "AMERICAS")
+  over_res <- sp::over(SpatialPoints(coords = data.frame(lon = biophysicalVars$Longitude, lat = biophysicalVars$Latitude), proj4string = CRS(projargs = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")), as(shp_ame, "SpatialPolygons"))
+  biophysicalVars$Analysis <- as.numeric(is.na(over_res)); rm(over_res)
+  biophysicalVars$Analysis[which(biophysicalVars$Analysis == "0")] <- "Americas"
+  biophysicalVars$Analysis[which(biophysicalVars$Analysis == "1")] <- "World"
+  rm(shp_ame)
+  
   saveRDS(object = biophysicalVars, file = paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/BEAN-GRP-COORDINATES-CLIMATE.RDS"))
   
 } else {
@@ -299,17 +308,6 @@ for(i in 1:length(protein_list)){
 
 ciat$Protein <- ciat$Protein2 <- ciat$Protein3 <- ciat$Protein4 <- ciat$Protein5 <- NULL
 names(ciat)
-
-# ------------------------------------ #
-# Define analyses to do
-# ------------------------------------ #
-
-shp_ame <- rgdal::readOGR(dsn = paste0(root, "/gap_analysis_landraces/Input_data/_maps/_shp_americas"), layer = "AMERICAS")
-over_res <- sp::over(SpatialPoints(coords = data.frame(lon = biophysicalVars$Longitude, lat = biophysicalVars$Latitude), proj4string = CRS(projargs = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")), as(shp_ame, "SpatialPolygons"))
-biophysicalVars$Analysis <- as.numeric(is.na(over_res)); rm(over_res)
-biophysicalVars$Analysis[which(biophysicalVars$Analysis == "0")] <- "Americas"
-biophysicalVars$Analysis[which(biophysicalVars$Analysis == "1")] <- "World"
-rm(shp_ame)
 
 # ------------------------------------ #
 # Combine datasets
