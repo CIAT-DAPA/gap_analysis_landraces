@@ -56,10 +56,11 @@ fluidRow(
               tabPanel("Occurrence",   box(background ="black",solidHeader = TRUE,width = 8,leafletOutput("mymap4",height = 500,width = "100%") ) 
                        
                        
-                       , box(solidHeader = F,width = 4, tagList(div( tags$h3(HTML("<b>1. Truly occurrence of crops </b>"))),
-                                                                tags$h5(HTML("<p align=justify>  Based on occurence coordinates for landraces beans crops shown in the map. 
-                                                                                                Draw one or more polygons (of any size) over all areas where  you  consider  
-                                                                                                 that presence points are wrong. <br/> Landrace is a complicated term. Here we define a landrace as having two essential features: 
+                       , box(solidHeader = F,width = 4, tagList(div( tags$h3(HTML("<b>1. Current distribution of landraces </b>"))),
+                                                                tags$h5(HTML("<p align=justify>  This map plots the distribution of accessions labled as landraces within the CIAT collection. 
+                                                                               In the background of this map, the pink color shows the area where common bean is produced, according to Mapspam. 
+                                                                               Please revise this map, and help us to identify any points that seem wrong. Draw a polygon around any dubious points.
+                                                                                <br/> <br/> Landrace is a complicated term. Here we define a landrace as having two essential features: 
                                                                     <br/> <br/> A). Being tied to a place (undergoing natural selection in a place for a significant period of time). <br/> <br/>
                                                                     B). Farmer reproduced (farmers save the seed/propagules and replant the landrace,
                                                                     rather than purchasing from the formal seed sector).

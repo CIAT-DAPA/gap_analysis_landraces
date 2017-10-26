@@ -104,7 +104,7 @@ body <- dashboardBody(
                                 h3(HTML("<b>2. Questions</b>")),
                                 h3(HTML("<p align=justify> This survey has five pages of questions, related to:
 
-                                         <br></br> A) 
+                                         <br></br> A) Current distribution of landraces in CIAT collection.
                                          <br></br> B) The current distribution of modern crop cultivars. 
                                          <br></br> C) The current distribution of landraces.
 

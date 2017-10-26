@@ -59,15 +59,15 @@ fluidRow(
               tabPanel("Occurrence",   box(background ="black",solidHeader = TRUE,width = 8,leafletOutput("mymap4.m",height = 500,width = "100%") ) 
                        
                        
-                       , box(solidHeader = F,width = 4, tagList(div( tags$h3(HTML("<b>1. Truly occurrence of crops </b>"))),
-                                                                tags$h5(HTML("<p align=justify> Based on occurence coordinates from CIAT landraces beans crops shown in the map. 
-                                                                                                Draw one or more polygons (of any size) over all areas where  you  consider  
-                                                                             that presence points are wrong. <br/> Landrace is a complicated term. Here we define a landrace as having two essential features: 
+                       , box(solidHeader = F,width = 4, tagList(div( tags$h3(HTML("<b>1. Current distribution of landraces </b>"))),
+                                                                tags$h5(HTML("<p align=justify> This map plots the distribution of accessions labled as landraces within the CIAT collection. 
+                                                                                In the background of this map, the pink color shows the area where common bean is produced, according to Mapspam. 
+                                                                               Please revise this map, and help us to identify any points that seem wrong. Draw a polygon around any dubious points.<br/> <br/> Landrace is a complicated term. Here we define a landrace as having two essential features: 
                                                                              <br/> <br/> A). Being tied to a place (undergoing natural selection in a place for a significant period of time). <br/> <br/>
                                                                              B). Farmer reproduced (farmers save the seed/propagules and replant the landrace,
                                                                              rather than purchasing from the formal seed sector).
                                                                              </p>")),
-                                                                textAreaInput("txt0","Write a note or comment:",height = "150px")
+                                                                textAreaInput("txt_m0","Write a note or comment:",height = "150px")
                                                                 ,div(style="position:relative;width: 100%",bsButton("done0_m", size="large",label = "Save", block = F, style="primary",icon("cloud-download")),
                                                                      bsTooltip(id = "done0_m", title = "Save your work", placement = "right", trigger = "hover")
                                                                      
@@ -96,7 +96,7 @@ fluidRow(
                                                                     <br/> <br/> A). Being tied to a place (undergoing natural selection in a place for a significant period of time). <br/> <br/>
                                                                     B). Farmer reproduced (farmers save the seed/propagules and replant the landrace,
                                                                     rather than purchasing from the formal seed sector).</p>")),
-                                                       textAreaInput("txt1","Write a note or comment:",height = "150px")
+                                                       textAreaInput("txt_m1","Write a note or comment:",height = "150px")
                                                        ,div(style="position:relative;width: 100%"
                                                             
                                                            ,bsButton("done_m", size="large",label = "Save", block = F, style="primary",icon("cloud-download"))
@@ -127,7 +127,7 @@ fluidRow(
                                                                         <br/> <br/> A). Being tied to a place (undergoing natural selection in a place for a significant period of time). <br/> <br/>
                                                                         B). Farmer reproduced (farmers save the seed/propagules and replant the landrace,
                                                                         rather than purchasing from the formal seed sector).</p></p>")),
-                                                           textAreaInput("txt2","Write a note or comment:",height = "150px")
+                                                           textAreaInput("txt_m2","Write a note or comment:",height = "150px")
                                                            ,div(style="position:relative",bsButton("done2_m",size="large" ,label = "Save", block = F, style="primary",icon("cloud-download")),
                                                                 bsTooltip(id = "done2_m", title = "Save your work", placement = "right", trigger = "hover")
                                                                 
@@ -165,7 +165,7 @@ fluidRow(
                                                         
                                                         tags$h4(HTML("<p align=justify>Draw one or more polygons (of any size) over all areas where you would prioritize collecting trips for landraces of
                                                                      the crop, in order to improve their representation in publicly available genebanks. </p>")),
-                                                        textAreaInput("txt3","Write a note or comment:",height = "150px")                                                      
+                                                        textAreaInput("txt_m3","Write a note or comment:",height = "150px")                                                      
                                                         ,div(style="position:relative"
                                                              ,bsButton("done3_m",size="large", label = "Save", block = F, style="primary",icon("cloud-download")),
                                                              bsTooltip(id = "done3_m", title = "Save your work", placement = "right", trigger = "hover")
@@ -195,7 +195,7 @@ fluidRow(
                                                                  
                                                                  tags$h4(HTML("<p align=justify>Draw one or more polygons (of any size) over all areas where landraces of the crop have already
                                                                               been sufficiently collected and where germplasm is conserved in publicly available genebanks.</p>")),
-                                                                 textAreaInput("txt4","Write a note or comment:",height = "150px")
+                                                                 textAreaInput("txt_m4","Write a note or comment:",height = "150px")
                                                                  ,div(style="position:relative"
                                                                       ,bsButton("done4_m",size="large" ,label = "Save", block = F, style="primary",icon("cloud-download")),
                                                                       bsTooltip(id = "done4_m", title = "Save your work", placement = "right", trigger = "hover")

@@ -66,7 +66,7 @@
                                                                                                                                                showCoverageOnHover= T,
                                                                                                                                                zoomToBoundsOnClick= T,
                                                                                                                                                animate=T,
-                                                                                                                                               disableClusteringAtZoom=8 ,
+                                                                                                                                               disableClusteringAtZoom=7 ,
                                                                                                                                                animateAddingMarkers=T )) %>%
       
       addDrawToolbar(

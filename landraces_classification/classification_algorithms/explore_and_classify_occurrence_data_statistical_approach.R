@@ -634,3 +634,114 @@ ciat.bio[,sapply(ciat.bio,is.character)]
 suppressMessages(if(!require(rdrop2)){install.packages("rdrop2");library(rdrop2)}else{library(rdrop2)})
 drop_auth()
 
+data(spam)
+
+
+data("decathlon")
+
+dat<-decathlon[,c(1:10,12)]
+
+acp<-PCA(dat,ncp=4,scale.unit=TRUE)
+
+acp$var$contrib
+
+acp2<-PCA(dat,ncp=4,col.w = w ,scale.unit=TRUE )
+
+
+plot(acp$ind$coord)
+lines(acp2$ind$coord,type="p",col="red")
+
+acp2$var$contrib
+
+plot(acp2)
+
+####### ACP 2 #####
+OSys <- Sys.info()[1]
+OSysPath <- switch(OSys, "Linux" = "/mnt", "Windows" = "//dapadfs")
+root     <- switch(OSys, "Linux" = "/mnt/workspace_cluster_9", "Windows" = "//dapadfs/Workspace_cluster_9")
+
+
+genep_1<- readRDS("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/Input_data/_datosAndres/acp/genepool_predictions.RDS")
+race_1<-readRDS("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/Input_data/_datosAndres/acp/predictions_race.RDS")
+beancordH<-readRDS("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/Input_data/_datosAndres/acp/BEAN-GRP-COORDINATES-HUMAN-FACTORS.RDS")
+beancordC<-readRDS("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/Input_data/_datosAndres/acp/BEAN-GRP-COORDINATES-CLIMATE.RDS")
+dmodel<- readRDS("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/Input_data/_datosAndres/acp/data4modeling.RDS")
+
+files<-dir(file.path("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/Input_data/raster_sdm/2_5m"))
+files<-files[grep("dist",files)]
+
+for(i in 1:length(files )){
+
+eval( parse( text =  paste0('raster_',files[i],'<-raster(',"'", file.path(paste0( root,"//gap_analysis_landraces/Input_data/raster_sdm/2_5m","/",files[i],"'" ) ),')' )  ) )    
+
+ eval( parse( text= paste0("dmodel <- data.frame( dmodel,", substr(files[i],1, nchar(files[i])-4 ) ,"= extract(", 'raster_',files[i], ", cbind(dmodel$Longitude,dmodel$Latitude) ,df=T)[,2] )"  )  ) ) 
+    
+  }
+
+
+dmodel<-dmodel[, -which(names(dmodel)== "Distance.to.GP1"  )]
+dmodel<- dmodel[complete.cases(dmodel$Genepool.predicted),]
+dmodel<- dmodel[complete.cases(dmodel$Race.predicted),]
+
+dmodel<- dmodel %>% dplyr::select( ., Altitude:Longitude ,annualPET:dist_toGP1 )
+dmodel<- na.omit(dmodel)
+# all(is.na(dmodel.acp))==FALSE
+
+
+dmodel.acp <- dmodel %>% dplyr::select( .,-Analysis ,-Genepool.predicted, -Race.predicted )  
+M<-cor(dmodel.acp)
+corrplot(M)
+
+highlyCorDescr <- findCorrelation(M, cutoff = .70)
+names(dmodel.acp)[highlyCorDescr]
+#dmodel.acp<- dmodel.acp [ , highlyCorDescr]
+
+
+acp<- PCA( dmodel.acp , quanti.sup = which( names(dmodel.acp) %in% names(dmodel.acp)[-highlyCorDescr]  )  )
+
+
+plot(acp)
+names(dmodel)
+
+
+
+
+df<-data.frame(acp$ind$coord[,1:2],gen.pred=dmodel$Genepool.predicted )
+plot(acp)
+ggplot(df,aes_string(x="Dim.1",y="Dim.2",color="gen.pred", shape="gen.pred")) + geom_point(size=1.85)  + guides(colour=guide_legend(override.aes=list(size=6))) +
+  xlab("") + ylab("") +
+  ggtitle("") +
+  theme_light(base_size=20) +
+  theme(axis.text.x=element_blank(),
+        axis.text.y=element_blank(),
+        legend.direction = "horizontal", 
+        legend.position = "bottom",
+        legend.box = "horizontal") +
+  scale_colour_brewer(palette = "Accent")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

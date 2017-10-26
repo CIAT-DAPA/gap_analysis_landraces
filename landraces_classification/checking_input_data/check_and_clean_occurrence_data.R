@@ -359,3 +359,5 @@ bio_tsne <- Rtsne(biophysicalVars[complete.cases(biophysicalVars),-1] %>% unique
 bio_tsne <- Rtsne(biophysicalVars[complete.cases(biophysicalVars),-1] %>% unique, dims = 2, perplexity = 30, verbose = TRUE, max_iter = 500)
 bio_tsne <- Rtsne(biophysicalVars[complete.cases(biophysicalVars),-1] %>% unique, dims = 2, perplexity = 50, verbose = TRUE, max_iter = 500)
 plot(bio_tsne$Y, pch = 20, main = "tsne for biophysical variables")
+
+

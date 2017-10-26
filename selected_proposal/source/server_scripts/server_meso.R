@@ -49,7 +49,7 @@
                                                                                                                                                showCoverageOnHover= T,
                                                                                                                                                zoomToBoundsOnClick= T,
                                                                                                                                                animate=T,
-                                                                                                                                               disableClusteringAtZoom=8 ,
+                                                                                                                                               disableClusteringAtZoom=7 ,
                                                                                                                                                animateAddingMarkers=T )) %>%
       
       addDrawToolbar(
@@ -204,12 +204,12 @@
   observeEvent(input$done0_m,{
     
   
-    saveData_1(returnlist.m0()$finished,gsub(" ", "", input$nombre),gsub(" ", "",input$tabset1.m),(input$done0_m), gsub(" ", "",input$menu),input$txt0)
+    saveData_1(returnlist.m0()$finished,gsub(" ", "", input$nombre),gsub(" ", "",input$tabset1.m),(input$done0_m), gsub(" ", "",input$menu),input$txt_m0)
     
     if(length(returnlist.m0()$finished)!=0){
       isolate({
         updateButton(session, "done0_m",label = " Save",style = "success",icon("check-circle"))
-        saveData_1(returnlist.m0()$finished,gsub(" ", "", input$nombre),gsub(" ", "",input$tabset1.m),(input$done0_m), gsub(" ", "",input$menu),input$txt0)
+        saveData_1(returnlist.m0()$finished,gsub(" ", "", input$nombre),gsub(" ", "",input$tabset1.m),(input$done0_m), gsub(" ", "",input$menu),input$txt_m0)
         
       })
       
@@ -400,11 +400,11 @@
     
     
     
-    saveData_1(returnlist.m()$finished,gsub(" ", "", input$nombre),gsub(" ", "",input$tabset1.m),(input$done_m), gsub(" ", "",input$menu),input$txt1)
+    saveData_1(returnlist.m()$finished,gsub(" ", "", input$nombre),gsub(" ", "",input$tabset1.m),(input$done_m), gsub(" ", "",input$menu),input$txt_m1)
     
     if(length(returnlist.m()$finished)!=0){
       updateButton(session, "done_m",label = " Save",style = "success",icon("check-circle"))
-      saveData_1(returnlist.m()$finished,gsub(" ", "", input$nombre),gsub(" ", "",input$tabset1.m),(input$done_m), gsub(" ", "",input$menu),input$txt1)
+      saveData_1(returnlist.m()$finished,gsub(" ", "", input$nombre),gsub(" ", "",input$tabset1.m),(input$done_m), gsub(" ", "",input$menu),input$txt_m1)
     }
     
   })
@@ -690,7 +690,7 @@
   observeEvent(input$done2_m,{
     
     
-    saveData_1(returnlist.m2()$finished,gsub(" ", "", input$nombre),gsub(" ", "", input$tabset1.m),(input$done2_m), gsub(" ", "",input$menu),input$txt2)
+    saveData_1(returnlist.m2()$finished,gsub(" ", "", input$nombre),gsub(" ", "", input$tabset1.m),(input$done2_m), gsub(" ", "",input$menu),input$txt_m2)
     
     if(length(returnlist.m2()$finished)!=0){
       updateButton(session, "done2_m",label = " Save",style = "success",icon("check-circle"))
@@ -961,7 +961,7 @@
   observeEvent(input$done3_m,{
     
     
-    saveData_1(returnlist.m3()$finished,gsub(" ", "", input$nombre),gsub(" ", "", input$tabset1.m),(input$done3_m), gsub(" ", "",input$menu),input$txt3)
+    saveData_1(returnlist.m3()$finished,gsub(" ", "", input$nombre),gsub(" ", "", input$tabset1.m),(input$done3_m), gsub(" ", "",input$menu),input$txt_m3)
     if(length(returnlist.m3()$finished)!=0){
       updateButton(session, "done3_m",label = " Save",style = "success",icon("check-circle"))
       
@@ -1247,7 +1247,7 @@
   observeEvent(input$done4_m,{
     
     
-    saveData_1(returnlist.m4()$finished,gsub(" ", "", input$nombre),gsub(" ", "", input$tabset1.m),(input$done4_m), gsub(" ", "",input$menu),input$txt4)
+    saveData_1(returnlist.m4()$finished,gsub(" ", "", input$nombre),gsub(" ", "", input$tabset1.m),(input$done4_m), gsub(" ", "",input$menu),input$txt_m4)
     if(length(returnlist.m4()$finished)!=0){
       updateButton(session, "done4_m",label = " Save",style = "success",icon("check-circle"))
       
