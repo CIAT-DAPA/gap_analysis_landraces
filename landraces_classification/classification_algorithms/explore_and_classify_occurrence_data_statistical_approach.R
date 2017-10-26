@@ -58,6 +58,10 @@ server <- function(input, output, session){
   
 }
 runGadget(shinyApp(ui, server),viewer = dialogViewer("Select Vars", width = 600, height = 600))
+# Data for modeling
+# saveRDS(genotypic_climate, "/home/hachicanoy/data4modeling.RDS")
+# genotypic_climate <- readRDS("/home/hachicanoy/data4modeling.RDS")
+
 
 # ------------------------------------ #
 # Main function
@@ -198,7 +202,7 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = "Genepool.inter
   genepool_na$Growth.habit <- factor(genepool_na$Growth.habit)
   genepool_na <- genepool_na[complete.cases(genepool_na[,-which(names(genepool_na) == y)]),]
   
-  model_type <- c("FDA", "glmFit1", "Rforest", "svmFit")
+  model_type <- c("FDA", "glmFit1", "Rforest", "svmFit") # model_type <- c("FDA", "Rforest", "svmFit")
   
   predictions <- lapply(model_type, function(x){ 
     
@@ -242,7 +246,7 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = "Genepool.inter
     (x[1] + x[4]) /sum(x)
   }))
   
-  accuracy <- c(accu.FDA, accu.glmFit1, accu.Rforest, accu.svm)
+  accuracy <- c(accu.FDA, accu.glmFit1, accu.Rforest, accu.svm) # accuracy <- c(accu.FDA, accu.Rforest, accu.svm)
   names(accuracy) <- model_type
   return(list(data_predicted = data.frame(genepool_na, predictions), models_accuracy = accuracy, data = data_gen))
   cat(">>>> Process done\n")
@@ -253,8 +257,168 @@ predictions <- genepool_predicted(data_gen = genotypic_climate, y = "Genepool.in
 df<-predictions[[2]]
 saveRDS(predictions, "/home/hachicanoy/genepool_predictions.RDS")
 
-data_gen$Genepool.predicted <- NA
-data_gen$Genepool.predicted[match(rownames(predictions[[1]]), rownames(data_gen))] <- as.character(apply(X = predictions[[1]][,c("FDA", "glmFit1", "Rforest", "svmFit")], MARGIN = 1, function(x){Mode(x)}))
+
+# Genepool predictions
+predictions <- readRDS("/home/hachicanoy/genepool_predictions.RDS")
+Mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+predictions[[1]]$Genepool.predicted <- as.character(apply(X = predictions[[1]][,c("FDA", "glmFit1", "Rforest", "svmFit")], MARGIN = 1, function(x){Mode(x)}))
+saveRDS(predictions, "/home/hachicanoy/genepool_predictions.RDS")
+
+confusionMatrix() # pred, truth
+
+# Race predictions
+predictions_race <- readRDS("/home/hachicanoy/predictions_race.RDS")
+Mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+predictions_race[[1]]$Race.predicted <- as.character(apply(X = predictions_race[[1]][,c("FDA", "Rforest", "svmFit")], MARGIN = 1, function(x){Mode(x)}))
+saveRDS(predictions_race, "/home/hachicanoy/predictions_race.RDS")
+
+predictions_race[[1]] %>% ggplot(aes(Genepool.predicted)) + geom_bar(aes(fill = Race.predicted))
+
+
+
+
+
+
+genotypic_climate$Genepool.predicted <- NA
+genotypic_climate$Genepool.predicted[match(rownames(predictions[[1]]), rownames(genotypic_climate))] <- predictions[[1]]$Genepool.predicted
+genotypic_climate$Genepool.predicted[which(!is.na(genotypic_climate$Genepool.interpreted.ACID))] <- as.character(genotypic_climate$Genepool.interpreted.ACID[which(!is.na(genotypic_climate$Genepool.interpreted.ACID))])
+genotypic_climate$Genepool.predicted[which(genotypic_climate$Genepool.predicted == "N/A")] <- NA
+genotypic_climate$Genepool.predicted[which(genotypic_climate$Genepool.predicted == "Spain_Andean_I")] <- "Andean"
+genotypic_climate$Genepool.predicted <- factor(genotypic_climate$Genepool.predicted)
+
+genotypic_climate$Race.predicted <- NA
+genotypic_climate$Race.predicted[match(rownames(predictions_race[[1]]), rownames(genotypic_climate))] <- predictions_race[[1]]$Race.predicted
+genotypic_climate$Race.predicted[which(!is.na(genotypic_climate$Race.interpreted.ACID))] <- as.character(genotypic_climate$Race.interpreted.ACID[which(!is.na(genotypic_climate$Race.interpreted.ACID))])
+genotypic_climate$Race.predicted[which(genotypic_climate$Race.predicted == "N/A")] <- NA
+genotypic_climate$Race.predicted <- factor(genotypic_climate$Race.predicted)
+
+saveRDS(genotypic_climate, "/home/hachicanoy/data4modeling.RDS")
+
+genotypic_climate <- readRDS("/home/hachicanoy/data4modeling.RDS")
+nipals_classification <- nipals(genotypic_climate %>% select(Altitude:Longitude, Seed.weight, annualPET:bio_19, Farm.size:Distance.to.GP1), comps = 5, scaled = T)
+vars1 = nipals_classification$cor.xt[,1] > 0.7 | z$cor.xt[,1] < -0.7
+vars2 = nipals_classification$cor.xt[,2] > 0.7 | z$cor.xt[,2] < -0.7
+vars = c(vars1, vars2)
+vars = names(vars[which(vars==TRUE)])
+
+pca_classic <- FactoMineR::PCA(X = genotypic_climate %>% select(Altitude:Longitude, Seed.weight, annualPET:bio_19, Farm.size:Distance.to.GP1), scale.unit = T, ncp = 5, graph = F)
+pca_classic <- FactoMineR::PCA(X = genotypic_climate %>% select(Altitude:Longitude, Seed.weight, annualPET:bio_19), scale.unit = T, ncp = 5, graph = F)
+pca_classic <- FactoMineR::PCA(X = genotypic_climate %>% select(Altitude, Seed.weight, annualPET:bio_19), scale.unit = T, ncp = 5, graph = F)
+pca_classic <- FactoMineR::PCA(X = genotypic_climate %>% select(Altitude, annualPET:bio_19), scale.unit = T, ncp = 5, graph = F)
+pca_classic <- FactoMineR::PCA(X = genotypic_climate %>% select(annualPET:bio_19), scale.unit = T, ncp = 5, graph = F)
+
+cosenos <- as.data.frame(pca_classic$var$cos2)
+cosenos <- cosenos[order(cosenos$Dim.1, decreasing = T),]; rownames(cosenos) <- 1:nrow(cosenos)
+
+par(mfrow=c(1,3))
+corrplot(pca_classic$var$cos2[,1:2], is.corr=FALSE) # Representation quality of each variable
+corrplot(pca_classic$var$contrib[,1:2], is.corr=FALSE) # Contribution of each variable to dimension
+corrplot(pca_classic$var$cor[,1:2], method="ellipse", is.corr=TRUE) # Correlation of each variable to dimension
+
+
+PCAscores <- as.data.frame(pca_classic$ind$coord)
+PCAscores$Genepool.predicted <- genotypic_climate$Genepool.predicted
+PCAscores$Race.predicted <- genotypic_climate$Race.predicted
+
+PCAscores %>% ggplot(aes(Dim.1, group = Genepool.predicted, colour = Genepool.predicted)) + geom_density()
+PCAscores %>% ggplot(aes(x = Dim.1, y = Dim.2, group = Genepool.predicted, colour = Genepool.predicted)) + geom_density2d()
+
+PCAscores %>% ggplot(aes(Dim.1, group = Race.predicted, colour = Race.predicted)) + geom_density()
+PCAscores %>% ggplot(aes(x = Dim.1, y = Dim.2, group = Race.predicted, colour = Race.predicted)) + geom_density2d()
+
+
+
+PCAscores <- as.data.frame(nipals_classification$scores)
+PCAscores$Genepool.predicted <- genotypic_climate$Genepool.predicted
+PCAscores$Race.predicted <- genotypic_climate$Race.predicted
+
+PCAscores %>% ggplot(aes(t1, group = Genepool.predicted, colour = Genepool.predicted)) + geom_density()
+PCAscores %>% ggplot(aes(x = t1, y = t2, group = Genepool.predicted, colour = Genepool.predicted)) + geom_density2d()
+
+PCAscores %>% ggplot(aes(t1, group = Race.predicted, colour = Race.predicted)) + geom_density()
+PCAscores %>% ggplot(aes(x = t1, y = t2, group = Race.predicted, colour = Race.predicted)) + geom_density2d()
+
+plot(nipals_classification$scores[,1], nipals_classification$scores[,2], col = genotypic_climate$Race.predicted)
+
+# Genepool predicted: Variable importance by NIPALS
+gpList <- sort(unique(predictions[[1]]$Genepool.predicted))
+varImpPred <- lapply(1:length(gpList), function(i){
+  df <- predictions[[1]] %>% filter(Genepool.predicted == gpList[i])
+  z <- nipals(df %>% select(Altitude:Longitude, Seed.weight, annualPET:Distance.to.GP1), comps = 5, scaled = T)
+  vars1 = z$cor.xt[,1] > 0.7 | z$cor.xt[,1] < -0.7
+  vars2 = z$cor.xt[,2] > 0.7 | z$cor.xt[,2] < -0.7
+  vars = c(vars1, vars2)
+  vars = names(vars[which(vars==TRUE)])
+  return(vars)
+})
+
+# Race predicted: Variable importance by NIPALS
+rcList <- sort(unique(predictions_race[[1]]$Race.predicted))
+race_varImpPred <- lapply(1:length(rcList), function(i){
+  df <- predictions_race[[1]] %>% filter(Race.predicted == rcList[i])
+  z <- nipals(df %>% select(Altitude:Longitude, Seed.weight, annualPET:Distance.to.GP1), comps = 5, scaled = T)
+  vars1 = z$cor.xt[,1] > 0.7 | z$cor.xt[,1] < -0.7
+  vars2 = z$cor.xt[,2] > 0.7 | z$cor.xt[,2] < -0.7
+  vars = c(vars1, vars2)
+  vars = names(vars[which(vars==TRUE)])
+  return(vars)
+})
+
+
+AndeanModel <- raster::raster("/mnt/workspace_cluster_9/gap_analysis_landraces/Input_data/SDMs/Results/Andean2/Andean_asc.asc")
+MesoamericanModel <- raster::raster("/mnt/workspace_cluster_9/gap_analysis_landraces/Input_data/SDMs/Results/Mesoamerican/Mesoamerican_asc.asc")
+genotypic_climate$AndeanProb <- raster::extract(x = AndeanModel,
+                                                y = genotypic_climate %>% dplyr::select(Longitude, Latitude))
+genotypic_climate$MesoamericanProb <- raster::extract(x = MesoamericanModel,
+                                                      y = genotypic_climate %>% dplyr::select(Longitude, Latitude))
+
+genotypic_climate$Genepool_probability <- NA
+genotypic_climate$Genepool_probability[which(genotypic_climate$Genepool.predicted == "Andean")] <- genotypic_climate$AndeanProb[which(genotypic_climate$Genepool.predicted == "Andean")]
+genotypic_climate$Genepool_probability[which(genotypic_climate$Genepool.predicted == "Mesoamerican")] <- genotypic_climate$MesoamericanProb[which(genotypic_climate$Genepool.predicted == "Mesoamerican")]
+
+pca_classic <- FactoMineR::PCA(X = genotypic_climate %>% select(annualPET:bio_19), scale.unit = T, ncp = 5, graph = F)
+df <- as.data.frame(pca_classic$ind$coord)
+df$Genepool_probability <- genotypic_climate$Genepool_probability
+df$Genepool <- genotypic_climate$Genepool.predicted
+df$Race <- genotypic_climate$Race.predicted
+
+ggplot(df, aes(x = Dim.1, y = Genepool_probability, group = Genepool, colour = Genepool)) + geom_point() +
+  theme_minimal()
+
+ggplot(df, aes(x = Dim.1, y = Genepool_probability, group = Genepool, colour = Genepool)) + geom_density2d() +
+  theme_minimal()
+
+
+ggplot(df[complete.cases(df),], aes(x = Dim.1, y = Dim.2)) + 
+  stat_density2d(geom = "tile", aes(fill = Genepool, alpha = ..density..), contour = FALSE) + 
+  scale_fill_manual(values=c("Andean"="#FF0000", "Mesoamerican"="#00FF00")) +
+  geom_vline(xintercept = 0) +
+  geom_hline(yintercept = 0) +
+  theme_minimal()
+
+genotypic_climate[complete.cases(genotypic_climate),] %>% ggplot(aes(Farm.size, group = Genepool.predicted, fill = Genepool.predicted, alpha = 0.3)) + geom_density()
+genotypic_climate[complete.cases(genotypic_climate),] %>% ggplot(aes(Latitude, group = Genepool.predicted, fill = Genepool.predicted, alpha = 0.3)) + geom_density()
+genotypic_climate[complete.cases(genotypic_climate),] %>% ggplot(aes(Accessibility, group = Genepool.predicted, fill = Genepool.predicted, alpha = 0.3)) + geom_density()
+
+ggplot(df[complete.cases(df),], aes(x = Dim.1, y = Dim.2)) + 
+  stat_density2d(geom = "tile", aes(fill = Race, alpha = ..density..), contour = FALSE) + 
+  #scale_fill_manual(values=c("Andean"="#FF0000", "Mesoamerican"="#00FF00")) +
+  geom_vline(xintercept = 0) +
+  geom_hline(yintercept = 0) +
+  theme_minimal()
+
+
+ggplot(df[complete.cases(df),], aes(x = Dim.1, y = Dim.2)) + 
+  stat_density2d(geom = "tile", aes(fill = Genepool, alpha = Genepool_probability), contour = FALSE) + 
+  scale_fill_manual(values=c("Andean"="#FF0000", "Mesoamerican"="#00FF00")) +
+  theme_minimal()
+
 
 # Map example
 
@@ -634,26 +798,6 @@ ciat.bio[,sapply(ciat.bio,is.character)]
 suppressMessages(if(!require(rdrop2)){install.packages("rdrop2");library(rdrop2)}else{library(rdrop2)})
 drop_auth()
 
-data(spam)
-
-
-data("decathlon")
-
-dat<-decathlon[,c(1:10,12)]
-
-acp<-PCA(dat,ncp=4,scale.unit=TRUE)
-
-acp$var$contrib
-
-acp2<-PCA(dat,ncp=4,col.w = w ,scale.unit=TRUE )
-
-
-plot(acp$ind$coord)
-lines(acp2$ind$coord,type="p",col="red")
-
-acp2$var$contrib
-
-plot(acp2)
 
 ####### ACP 2 #####
 OSys <- Sys.info()[1]
