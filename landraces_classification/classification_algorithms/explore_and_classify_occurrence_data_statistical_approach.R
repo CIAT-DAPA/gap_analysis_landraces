@@ -36,7 +36,7 @@ suppressMessages(if(!require(assertthat)){install.packages("assertthat");library
 suppressMessages(if(!require(nnet)){install.packages("nnet");library(nnet)}else{library(nnet)})
 
 # Load data
-genotypic_climate <- readRDS("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/Input_data/_datosAndres/acp/data4modeling.RDS")
+genotypic_climate <- readRDS(paste0(root, "/gap_analysis_landraces/Input_data/_datosAndres/acp/data4modeling.RDS"))
 rownames(genotypic_climate) <- genotypic_climate$ID
 
 # Descriptive analysis
