@@ -902,4 +902,109 @@ foreach(i=4:1, .combine='c',.inorder = F) %dopar% {
 
 x <- foreach(a=irnorm(1, count=5), .combine='cbind') %do% a
 x
+#--------------------------
+
+ui <- leafletOutput("leafmap")
+
+
+server <- function(input, output, session) {
+  
+  output$leafmap <- renderLeaflet({
+    leaflet() %>%
+      addTiles() %>%
+      addDrawToolbar(editOptions = editToolbarOptions())
+  })
+  
+  observeEvent(input$leafmap_draw_start,{
+    print("Start of drawing")
+    print(input$leafmap_draw_start)
+  })
+  
+  
+  observeEvent(input$leafmap_dblclick,{
+    print("Stopped drawing")
+    print(input$leafmap_dblclick)
+  })
+  
+  
+}
+shinyApp(ui, server)
+
+
+ctx<-new_context(global="window",typed_arrays = TRUE)
+ctx$get("Object.keys(window)")
+ctx$source("C:/Users/acmendez/Documents/hola2.js")
+
+ctx$eval(h)
+
+ctx$console()
+
+
+data(diamonds, package="ggplot2")
+
+# Create JavaScript session
+ct <- new_context(global=c("window","document") )
+
+ct$source("https://unpkg.com/leaflet@1.2.0/dist/leaflet.js")
+
+ct$console()
+
+
+shinyUI = pageWithSidebar(
+  headerPanel("test"),
+  sidebarPanel(HTML(paste('<p>Click Count: ',textOutput("count"),'</p>'))),
+  mainPanel(
+    #    includeHTML("static.html"),
+    #    uiOutput("x"),
+    tags$button(id="button1", 
+                type="button", 
+                class="btn action-button btn-large btn-primary", 
+                HTML('<i class="icon-star"></i>Large button'))
+  )
+)
+shinyServer = function(input,output){
+  # output$x     <- renderUI(input$button1)
+  output$count <- renderText(input$button1)
+}
+
+runApp(list(
+  ui = shinyUI,
+  server = shinyServer
+))
+
+
+
+shinyUI= bootstrapPage(
+  
+  # a div named mydiv
+  tags$div(id="mydiv", style="width: 50px; height :50px;
+           left: 100px; top: 100px;
+           background-color: gray; position: absolute"),
+  
+  # a shiny element to display unformatted text
+  verbatimTextOutput("results"),
+  
+  # javascript code to send data to shiny server
+  tags$script('
+    document.getElementById("mydiv").onclick = function() {
+      var number = Math.random();
+      Shiny.onInputChange("mydata", number);
+    };
+  ')
+  
+)
+
+shinyServer=function(input, output, session) {
+  
+  output$results = renderPrint({
+    input$mydata
+  })
+  
+}
+
+runApp(list(
+  ui = shinyUI,
+  server = shinyServer
+))
+
 

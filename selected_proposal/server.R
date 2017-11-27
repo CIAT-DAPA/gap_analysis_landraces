@@ -30,8 +30,8 @@ suppressMessages(if(!require(shinyBS)){install.packages("shinyBS");library(shiny
 suppressMessages(if(!require(rgdal)){install.packages('rgdal'); library(rgdal)} else {library(rgdal)})
 suppressMessages(if(!require(dplyr)){install.packages('dplyr'); library(dplyr)} else {library(dplyr)})
 suppressMessages(if(!require(ggplot2)){install.packages('ggplot2'); library(ggplot2)} else {library(ggplot2)})
-#suppressMessages(if(!require(plotly)){install.packages('plotly'); library(plotly)} else {library(plotly)})
-
+suppressMessages(if(!require(plotly)){install.packages('plotly'); library(plotly)} else {library(plotly)})
+suppressMessages(if(!require(jsonlite)){install.packages('jsonlite'); library(jsonlite)} else {library(jsonlite)})
 
 # Define server logic required to draw map whit leaflet option
 

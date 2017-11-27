@@ -38,7 +38,7 @@ suppressMessages(if(!require(nnet)){install.packages("nnet");library(nnet)}else{
 # Load data
 genotypic_climate <- readRDS("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/Input_data/_datosAndres/acp/data4modeling.RDS")
 rownames(genotypic_climate) <- genotypic_climate$ID
-
+#barplot(table(genotypic_climate$Genepool.predicted)/sum(table(genotypic_climate$Genepool.predicted)))
 # Descriptive analysis
 # source("descriptive_analysis4cleanedDB.R")
 
@@ -64,7 +64,7 @@ runGadget(shinyApp(ui, server),viewer = dialogViewer("Select Vars", width = 600,
 #####----------Main function------------#########
 #################################################
 #################################################
-y = "Race.interpreted.ACID"
+
 
 genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.interpreted.ACID","Race.interpreted.ACID"), area = "Americas"){
   
@@ -125,7 +125,7 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
     dplyr::filter(., Analysis == area & To.use.ACID == 1) %>% `rownames<-`(.$ID) %>%
     dplyr::select(., -ID, -Analysis, -To.use.ACID)
   
-  data_gen<- data_gen %>% dplyr::select(., -ID, -Analysis, -To.use.ACID)
+  #data_gen<- data_gen %>% dplyr::select(., -ID, -Analysis, -To.use.ACID)
   # Arrange and let just completed data for the training process
 
   
@@ -154,7 +154,11 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
   
   # Identify and exclude variables with low frequencies and variance close to 0
   nzv <- nearZeroVar(genepool_data)
-  genepool_data <- genepool_data[,-nzv]
+  if(length(nzv)!=0){
+    genepool_data <- genepool_data[,-nzv]
+    
+  }
+  
   
   
   
@@ -162,6 +166,10 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
   
   # Define parameters to train models
   set.seed(825); ctrol2 <- trainControl(method = "LGOCV", p = 0.8, number = 1, savePredictions = T)
+  n<- nrow(genepool_data)*0.2
+  cat(paste("Sample size of Testing genepool-data:",n,"\n"))
+  rm(n)
+  
   # In case of imbalance: ctrol2 <- trainControl(method = "LGOCV", p = 0.8, number = 1, savePredictions = T, sampling = "down")
   
   ##########################################
@@ -217,11 +225,13 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
   
   
  # genepool_na <- genepool_na[, names(genepool_data)]
-  genepool_na$Genepool.protein <- as.character(genepool_na$Genepool.protein)
-  genepool_na$Genepool.protein[which(genepool_na$Genepool.protein == "N/A")] <- NA
-  genepool_na$Genepool.protein <- factor(genepool_na$Genepool.protein)
-  genepool_na$Growth.habit[which(genepool_na$Growth.habit == "Climbing-Determinate")] <- NA
-  genepool_na$Growth.habit <- factor(genepool_na$Growth.habit)
+  if(assertthat::has_name( genepool_na, "Genepool.protein")){genepool_na$Genepool.protein <- as.character(genepool_na$Genepool.protein)
+   genepool_na$Genepool.protein[which(genepool_na$Genepool.protein == "N/A")] <- NA
+  genepool_na$Genepool.protein <- factor(genepool_na$Genepool.protein) }
+  
+  if(assertthat::has_name( genepool_na, "Growth.habit")){genepool_na$Growth.habit[which(genepool_na$Growth.habit == "Climbing-Determinate")] <- NA
+  genepool_na$Growth.habit <- factor(genepool_na$Growth.habit)  }
+  
   genepool_na <- genepool_na[complete.cases(genepool_na[,-which( names(genepool_na) == y[1]  )]),]
   
   model_type <- c("FDA", "glmFit1", "Rforest", "svmFit")
@@ -316,6 +326,11 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
     
     # Define parameters to train models
     set.seed(825); ctrol2 <- trainControl(method = "LGOCV", p = 0.8, number = 1, savePredictions = T)
+    
+    n<- nrow(genepool_data)*0.2
+    cat(paste("Sample size of Testing race-data:",n,"\n"))
+    rm(n)
+    
     # In case of imbalance: ctrol2 <- trainControl(method = "LGOCV", p = 0.8, number = 1, savePredictions = T, sampling = "down")
     
     ##########################################
@@ -402,7 +417,7 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
                                                            genepool_na_race$Growth.habit <- factor(genepool_na_race$Growth.habit)
     }
     
-    genepool_na_race <- genepool_na_race[complete.cases(genepool_na_race[,-which(names(genepool_na_race) == y[2] & names(genepool_na_race) == "Genepool.interpreted.ACID" )]),]#predicciones con el Rforest
+    genepool_na_race <- genepool_na_race[complete.cases(genepool_na_race[,-which(names(genepool_na_race) == y[2] & names(genepool_na_race) == y[1] )]),]#predicciones con el Rforest
     
     model_type <- c("FDA.race", "multi.model", "Rforest.race", "svmFit.race")
     
@@ -436,7 +451,7 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
       
       return(pred)
     } )
-    ####  REVISAR ESTA PARTE POR QUE LAS ACCURACIS ESTAN MAL CALCULADAS
+   
     names(predictions_race)<-model_type
     data_predicted_race <- data.frame(genepool_na_race, predictions_race)
     
@@ -460,29 +475,28 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
   }
   
   
-  
+  cat("Saving data...\n")
  
   if( !is.null(y[1]) ){
     
       if(length(y)==2){
+        cat(">>>> Process done\n")
         return(  list(data_predicted_genepool = data.frame(genepool_na, predictions), accuracy.genepool = accuracy, data_predicted_race= data.frame(genepool_na_race, predictions_race), accuracy.race = accuracy_race ,data = data_gen)  )
         
       }else{
-        
+       
         return(list(data_predicted = data.frame(genepool_na, predictions), models_accuracy = accuracy, data = data_gen))
-        cat(">>>> Process done\n")
+        
       }
    
   }else{ 
     stop("ERROOOOOORRRRR")
     }
-  
-  
-  
 }
 
 predictions <- genepool_predicted(data_gen = genotypic_climate, c("Genepool.interpreted.ACID","Race.interpreted.ACID"), area = "Americas")
-df<-predictions[[2]]
+df<-predictions[[2]];df
+df2<-predictions[[4]];df2
 predictions
 saveRDS(predictions, "/home/hachicanoy/genepool_predictions.RDS")
 

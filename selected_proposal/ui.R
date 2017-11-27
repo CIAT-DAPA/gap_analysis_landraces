@@ -19,7 +19,8 @@ suppressMessages(if(!require(shinydashboard)){install.packages("shinydashboard")
 suppressMessages(if(!require(leaflet)){install.packages("leaflet");library(leaflet)}else{library(leaflet)})
 suppressMessages(if(!require(shinyBS)){install.packages("shinyBS");library(shinyBS)}else{library(shinyBS)})
 suppressMessages(if(!require(ggplot2)){install.packages('ggplot2'); library(ggplot2)} else {library(ggplot2)})
-#suppressMessages(if(!require(plotly)){install.packages('plotly'); library(plotly)} else {library(plotly)})
+
+
 
 
 
@@ -147,7 +148,7 @@ body <- dashboardBody(
     
   tabItem(tabName = "Andean",
  
-          source("source/ui_scripts/ui_andean.R", local = TRUE)
+          source("source/ui_scripts/ui_andean.R", local = TRUE,encoding ="UTF-8")
   
  
   ),#end tabItem for the first survey

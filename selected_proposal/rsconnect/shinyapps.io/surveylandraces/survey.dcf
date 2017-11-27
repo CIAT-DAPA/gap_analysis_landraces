@@ -1,10 +1,12 @@
 name: survey
 title: Survey
+username:
 account: surveylandraces
 server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
 appId: 213971
-bundleId: 1035259
+bundleId: 1090531
 url: https://surveylandraces.shinyapps.io/survey/
-when: 1508434763.1346
+when: 1511365522.17968
 asMultiple: FALSE
 asStatic: FALSE
