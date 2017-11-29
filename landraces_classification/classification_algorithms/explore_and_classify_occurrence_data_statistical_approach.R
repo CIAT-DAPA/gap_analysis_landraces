@@ -34,9 +34,10 @@ suppressMessages(if(!require(shiny)){install.packages("shiny");library(shiny)}el
 suppressMessages(if(!require(miniUI)){install.packages("miniUI");library(miniUI)}else{library(miniUI)})
 suppressMessages(if(!require(assertthat)){install.packages("assertthat");library(assertthat)}else{library(assertthat)})
 suppressMessages(if(!require(nnet)){install.packages("nnet");library(nnet)}else{library(nnet)})
+suppressMessages(if(!require(earth)){install.packages("earth");library(earth)}else{library(earth)})
 
 # Load data
-genotypic_climate <- readRDS("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/Input_data/_datosAndres/acp/data4modeling.RDS")
+genotypic_climate <- readRDS(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/BEAN-GRP-COORDINATES-CLIMATE-HUMAN-FACTORS.RDS"))
 rownames(genotypic_climate) <- genotypic_climate$ID
 #barplot(table(genotypic_climate$Genepool.predicted)/sum(table(genotypic_climate$Genepool.predicted)))
 # Descriptive analysis
@@ -59,7 +60,7 @@ server <- function(input, output, session){
 }
 runGadget(shinyApp(ui, server),viewer = dialogViewer("Select Vars", width = 600, height = 600))
 
-##################################################
+#################################################
 #################################################
 #####----------Main function------------#########
 #################################################
@@ -71,7 +72,6 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
   # ---------------------------------------------------------------- #
   # Train models
   # ---------------------------------------------------------------- #
- 
   cat("\n>>>> Starting training process\n\n")
   
   if( length(grep("Color_",names(data_gen) ) )!= 0 ){  
@@ -81,10 +81,8 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
     data_gen[,grep("Protein_",names(data_gen) )]<- data_gen[,grep("Protein_",names(data_gen) )] %>% mutate_all(., funs(as.factor(.)))
   }
   
-  
   # Function to exclude correlated variables before to model
   colinearity <- function(genepool_data,i=1){
-    
     numeric <- genepool_data[,sapply(genepool_data, is.numeric)]
     descrCor <- cor(numeric)
     highlyCorDescr <- findCorrelation(descrCor, cutoff = .75)
@@ -92,20 +90,15 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
     vec <- which(names(genepool_data) %in% names(numeric))
     genepool_data <- eval(parse(text = paste0("data.frame(", y[i], "=", "genepool_data$", y[i], ",", "numeric", ")")))
     return(genepool_data)
-    
   }
   
   # Function to get just numeric variables before to model
   only_numeric <- function(genepool_data,i=1 ){
-    
     genepool_data2 <- genepool_data[,sapply(genepool_data, is.numeric)]
     genepool_data <- eval(parse(text = paste0("data.frame(", y[i], "=", "genepool_data$", y[i], ",", "genepool_data2", ")")))
     return(genepool_data)
-    
   }
   
-  
- 
   # Process response variable
   eval(parse(text = paste0("data_gen$", y[1], " <- as.character(data_gen$", y[1], ")")))
   eval(parse(text = paste0("data_gen$", y[1], "[which(data_gen$", y[1], " == 'N/A')] <- NA")))
@@ -114,33 +107,24 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
   }
   eval(parse(text = paste0("data_gen$", y[1], " <- factor(data_gen$", y[1], ")"))) 
   
-  
- 
-    
-    
-  
   # Apply filters
   row.names(data_gen) <- data_gen$ID
   genepool_data <- data_gen %>% 
     dplyr::filter(., Analysis == area & To.use.ACID == 1) %>% `rownames<-`(.$ID) %>%
     dplyr::select(., -ID, -Analysis, -To.use.ACID)
   
-  #data_gen<- data_gen %>% dplyr::select(., -ID, -Analysis, -To.use.ACID)
+  # data_gen<- data_gen %>% dplyr::select(., -ID, -Analysis, -To.use.ACID)
   # Arrange and let just completed data for the training process
-
   
-  genepool_data<- genepool_data[complete.cases(genepool_data),]
-
+  genepool_data$ID <- rownames(genepool_data)
+  genepool_data <- genepool_data[complete.cases(genepool_data),]
+  rownames(genepool_data) <- genepool_data$ID; genepool_data$ID <- NULL
   
   # Select response variable
-  
-  
   if( y[1] == "Genepool.interpreted.ACID" ){
     if(assertthat::has_name( genepool_data, "Race.interpreted.ACID")){ genepool_data$Race.interpreted.ACID <- NULL}
     if(assertthat::has_name( genepool_data, "Subgroup.interpreted.ACID")){ genepool_data$Subgroup.interpreted.ACID <- NULL}
   } 
-  
-   
   
   if(assertthat::has_name(genepool_data, "Genepool.protein")){ genepool_data$Genepool.protein[which(genepool_data$Genepool.protein == "N/A")] <- NA }
   genepool_data <- genepool_data[complete.cases(genepool_data),]
@@ -156,17 +140,11 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
   nzv <- nearZeroVar(genepool_data)
   if(length(nzv)!=0){
     genepool_data <- genepool_data[,-nzv]
-    
   }
-  
-  
-  
-  
-  
   
   # Define parameters to train models
   set.seed(825); ctrol2 <- trainControl(method = "LGOCV", p = 0.8, number = 1, savePredictions = T)
-  n<- nrow(genepool_data)*0.2
+  n <- nrow(genepool_data)*0.2
   cat(paste("Sample size of Testing genepool-data:",n,"\n"))
   rm(n)
   
@@ -176,16 +154,15 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
   # Model 1
   # Bagged Flexible Discriminant Analysis
   ##########################################
-  
   cat("Running FDA ...\n")
-  data_in <- only_numeric(genepool_data,i=1)
+  data_in <- only_numeric(genepool_data, i=1)
   eval(parse(text = paste0("FDA <- train(", y[1], " ~ ., data = data_in, method = 'bagFDA', trControl = ctrol2)"))) # FDA training
   cat("finishing FDA ...\n")
+  
   ##########################################
   # Model 2
   # GLM: Logistic Regression Model
   ##########################################
-  
   cat("Running GLM ...\n")
   vf <- colinearity(genepool_data,i=1)
   pos <- which(sapply(vf, is.factor))
@@ -194,49 +171,66 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
   }
   eval(parse(text = paste0("glmFit1 <- train(", y[1], " ~ ., data = vf, method = 'glm', family = 'binomial', trControl = ctrol2)"))) # GLM training
   cat("finishing GLM ...\n")
+  
   ##########################################
   # Model 3
   # Random Forest
   ##########################################
-  
   cat("Running Random Forest ...\n")
-  grid <- expand.grid(mtry = round((ncol(genepool_data)-4)/3))
+  grid <- expand.grid(mtry = round(sqrt(ncol(genepool_data))))
   eval(parse(text = paste0("Rforest <- train(", y[1], " ~ ., data = genepool_data, method = 'rf', tuneGrid = grid, importance = TRUE, ntree = 2000, metric = 'Accuracy', trControl = ctrol2)"))) # RF training
   cat("finishing Rforest ...\n")
+  
   ##########################################
   # Model 4
   # Support Vector Machines
   ##########################################
-  
   cat("Running Support Vector Machine ...\n\n")
   eval(parse(text = paste0("svmFit <- train(", y[1], " ~ ., data = genepool_data, method = 'svmRadial', tuneLength = 9, trControl = ctrol2, importance = T)")))
   cat("finishing SVM ...\n")
+  
+  # ---------------------------------------------------------------- #
+  # Save Variable importance
+  # ---------------------------------------------------------------- #
+  # variableImportance <- list(FDA = caret::varImp(FDA)$importance,
+  #                            GLM = caret::varImp(glmFit1)$importance,
+  #                            RF  = caret::varImp(Rforest)$importance,
+  #                            SVM = caret::varImp(svmFit)$importance
+  # )
+  # variableImportance <- lapply(variableImportance, function(df){
+  #   df$Variable <- rownames(df)
+  #   rownames(df) <- 1:nrow(df)
+  #   return(df)
+  # })
+  
   # ---------------------------------------------------------------- #
   # Predict new cases
   # ---------------------------------------------------------------- #
-  
   cat(">>>> Starting predicting process\n\n")
   
+  data_gen <- data_gen %>% dplyr::select(., -Analysis, -To.use.ACID)
   genepool_na <- data_gen[!complete.cases(eval(parse(text = paste0("data_gen$", y[1])))),]
+  rownames(genepool_na) <- genepool_na$ID; genepool_na$ID <- NULL
   if( y[1] == "Genepool.interpreted.ACID" ){
     if(assertthat::has_name( genepool_na, "Race.interpreted.ACID")){ genepool_na$Race.interpreted.ACID <- NULL}
     if(assertthat::has_name( genepool_na, "Subgroup.interpreted.ACID")){ genepool_na$Subgroup.interpreted.ACID <- NULL}
-  } 
-  
+  }
   
  # genepool_na <- genepool_na[, names(genepool_data)]
-  if(assertthat::has_name( genepool_na, "Genepool.protein")){genepool_na$Genepool.protein <- as.character(genepool_na$Genepool.protein)
+ if(assertthat::has_name( genepool_na, "Genepool.protein")){genepool_na$Genepool.protein <- as.character(genepool_na$Genepool.protein)
    genepool_na$Genepool.protein[which(genepool_na$Genepool.protein == "N/A")] <- NA
   genepool_na$Genepool.protein <- factor(genepool_na$Genepool.protein) }
   
   if(assertthat::has_name( genepool_na, "Growth.habit")){genepool_na$Growth.habit[which(genepool_na$Growth.habit == "Climbing-Determinate")] <- NA
   genepool_na$Growth.habit <- factor(genepool_na$Growth.habit)  }
   
-  genepool_na <- genepool_na[complete.cases(genepool_na[,-which( names(genepool_na) == y[1]  )]),]
+  genepool_na$ID <- rownames(genepool_na)
+  genepool_na <- genepool_na[complete.cases(genepool_na[,-which(names(genepool_na) == y[1])]), ]
+  rownames(genepool_na) <- genepool_na$ID; genepool_na$ID <- NULL
   
   model_type <- c("FDA", "glmFit1", "Rforest", "svmFit")
   
-  predictions <- lapply(model_type, function(x){ 
+  predictions <- lapply(model_type, function(x){
     
     model <- eval(parse(text = x ))
     
@@ -283,8 +277,6 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
   accuracy <- c(accu.FDA, accu.glmFit1, accu.Rforest, accu.svm)
   names(accuracy) <- model_type
   
-  
-  
   #------------------------------------------------------ ^ -------------------------------
   #### predictions for  races
   #------------------------------------------------------ ^ -------------------------------
@@ -320,10 +312,6 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
     nzv <- nearZeroVar(genepool_data)
     genepool_data <- genepool_data[,-nzv]
     
-    
-    
-    
-    
     # Define parameters to train models
     set.seed(825); ctrol2 <- trainControl(method = "LGOCV", p = 0.8, number = 1, savePredictions = T)
     
@@ -337,59 +325,69 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
     # Model 1
     # Bagged Flexible Discriminant Analysis
     ##########################################
-    
-    
     cat("Running FDA ...\n")
     data_in <- only_numeric(genepool_data,i=2)
     data_in<-   eval( parse( text= paste0( "data.frame(  data_in,", y[1], "= genepool_data$",y[1],  ")") ) )
     eval(parse(text = paste0("FDA.race <- train(", y[2], " ~ ., data = data_in, method = 'bagFDA', trControl = ctrol2)"))) # FDA training
     cat("finishing FDA ...\n")
+    
     ##########################################
     # Model 2
-    # GLM: Logistic Regression Model
+    # MLM: Multinomial Regression Model
     ##########################################
-    
     cat("Running multinom glm ...\n")
     vf <- colinearity(genepool_data,i=2)
-    vf<-  eval( parse( text= paste0( "data.frame( vf,", y[1], "= genepool_data$",y[1],  ")") ) )
+    vf <- eval( parse( text = paste0( "data.frame( vf,", y[1], "= genepool_data$", y[1],  ")") ) )
     
     # vf$Race.interpreted.ACID<-c(0,1,2,3,4)[vf$Race.interpreted.ACID]
     # vf$Genepool.interpreted.ACID<-c(0,1)[vf$Genepool.interpreted.ACID]
   
-    vf$Race.interpreted.ACID<-relevel(genepool_data$Race.interpreted.ACID,ref="Durango-Jalisco")
+    vf$Race.interpreted.ACID <-relevel(genepool_data$Race.interpreted.ACID, ref = "Durango-Jalisco")
     
     set.seed(1200)
     #genepool_data<- colinearity(genepool_data)
     folds<-modelr::crossv_kfold(vf,k=6)
     
+    multi <- eval ( parse (  text= paste0( "folds %>% mutate(.,model=purrr::map(train, ~ nnet::multinom(", y[2],"~. , data=. ) ) )"   ) ) )
+    multi <- multi %>%  dplyr::mutate(.,tested= purrr::map2(model,test, ~predict(.x,newdata=.y) )  )   
+    multi <- eval (parse( text= paste0(" multi %>% dplyr::mutate(., cm=purrr::map2(test,tested, ~table(data.frame(.x)$",y[2],",.y)  )   )  %>% mutate(., accuracy=purrr::map(cm, function(x){ sum(diag(x))/sum(x)}  )  )"    )))
     
-    multi<- eval ( parse (  text= paste0( "folds %>% mutate(.,model=purrr::map(train, ~ nnet::multinom(", y[2],"~. , data=. ) ) )"   ) ) )
-    
-    multi<- multi %>%  dplyr::mutate(.,tested= purrr::map2(model,test, ~predict(.x,newdata=.y) )  )   
-    
-    multi<-  eval (parse( text= paste0(" multi %>% dplyr::mutate(., cm=purrr::map2(test,tested, ~table(data.frame(.x)$",y[2],",.y)  )   )  %>% mutate(., accuracy=purrr::map(cm, function(x){ sum(diag(x))/sum(x)}  )  )"    )))
-    
-    #select the best model#
-    multi.model<- multi[which(unlist(multi$accuracy)==max(unlist(multi$accuracy))),"model"]$model
-    
+    # select the best model#
+    multi.model <- multi[which(unlist(multi$accuracy) == max(unlist(multi$accuracy))), "model"]$model
     mean(unlist(multi$accuracy))
+    
+    # Variable importance
+    mlm.varImp <- lapply(X = multi$model, FUN = varImp)
+    mlm.varImp <- do.call(cbind, mlm.varImp)
+    colnames(mlm.varImp) <- paste0("fold_", 1:6)
+    mlm.varImp$Overall <- apply(X = mlm.varImp, MARGIN = 1, FUN = function(x) median(x, na.rm = T))
+    mlm.varImp <- mlm.varImp %>% select(Overall)
+    
     ##########################################
     # Model 3
     # Random Forest
     ##########################################
-    
     cat("Running Random Forest ...\n")
     grid <- expand.grid(mtry = round((ncol(genepool_data)-4)/3))
     eval(parse(text = paste0("Rforest.race <- train(", y[2], " ~ ., data = genepool_data, method = 'rf', tuneGrid = grid, importance = TRUE, ntree = 2000, metric = 'Accuracy', trControl = ctrol2)"))) # RF training
     cat("finishing Rforest ...\n")
+    
     ##########################################
     # Model 4
     # Support Vector Machines
     ##########################################
-    
     cat("Running Support Vector Machine ...\n\n")
     eval(parse(text = paste0("svmFit.race <- train(", y[2], " ~ ., data = genepool_data[,-which( names(genepool_data)==", 'y[1]' ,") ], method = 'svmRadial', tuneLength = 9, trControl = ctrol2, importance = T)")))
     cat("finishing SVM ...\n")
+    
+    # ---------------------------------------------------------------- #
+    # Save Variable importance
+    # ---------------------------------------------------------------- #
+    # variableImportance.race <- list(FDA = caret::varImp(FDA.race)$importance,
+    #                                 MLM = mlm.varImp,
+    #                                 RF  = caret::varImp(Rforest.race)$importance,
+    #                                 SVM = caret::varImp(svmFit.race)$importance
+    # )
     
     cat(">>>> Starting predicting process for race...\n\n")
     
@@ -481,7 +479,13 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
     
       if(length(y)==2){
         cat(">>>> Process done\n")
-        return(  list(data_predicted_genepool = data.frame(genepool_na, predictions), accuracy.genepool = accuracy, data_predicted_race= data.frame(genepool_na_race, predictions_race), accuracy.race = accuracy_race ,data = data_gen)  )
+        return(list(data_predicted_genepool = data.frame(genepool_na, predictions),
+                    accuracy.genepool = accuracy,
+                    # variableImportance.genepool = variableImportance,
+                    data_predicted_race= data.frame(genepool_na_race, predictions_race),
+                    accuracy.race = accuracy_race,
+                    # variableImportance.race = variableImportance.race,
+                    data = data_gen))
         
       }else{
        
@@ -493,6 +497,24 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
     stop("ERROOOOOORRRRR")
     }
 }
+
+
+
+data_predicted_genepool$ID <- rownames(data_predicted_genepool)
+data_predicted_genepool$ID <- as.numeric(data_predicted_genepool$ID)
+genotypic_climate <- readRDS(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/BEAN-GRP-COORDINATES-CLIMATE-HUMAN-FACTORS.RDS"))
+genotypic_climate <- genotypic_climate %>% select(ID, Longitude, Latitude)
+
+getmode <- function(v) {
+  uniqv <- unique(v)
+  uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+
+data_predicted_genepool$Genepool.prediction <- apply(X = data_predicted_genepool[,47:50], MARGIN = 1, FUN = getmode)
+
+data_predicted_genepool <- dplyr::inner_join(x = data_predicted_genepool, y = genotypic_climate, by = "ID")
+write.csv(x = data_predicted_genepool, "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/Results/classification_analysis/genepool_predicted.csv", row.names = F)
+saveRDS(data_predicted_genepool, "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/Results/classification_analysis/genepool_predicted.RDS")
 
 predictions <- genepool_predicted(data_gen = genotypic_climate, c("Genepool.interpreted.ACID","Race.interpreted.ACID"), area = "Americas")
 df<-predictions[[2]];df

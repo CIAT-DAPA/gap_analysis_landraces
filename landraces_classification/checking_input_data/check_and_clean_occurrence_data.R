@@ -174,39 +174,72 @@ if(!file.exists(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_dat
   coord_df <- readRDS(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/BEAN-GRP-COORDINATES-CLIMATE.RDS"))
   coord_df <- coord_df %>% dplyr::select(ID, Longitude, Latitude)
   
-  farm_size <- raster::raster(paste0(root, '/gap_analysis_landraces/Input_data/_maps/_farm_size/field_size_10_40_cropland.img'))
-  coord_farm_size <- raster::extract(x = farm_size, y = coord_df[,c("Longitude", "Latitude")])
+  # farm_size <- raster::raster(paste0(root, '/gap_analysis_landraces/Input_data/_maps/_farm_size/field_size_10_40_cropland.img'))
+  # coord_farm_size <- raster::extract(x = farm_size, y = coord_df[,c("Longitude", "Latitude")])
   
-  accessibility <- raster::raster(paste0(root, '/gap_analysis_landraces/Input_data/_maps/_accessibility/acc_50k'))
+  accessibility <- raster::raster(paste0(root, '/gap_analysis_landraces/Input_data/raster_sdm/2_5m/Accessibility.tif'))
   coord_accessibility <- raster::extract(x = accessibility, y = coord_df[,c("Longitude", "Latitude")])
   
-  mapspam <- raster::stack(paste0(root, '/gap_analysis_landraces/Input_data/_maps/_crop_areas/MapSPAM/Bean/mapspam_bean.nc'))
-  names(mapspam) <- c("Harvested.area", "Physical.area", "Production", "Yield")
-  coord_mapspam <- raster::extract(x = mapspam, y = coord_df[,c("Longitude", "Latitude")])
+  Harvested.area <- raster::raster(paste0(root, '/gap_analysis_landraces/Input_data/raster_sdm/2_5m/Harvested.area.tif'))
+  coord_harvested <- raster::extract(x = Harvested.area, y = coord_df[,c("Longitude", "Latitude")])
   
-  ppp <- raster::raster(paste0(root, '/gap_analysis_landraces/Input_data/_maps/_GDP/PPP2005/ppp2005sum.asc'))
-  coord_ppp <- raster::extract(x = ppp, y = coord_df[,c("Longitude", "Latitude")])
-  coord_ppp[which(coord_ppp < 0)] <- NA
+  Physical.area <- raster::raster(paste0(root, '/gap_analysis_landraces/Input_data/raster_sdm/2_5m/Physical.area.tif'))
+  coord_physical <- raster::extract(x = Physical.area, y = coord_df[,c("Longitude", "Latitude")])
   
-  irrigation <- raster::raster(paste0(root, '/gap_analysis_landraces/Input_data/_maps/_irrigation/gmia_v5_aei_ha.asc'))
+  Production <- raster::raster(paste0(root, '/gap_analysis_landraces/Input_data/raster_sdm/2_5m/Production.tif'))
+  coord_production <- raster::extract(x = Production, y = coord_df[,c("Longitude", "Latitude")])
+  
+  Yield <- raster::raster(paste0(root, '/gap_analysis_landraces/Input_data/raster_sdm/2_5m/Yield.tif'))
+  coord_yield <- raster::extract(x = Yield, y = coord_df[,c("Longitude", "Latitude")])
+  
+  # ppp <- raster::raster(paste0(root, '/gap_analysis_landraces/Input_data/_maps/_GDP/PPP2005/ppp2005sum.asc'))
+  # coord_ppp <- raster::extract(x = ppp, y = coord_df[,c("Longitude", "Latitude")])
+  # coord_ppp[which(coord_ppp < 0)] <- NA
+  
+  irrigation <- raster::raster(paste0(root, '/gap_analysis_landraces/Input_data/raster_sdm/2_5m/Irrigation.tif'))
   coord_irrigation <- raster::extract(x = irrigation, y = coord_df[,c("Longitude", "Latitude")])
   
-  dGP1 <- raster::raster(paste0(root, '/gap_analysis_landraces/Input_data/_maps/_distance_GP1/distance_gp1.asc'))
+  dGP1 <- raster::raster(paste0(root, '/gap_analysis_landraces/Input_data/raster_sdm/2_5m/dist_toGP1.tif'))
   coord_dGP1 <- raster::extract(x = dGP1, y = coord_df[,c("Longitude", "Latitude")])
   
+  dist_h_set <- raster::raster(paste0(root, '/gap_analysis_landraces/Input_data/raster_sdm/2_5m/dist_h_set.tif'))
+  coord_disthset <- raster::extract(x = dist_h_set, y = coord_df[,c("Longitude", "Latitude")])
+  
+  dist_rivers <- raster::raster(paste0(root, '/gap_analysis_landraces/Input_data/raster_sdm/2_5m/dist_rivers.tif'))
+  coord_distrivers <- raster::extract(x = dist_rivers, y = coord_df[,c("Longitude", "Latitude")])
+  
   humanFactors <- data.frame(coord_df,
-                             Farm.size = coord_farm_size,
+                             # Farm.size = coord_farm_size,
                              Accessibility = coord_accessibility,
-                             coord_mapspam,
-                             Purchasing.power.parity = coord_ppp,
+                             Harvested.area = coord_harvested,
+                             Physical.area = coord_physical,
+                             Production = coord_production,
+                             Yield = coord_yield,
+                             #Purchasing.power.parity = coord_ppp,
                              Irrigation = coord_irrigation,
-                             Distance.to.GP1 = coord_dGP1)
-  rm(coord_df, farm_size, coord_farm_size, accessibility, coord_accessibility, mapspam, coord_mapspam, ppp, coord_ppp, irrigation, coord_irrigation, dGP1, coord_dGP1)
+                             Distance.to.GP1 = coord_dGP1,
+                             Distance.to.h.settlements = coord_disthset,
+                             Distances.to.rivers = coord_distrivers)
+  rm(coord_df, accessibility, coord_accessibility,
+     Harvested.area, coord_harvested,
+     Physical.area, coord_physical,
+     Production, coord_production,
+     Yield, coord_yield, irrigation, coord_irrigation, dGP1, coord_dGP1, dist_rivers, coord_distrivers)
   saveRDS(object = humanFactors, file = paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/BEAN-GRP-COORDINATES-HUMAN-FACTORS.RDS"))
   
 } else {
   humanFactors <- readRDS(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/BEAN-GRP-COORDINATES-HUMAN-FACTORS.RDS"))
 }
+
+# ------------------------------------ #
+# Combine datasets
+# ------------------------------------ #
+
+all_df2 <- dplyr::left_join(x = ciat, y = biophysicalVars, by = c("ID", "Longitude", "Latitude"))
+all_df2 <- dplyr::left_join(x = all_df2, y = humanFactors, by = c("ID", "Longitude", "Latitude"))
+
+saveRDS(object = all_df2, file = paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/BEAN-GRP-COORDINATES-CLIMATE-HUMAN-FACTORS.RDS"))
+
 
 # ------------------------------------ #
 # Filter database by physical descriptors
@@ -316,7 +349,8 @@ names(ciat)
 all_df2 <- dplyr::left_join(x = ciat, y = biophysicalVars, by = c("ID", "Longitude", "Latitude"))
 all_df2 <- dplyr::left_join(x = all_df2, y = humanFactors, by = c("ID", "Longitude", "Latitude"))
 
-write.csv(all_df2, "/home/hachicanoy/bean_landraces/ciat_descriptors_climate_hfactors.csv", row.names = F)
+saveRDS(object = all_df2, file = paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/BEAN-GRP-COORDINATES-CLIMATE-HUMAN-FACTORS.RDS"))
+
 
 #all_df2 <- all_df %>% dplyr::select(Genepool.interpreted.ACID, annualPET:bio_19)
 all_df2 <- all_df %>% dplyr::select(Race.interpreted.ACID, annualPET:bio_19) #Altitude: Latitude, 
