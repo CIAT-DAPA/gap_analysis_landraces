@@ -1007,4 +1007,6 @@ runApp(list(
   server = shinyServer
 ))
 
+plot(density( pred.rf[which(pred.rf$genepool=="Andean"),2] ),xlim=c(0,1))
+lines(density( pred.rf[which(pred.rf$genepool=="Mesoamerican"),2] ),col="red")
 
