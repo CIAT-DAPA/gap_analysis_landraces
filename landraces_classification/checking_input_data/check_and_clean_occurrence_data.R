@@ -1,4 +1,4 @@
-# Check and clean occurrence data
+# Check and clean CIAT occurrence data
 # H. Achicanoy
 # CIAT, 2017
 
@@ -217,9 +217,9 @@ if(!file.exists(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_dat
                              Yield = coord_yield,
                              #Purchasing.power.parity = coord_ppp,
                              Irrigation = coord_irrigation,
-                             Distance.to.GP1 = coord_dGP1,
-                             Distance.to.h.settlements = coord_disthset,
-                             Distances.to.rivers = coord_distrivers)
+                             dist_toGP1 = coord_dGP1,
+                             dist_h_set = coord_disthset,
+                             dist_rivers = coord_distrivers)
   rm(coord_df, accessibility, coord_accessibility,
      Harvested.area, coord_harvested,
      Physical.area, coord_physical,
@@ -257,90 +257,93 @@ ciat %>% ggplot(aes(x = Longitude, y = Latitude)) + geom_point()
 # Arrange physical descriptors
 # ------------------------------------ #
 
-# Split colors
-ciat <- ciat %>% tidyr::separate(Seed.color, into = c("Seed.color", "Seed.color2", "Seed.color3"), sep = ",") 
-ciat$Seed.color[grep(pattern = "Crema ", x = ciat$Seed.color)] <- "Cream"
-ciat$Seed.color[grep(pattern = "Rosaso", x = ciat$Seed.color)] <- "Pink"
-
-ciat$Seed.color2[grep(pattern = " Black", x = ciat$Seed.color2)] <- "Black"
-ciat$Seed.color2[grep(pattern = " Brown", x = ciat$Seed.color2)] <- "Brown"
-ciat$Seed.color2[grep(pattern = " Cream", x = ciat$Seed.color2)] <- "Cream"
-ciat$Seed.color2[grep(pattern = " Other", x = ciat$Seed.color2)] <- "Other"
-ciat$Seed.color2[grep(pattern = " Pink", x = ciat$Seed.color2)] <- "Pink"
-ciat$Seed.color2[grep(pattern = " Purple", x = ciat$Seed.color2)] <- "Purple"
-ciat$Seed.color2[grep(pattern = " Red", x = ciat$Seed.color2)] <- "Red"
-ciat$Seed.color2[grep(pattern = " White", x = ciat$Seed.color2)] <- "White"
-ciat$Seed.color2[grep(pattern = " Yellow", x = ciat$Seed.color2)] <- "Yellow"
-
-ciat$Seed.color3[grep(pattern = " Black", x = ciat$Seed.color3)] <- "Black"
-ciat$Seed.color3[grep(pattern = " Brown", x = ciat$Seed.color3)] <- "Brown"
-ciat$Seed.color3[grep(pattern = " Cream", x = ciat$Seed.color3)] <- "Cream"
-ciat$Seed.color3[grep(pattern = " Other", x = ciat$Seed.color3)] <- "Other"
-ciat$Seed.color3[grep(pattern = " Pink", x = ciat$Seed.color3)] <- "Pink"
-ciat$Seed.color3[grep(pattern = " Purple", x = ciat$Seed.color3)] <- "Purple"
-ciat$Seed.color3[grep(pattern = " Red", x = ciat$Seed.color3)] <- "Red"
-ciat$Seed.color3[grep(pattern = " White", x = ciat$Seed.color3)] <- "White"
-ciat$Seed.color3[grep(pattern = " Yellow", x = ciat$Seed.color3)] <- "Yellow"
-
-color_list <- c(ciat$Seed.color %>% as.character %>% unique,
-                ciat$Seed.color2 %>% as.character %>% unique,
-                ciat$Seed.color3 %>% as.character %>% unique) %>% unique %>% sort
-
-for(i in 1:length(color_list)){
-  eval(parse(text = paste0("ciat$Color_", color_list[i], " <- 0")))
-  col_id <- which(ciat$Seed.color == color_list[i] | ciat$Seed.color2 == color_list[i] | ciat$Seed.color3 == color_list[i])
-  if(length(col_id) > 0){
-    eval(parse(text = paste0("ciat$Color_", color_list[i], "[col_id] <- 1")))
-  }
-}; rm(i, col_id, color_list)
-
-ciat$Seed.color <- ciat$Seed.color2 <- ciat$Seed.color3 <- NULL
-
-# Split proteins
-ciat$Protein[grep(pattern = "\\?", x = ciat$Protein)] <- NA
-ciat <- ciat %>% tidyr::separate(Protein, into = c("Protein", "Protein2", "Protein3", "Protein4", "Protein5"), sep = ",")
-ciat$Protein[grep(pattern = "Ca1\\(2D\\)", x = ciat$Protein)] <- "Ca1"
-ciat$Protein[grep(pattern = "CAR\\(2D\\)", x = ciat$Protein)] <- "CAR"
-ciat$Protein[grep(pattern = "CAR\\(2D\\)H1", x = ciat$Protein)] <- "CAR,H1"
-ciat$Protein[grep(pattern = "CH \\(2D\\)", x = ciat$Protein)] <- "CH"
-ciat$Protein[grep(pattern = "CH\\(2D\\)", x = ciat$Protein)] <- "CH"
-ciat$Protein[grep(pattern = "H1\\(2D\\)", x = ciat$Protein)] <- "H1"
-ciat$Protein[grep(pattern = "H2\\(2D\\)", x = ciat$Protein)] <- "H2"
-ciat$Protein[grep(pattern = "HE\\(2D\\)", x = ciat$Protein)] <- "HE"
-ciat$Protein[grep(pattern = "L \\(2D\\)", x = ciat$Protein)] <- "L"
-ciat$Protein[grep(pattern = "LI\\(2D\\)", x = ciat$Protein)] <- "LI"
-ciat$Protein[grep(pattern = "S\\(2D\\)", x = ciat$Protein)] <- "S"
-ciat$Protein[grep(pattern = "Sd\\(2D\\)", x = ciat$Protein)] <- "Sd"
-ciat$Protein[grep(pattern = "T \\(2D\\)", x = ciat$Protein)] <- "T"
-ciat$Protein[grep(pattern = "T\\(2D\\)", x = ciat$Protein)] <- "T"
-ciat$Protein[grep(pattern = "TI1\\(2D\\)", x = ciat$Protein)] <- "TI1"
-ciat$Protein[grep(pattern = "TI2\\(2D\\)", x = ciat$Protein)] <- "TI2"
-
-ciat$Protein2[grep(pattern = " H1\\(LCG\\)", x = ciat$Protein2)] <- "H1"
-ciat$Protein2[grep(pattern = "^CAR\\(2D\\)", x = ciat$Protein2)] <- "CAR"
-ciat$Protein2[grep(pattern = "^CH\\(2D\\)", x = ciat$Protein2)] <- "CH"
-ciat$Protein2[grep(pattern = "^H1\\(2D", x = ciat$Protein2)] <- "H1"
-ciat$Protein2[grep(pattern = "^S\\(2D", x = ciat$Protein2)] <- "S"
-
-ciat$Protein3[grep(pattern = "^CAR\\(2D\\)", x = ciat$Protein3)] <- "CAR"
-
-protein_list <- c(ciat$Protein %>% as.character %>% unique,
-                ciat$Protein2 %>% as.character %>% unique,
-                ciat$Protein3 %>% as.character %>% unique,
-                ciat$Protein4 %>% as.character %>% unique,
-                ciat$Protein5 %>% as.character %>% unique) %>% unique %>% sort
-protein_list <- protein_list[-1]
-
-for(i in 1:length(protein_list)){
-  eval(parse(text = paste0("ciat$Protein_", protein_list[i], " <- 0")))
-  protein_id <- which(ciat$Protein == protein_list[i] | ciat$Protein2 == protein_list[i] | ciat$Protein3 == protein_list[i] | ciat$Protein4 == protein_list[i] | ciat$Protein5 == protein_list[i])
-  if(length(protein_id) > 0){
-    eval(parse(text = paste0("ciat$Protein_", protein_list[i], "[protein_id] <- 1")))
-  }
-}; rm(i, protein_id, protein_list)
-
-ciat$Protein <- ciat$Protein2 <- ciat$Protein3 <- ciat$Protein4 <- ciat$Protein5 <- NULL
-names(ciat)
+arrangePD <- F
+if(arrangePD){
+  # Split colors
+  ciat <- ciat %>% tidyr::separate(Seed.color, into = c("Seed.color", "Seed.color2", "Seed.color3"), sep = ",") 
+  ciat$Seed.color[grep(pattern = "Crema ", x = ciat$Seed.color)] <- "Cream"
+  ciat$Seed.color[grep(pattern = "Rosaso", x = ciat$Seed.color)] <- "Pink"
+  
+  ciat$Seed.color2[grep(pattern = " Black", x = ciat$Seed.color2)] <- "Black"
+  ciat$Seed.color2[grep(pattern = " Brown", x = ciat$Seed.color2)] <- "Brown"
+  ciat$Seed.color2[grep(pattern = " Cream", x = ciat$Seed.color2)] <- "Cream"
+  ciat$Seed.color2[grep(pattern = " Other", x = ciat$Seed.color2)] <- "Other"
+  ciat$Seed.color2[grep(pattern = " Pink", x = ciat$Seed.color2)] <- "Pink"
+  ciat$Seed.color2[grep(pattern = " Purple", x = ciat$Seed.color2)] <- "Purple"
+  ciat$Seed.color2[grep(pattern = " Red", x = ciat$Seed.color2)] <- "Red"
+  ciat$Seed.color2[grep(pattern = " White", x = ciat$Seed.color2)] <- "White"
+  ciat$Seed.color2[grep(pattern = " Yellow", x = ciat$Seed.color2)] <- "Yellow"
+  
+  ciat$Seed.color3[grep(pattern = " Black", x = ciat$Seed.color3)] <- "Black"
+  ciat$Seed.color3[grep(pattern = " Brown", x = ciat$Seed.color3)] <- "Brown"
+  ciat$Seed.color3[grep(pattern = " Cream", x = ciat$Seed.color3)] <- "Cream"
+  ciat$Seed.color3[grep(pattern = " Other", x = ciat$Seed.color3)] <- "Other"
+  ciat$Seed.color3[grep(pattern = " Pink", x = ciat$Seed.color3)] <- "Pink"
+  ciat$Seed.color3[grep(pattern = " Purple", x = ciat$Seed.color3)] <- "Purple"
+  ciat$Seed.color3[grep(pattern = " Red", x = ciat$Seed.color3)] <- "Red"
+  ciat$Seed.color3[grep(pattern = " White", x = ciat$Seed.color3)] <- "White"
+  ciat$Seed.color3[grep(pattern = " Yellow", x = ciat$Seed.color3)] <- "Yellow"
+  
+  color_list <- c(ciat$Seed.color %>% as.character %>% unique,
+                  ciat$Seed.color2 %>% as.character %>% unique,
+                  ciat$Seed.color3 %>% as.character %>% unique) %>% unique %>% sort
+  
+  for(i in 1:length(color_list)){
+    eval(parse(text = paste0("ciat$Color_", color_list[i], " <- 0")))
+    col_id <- which(ciat$Seed.color == color_list[i] | ciat$Seed.color2 == color_list[i] | ciat$Seed.color3 == color_list[i])
+    if(length(col_id) > 0){
+      eval(parse(text = paste0("ciat$Color_", color_list[i], "[col_id] <- 1")))
+    }
+  }; rm(i, col_id, color_list)
+  
+  ciat$Seed.color <- ciat$Seed.color2 <- ciat$Seed.color3 <- NULL
+  
+  # Split proteins
+  ciat$Protein[grep(pattern = "\\?", x = ciat$Protein)] <- NA
+  ciat <- ciat %>% tidyr::separate(Protein, into = c("Protein", "Protein2", "Protein3", "Protein4", "Protein5"), sep = ",")
+  ciat$Protein[grep(pattern = "Ca1\\(2D\\)", x = ciat$Protein)] <- "Ca1"
+  ciat$Protein[grep(pattern = "CAR\\(2D\\)", x = ciat$Protein)] <- "CAR"
+  ciat$Protein[grep(pattern = "CAR\\(2D\\)H1", x = ciat$Protein)] <- "CAR,H1"
+  ciat$Protein[grep(pattern = "CH \\(2D\\)", x = ciat$Protein)] <- "CH"
+  ciat$Protein[grep(pattern = "CH\\(2D\\)", x = ciat$Protein)] <- "CH"
+  ciat$Protein[grep(pattern = "H1\\(2D\\)", x = ciat$Protein)] <- "H1"
+  ciat$Protein[grep(pattern = "H2\\(2D\\)", x = ciat$Protein)] <- "H2"
+  ciat$Protein[grep(pattern = "HE\\(2D\\)", x = ciat$Protein)] <- "HE"
+  ciat$Protein[grep(pattern = "L \\(2D\\)", x = ciat$Protein)] <- "L"
+  ciat$Protein[grep(pattern = "LI\\(2D\\)", x = ciat$Protein)] <- "LI"
+  ciat$Protein[grep(pattern = "S\\(2D\\)", x = ciat$Protein)] <- "S"
+  ciat$Protein[grep(pattern = "Sd\\(2D\\)", x = ciat$Protein)] <- "Sd"
+  ciat$Protein[grep(pattern = "T \\(2D\\)", x = ciat$Protein)] <- "T"
+  ciat$Protein[grep(pattern = "T\\(2D\\)", x = ciat$Protein)] <- "T"
+  ciat$Protein[grep(pattern = "TI1\\(2D\\)", x = ciat$Protein)] <- "TI1"
+  ciat$Protein[grep(pattern = "TI2\\(2D\\)", x = ciat$Protein)] <- "TI2"
+  
+  ciat$Protein2[grep(pattern = " H1\\(LCG\\)", x = ciat$Protein2)] <- "H1"
+  ciat$Protein2[grep(pattern = "^CAR\\(2D\\)", x = ciat$Protein2)] <- "CAR"
+  ciat$Protein2[grep(pattern = "^CH\\(2D\\)", x = ciat$Protein2)] <- "CH"
+  ciat$Protein2[grep(pattern = "^H1\\(2D", x = ciat$Protein2)] <- "H1"
+  ciat$Protein2[grep(pattern = "^S\\(2D", x = ciat$Protein2)] <- "S"
+  
+  ciat$Protein3[grep(pattern = "^CAR\\(2D\\)", x = ciat$Protein3)] <- "CAR"
+  
+  protein_list <- c(ciat$Protein %>% as.character %>% unique,
+                    ciat$Protein2 %>% as.character %>% unique,
+                    ciat$Protein3 %>% as.character %>% unique,
+                    ciat$Protein4 %>% as.character %>% unique,
+                    ciat$Protein5 %>% as.character %>% unique) %>% unique %>% sort
+  protein_list <- protein_list[-1]
+  
+  for(i in 1:length(protein_list)){
+    eval(parse(text = paste0("ciat$Protein_", protein_list[i], " <- 0")))
+    protein_id <- which(ciat$Protein == protein_list[i] | ciat$Protein2 == protein_list[i] | ciat$Protein3 == protein_list[i] | ciat$Protein4 == protein_list[i] | ciat$Protein5 == protein_list[i])
+    if(length(protein_id) > 0){
+      eval(parse(text = paste0("ciat$Protein_", protein_list[i], "[protein_id] <- 1")))
+    }
+  }; rm(i, protein_id, protein_list)
+  
+  ciat$Protein <- ciat$Protein2 <- ciat$Protein3 <- ciat$Protein4 <- ciat$Protein5 <- NULL
+  names(ciat)
+}
 
 # ------------------------------------ #
 # Combine datasets
@@ -351,47 +354,46 @@ all_df2 <- dplyr::left_join(x = all_df2, y = humanFactors, by = c("ID", "Longitu
 
 saveRDS(object = all_df2, file = paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/BEAN-GRP-COORDINATES-CLIMATE-HUMAN-FACTORS.RDS"))
 
-
-#all_df2 <- all_df %>% dplyr::select(Genepool.interpreted.ACID, annualPET:bio_19)
-all_df2 <- all_df %>% dplyr::select(Race.interpreted.ACID, annualPET:bio_19) #Altitude: Latitude, 
-all_df2 <- all_df2[complete.cases(all_df2),]
-
-# Reference: 68%
-bean_pca <- FactoMineR::PCA(X = all_df2[,-1], scale.unit = T, graph = F)
-head(bean_pca$eig)
-test <- bean_pca$ind$coord
-#test <- data.frame(test, Genepool = all_df2$Genepool.interpreted.ACID)
-test <- data.frame(test, Race = all_df2$Race.interpreted.ACID)
-#test %>% ggplot(aes(x = Dim.1, colour = Genepool)) + geom_rug() + geom_density()
-#test %>% ggplot(aes(x = Dim.1, y = Dim.2, colour = Genepool)) + geom_point() + geom_density2d()
-test %>% ggplot(aes(x = Dim.1, colour = Race)) + geom_rug() + geom_density()
-test %>% ggplot(aes(x = Dim.1, y = Dim.2, colour = Race)) + geom_point() + geom_density2d()
-
-
-
-
-
-M <- cor(biophysicalVars[,-(1)], use = "complete.obs", method = "spearman")
-corrplot(M, method = "square", type = "lower")
-corrplot(M, method = "square", type = "lower", order = "hclust", addrect = 2)
-
-bio_pca <- FactoMineR::PCA(X = biophysicalVars[,-(1:2)], scale.unit = T, ncp = 3, graph = F)
-bio_pca$eig
-
-bio_hcpc <- FactoMineR::HCPC(bio_pca, nb.clust = -1, graph = F)
-
-fviz_dend(bio_hcpc, 
-          cex = 0.7,                     # Label size
-          palette = "jco",               # Color palette see ?ggpubr::ggpar
-          rect = TRUE, rect_fill = TRUE, # Add rectangle around groups
-          rect_border = "jco",           # Rectangle color
-          labels_track_height = 0.8      # Augment the room for labels
-)
-
-suppressMessages(library(Rtsne))
-bio_tsne <- Rtsne(biophysicalVars[complete.cases(biophysicalVars),-1] %>% unique, dims = 2, perplexity = 500, verbose = TRUE, max_iter = 500)
-bio_tsne <- Rtsne(biophysicalVars[complete.cases(biophysicalVars),-1] %>% unique, dims = 2, perplexity = 30, verbose = TRUE, max_iter = 500)
-bio_tsne <- Rtsne(biophysicalVars[complete.cases(biophysicalVars),-1] %>% unique, dims = 2, perplexity = 50, verbose = TRUE, max_iter = 500)
-plot(bio_tsne$Y, pch = 20, main = "tsne for biophysical variables")
-
-dep<- mapview() %>% editMap()
+# all_df2 <- all_df %>% dplyr::select(Genepool.interpreted.ACID, annualPET:bio_19)
+# all_df2 <- all_df %>% dplyr::select(Race.interpreted.ACID, annualPET:bio_19) #Altitude: Latitude, 
+# all_df2 <- all_df2[complete.cases(all_df2),]
+# 
+# # Reference: 68%
+# bean_pca <- FactoMineR::PCA(X = all_df2[,-1], scale.unit = T, graph = F)
+# head(bean_pca$eig)
+# test <- bean_pca$ind$coord
+# #test <- data.frame(test, Genepool = all_df2$Genepool.interpreted.ACID)
+# test <- data.frame(test, Race = all_df2$Race.interpreted.ACID)
+# #test %>% ggplot(aes(x = Dim.1, colour = Genepool)) + geom_rug() + geom_density()
+# #test %>% ggplot(aes(x = Dim.1, y = Dim.2, colour = Genepool)) + geom_point() + geom_density2d()
+# test %>% ggplot(aes(x = Dim.1, colour = Race)) + geom_rug() + geom_density()
+# test %>% ggplot(aes(x = Dim.1, y = Dim.2, colour = Race)) + geom_point() + geom_density2d()
+# 
+# 
+# 
+# 
+# 
+# M <- cor(biophysicalVars[,-(1)], use = "complete.obs", method = "spearman")
+# corrplot(M, method = "square", type = "lower")
+# corrplot(M, method = "square", type = "lower", order = "hclust", addrect = 2)
+# 
+# bio_pca <- FactoMineR::PCA(X = biophysicalVars[,-(1:2)], scale.unit = T, ncp = 3, graph = F)
+# bio_pca$eig
+# 
+# bio_hcpc <- FactoMineR::HCPC(bio_pca, nb.clust = -1, graph = F)
+# 
+# fviz_dend(bio_hcpc, 
+#           cex = 0.7,                     # Label size
+#           palette = "jco",               # Color palette see ?ggpubr::ggpar
+#           rect = TRUE, rect_fill = TRUE, # Add rectangle around groups
+#           rect_border = "jco",           # Rectangle color
+#           labels_track_height = 0.8      # Augment the room for labels
+# )
+# 
+# suppressMessages(library(Rtsne))
+# bio_tsne <- Rtsne(biophysicalVars[complete.cases(biophysicalVars),-1] %>% unique, dims = 2, perplexity = 500, verbose = TRUE, max_iter = 500)
+# bio_tsne <- Rtsne(biophysicalVars[complete.cases(biophysicalVars),-1] %>% unique, dims = 2, perplexity = 30, verbose = TRUE, max_iter = 500)
+# bio_tsne <- Rtsne(biophysicalVars[complete.cases(biophysicalVars),-1] %>% unique, dims = 2, perplexity = 50, verbose = TRUE, max_iter = 500)
+# plot(bio_tsne$Y, pch = 20, main = "tsne for biophysical variables")
+# 
+# dep<- mapview() %>% editMap()

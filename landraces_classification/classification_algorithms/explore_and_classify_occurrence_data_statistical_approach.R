@@ -192,16 +192,29 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
   # ---------------------------------------------------------------- #
   # Save Variable importance
   # ---------------------------------------------------------------- #
-  variableImportance <- list(FDA = caret::varImp(FDA)$importance,
-                             GLM = caret::varImp(glmFit1)$importance,
-                             RF  = caret::varImp(Rforest)$importance
-                             # SVM = caret::varImp(svmFit)$importance
-  )
-  variableImportance <- lapply(variableImportance, function(df){
-    df$Variable <- rownames(df)
-    rownames(df) <- 1:nrow(df)
-    return(df)
-  })
+  variableImportance <- caret::varImp(Rforest)$importance
+  colnames(variableImportance) <- paste0(colnames(variableImportance), ".RF")
+  variableImportance$Variable <- rownames(variableImportance)
+  rownames(variableImportance) <- 1:nrow(variableImportance)
+  variableImportance <- variableImportance[order(variableImportance$Andean, decreasing = T),]
+  
+  # variableImportance <- list(FDA = caret::varImp(FDA)$importance,
+  #                            GLM = caret::varImp(glmFit1)$importance,
+  #                            RF  = caret::varImp(Rforest)$importance
+  #                            # SVM = caret::varImp(svmFit)$importance
+  # )
+  # variableImportance <- lapply(1:length(variableImportance), function(i){
+  #   df <- variableImportance[[i]]
+  #   colnames(df) <- paste0(colnames(df), ".", names(variableImportance)[i])
+  #   df$Variable <- rownames(df)
+  #   rownames(df) <- 1:nrow(df)
+  #   return(df)
+  # })
+  # varsImportance <- Reduce(function(x, y) merge(x, y, by = "Variable"), variableImportance)
+  # varsImportance$VariableImportance <- rowMeans(varsImportance[,-which(colnames(varsImportance)=="Variable")], na.rm = T)
+  # varsImportance <- varsImportance %>% dplyr::select(Variable, VariableImportance)
+  # varsImportance <- varsImportance %>% dplyr::arrange(., -VariableImportance)
+  # saveRDS(object = varsImportance, file = paste0(root, "/gap_analysis_landraces/Results/classification_analysis/genepool_predictors.RDS"))
   
   # ---------------------------------------------------------------- #
   # Predict new cases
@@ -468,6 +481,18 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
     
       if(length(y)==2){
         cat(">>>> Process done\n")
+        data_predicted_genepool <- data.frame(genepool_na, predictions)
+        getmode <- function(v){
+          uniqv <- unique(v)
+          uniqv[which.max(tabulate(match(v, uniqv)))]
+        }
+        data_predicted_genepool$Genepool.prediction <- apply(X = data_predicted_genepool %>% select(FDA:svmFit), MARGIN = 1, FUN = getmode)
+        data_predicted_genepool$ID <- rownames(data_predicted_genepool)
+        data_predicted_genepool$ID <- as.integer(data_predicted_genepool$ID)
+        genotypic_climate <- readRDS(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/BEAN-GRP-COORDINATES-CLIMATE-HUMAN-FACTORS.RDS"))
+        genotypic_climate <- genotypic_climate %>% select(ID, Longitude, Latitude)
+        data_predicted_genepool <- dplyr::inner_join(x = data_predicted_genepool, y = genotypic_climate, by = "ID")
+        saveRDS(data_predicted_genepool, paste0(root, "/gap_analysis_landraces/Results/classification_analysis/genepool_predicted_ciat_original.RDS"))
         return(list(data_predicted_genepool = data.frame(genepool_na, predictions),
                     accuracy.genepool = accuracy,
                     variableImportance.genepool = variableImportance,
