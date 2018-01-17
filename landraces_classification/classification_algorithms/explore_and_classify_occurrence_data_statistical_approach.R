@@ -81,8 +81,11 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
     data_gen[,grep("Protein_", names(data_gen) )] <- data_gen[,grep("Protein_",names(data_gen) )] %>% mutate_all(., funs(as.factor(.)))
   }
   
+  # Hold a copy of the original data set
+  original_df <- data_gen
+  
   # Function to exclude correlated variables before to model
-  colinearity <- function(genepool_data,i=1){
+  colinearity <- function(genepool_data, i = 1){
     numeric <- genepool_data[,sapply(genepool_data, is.numeric)]
     descrCor <- cor(numeric)
     highlyCorDescr <- findCorrelation(descrCor, cutoff = .75)
@@ -93,7 +96,7 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
   }
   
   # Function to get just numeric variables before to model
-  only_numeric <- function(genepool_data,i=1 ){
+  only_numeric <- function(genepool_data, i = 1){
     genepool_data2 <- genepool_data[,sapply(genepool_data, is.numeric)]
     genepool_data <- eval(parse(text = paste0("data.frame(", y[i], "=", "genepool_data$", y[i], ",", "genepool_data2", ")")))
     return(genepool_data)
@@ -121,7 +124,7 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
   rownames(genepool_data) <- genepool_data$ID; genepool_data$ID <- NULL
   
   # Select response variable
-  if( y[1] == "Genepool.interpreted.ACID" ){
+  if(y[1] == "Genepool.interpreted.ACID"){
     if(assertthat::has_name( genepool_data, "Race.interpreted.ACID")){ genepool_data$Race.interpreted.ACID <- NULL}
     if(assertthat::has_name( genepool_data, "Subgroup.interpreted.ACID")){ genepool_data$Subgroup.interpreted.ACID <- NULL}
   }
@@ -138,25 +141,36 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
   
   # Identify and exclude variables with low frequencies and variance close to 0
   nzv <- nearZeroVar(genepool_data)
-  if(length(nzv)!=0){
+  if(length(nzv) != 0){
     genepool_data <- genepool_data[,-nzv]
   }
   
   # Define parameters to train models
-  set.seed(825); ctrol2 <- trainControl(method = "LGOCV", p = 0.8, number = 1, savePredictions = T)
+  set.seed(825)
+  eval(parse(text = paste0("p <- table(genepool_data$", y[1], ")/sum(table(genepool_data$", y[1], "))")))
+  if(sum(p < .4) != 0 | sum(p > .6) != 0){ # In case of imbalance
+    ctrol2 <- trainControl(method = "LGOCV", p = 0.8, number = 10, savePredictions = T, sampling = "down")
+  } else {
+    ctrol2 <- trainControl(method = "LGOCV", p = 0.8, number = 10, savePredictions = T)
+  }
   n <- nrow(genepool_data)*0.2
-  cat(paste("Sample size of Testing genepool-data:",n,"\n"))
+  cat(paste("Sample size of Testing genepool-data:", round(n),"\n"))
   rm(n)
   
-  # In case of imbalance: ctrol2 <- trainControl(method = "LGOCV", p = 0.8, number = 1, savePredictions = T, sampling = "down")
+  ctrol2 <- trainControl(method = "LGOCV", p = 0.8, number = 10, savePredictions = T)
+  ctrol2 <- trainControl(method = "LGOCV", p = 0.8, number = 1, savePredictions = T)
+  ctrol2 <- trainControl(method = "cv", p = 0.8, number = 10, savePredictions = T)
+  ctrol2 <- trainControl(method = "cv", p = 0.8, number = 1, savePredictions = T)
+  ctrol2 <- trainControl(method = "repeatedcv", p = 0.8, number = 10, savePredictions = T)
+  ctrol2 <- trainControl(method = "repeatedcv", p = 0.8, number = 1, savePredictions = T)
   
   ##########################################
   # Model 1
   # Bagged Flexible Discriminant Analysis
   ##########################################
   cat("Running FDA ...\n")
-  data_in <- only_numeric(genepool_data, i=1)
-  eval(parse(text = paste0("FDA <- train(", y[1], " ~ ., data = data_in, method = 'bagFDA', trControl = ctrol2)"))) # FDA training
+  data_in <- only_numeric(genepool_data, i = 1)
+  eval(parse(text = paste0("FDA <- train(", y[1], " ~ ., data = data_in, method = 'bagFDA', metric = 'Kappa', trControl = ctrol2)"))) # FDA training
   cat("finishing FDA ...\n")
   
   ##########################################
@@ -164,7 +178,7 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
   # GLM: Logistic Regression Model
   ##########################################
   cat("Running GLM ...\n")
-  vf <- colinearity(genepool_data,i=1)
+  vf <- colinearity(genepool_data, i = 1)
   pos <- which(sapply(vf, is.factor))
   for(i in 1:length(pos)){
     vf[,pos[i]] <- make.names((vf[,pos[i]]))
