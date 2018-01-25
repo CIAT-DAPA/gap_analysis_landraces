@@ -41,7 +41,7 @@ suppressMessages(if(!require(jsonlite)){install.packages('jsonlite'); library(js
 #token <- drop_auth()
 #saveRDS(token, "droptoken.rds")
 
-#setwd("C:/Users/acmendez/Google Drive/CIAT/gap_analysis_landraces/selected_proposal")
+##setwd("C:/Users/acmendez/Google Drive/CIAT/gap_analysis_landraces/selected_proposal")
 
 harvest<-readOGR(dsn="harvest_area_shapefile_simplify",layer="harvest_area")
 presence<-readRDS("presence_data/genepool_predictions.RDS")

@@ -38,6 +38,7 @@ suppressMessages(if(!require(nnet)){install.packages("nnet");library(nnet)}else{
 # Load data
 #file://dapadfs/Workspace_cluster_9/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/BEAN-GRP-COORDINATES-CLIMATE-HUMAN-FACTORS.RDS
 genotypic_climate <- readRDS("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/Input_data/_datosAndres/acp/data4modeling.RDS")
+table(genotypic_climate$Race.interpreted.ACID)
 rownames(genotypic_climate) <- genotypic_climate$ID
 #barplot(table(genotypic_climate$Genepool.predicted)/sum(table(genotypic_climate$Genepool.predicted)))
 # Descriptive analysis

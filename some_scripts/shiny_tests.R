@@ -292,6 +292,15 @@ observeEvent(input$mymap_shape_click, {
 
 
 
+for(i in 1:10000){
+  
+  cat("Procesando: ", (i/10000)*100, "%", rep(".",runif(1,2,15)), fill = TRUE, labels = paste0("{", 1:10, "}:"))
+  Sys.sleep(2)
+  
+  
+}
+
+
 
 install.packages("fields")
 install.packages("spam")
@@ -1009,4 +1018,65 @@ runApp(list(
 
 plot(density( pred.rf[which(pred.rf$genepool=="Andean"),2] ),xlim=c(0,1))
 lines(density( pred.rf[which(pred.rf$genepool=="Mesoamerican"),2] ),col="red")
+############################
 
+quakes1 <- quakes[1:10,]
+mymap <- leaflet({})
+
+mymap <- mymap %>%   addProviderTiles(providers$OpenStreetMap.BlackAndWhite, #map type or map theme. -default($Stame.TonerLite)
+                                      options = providerTileOptions(noWrap = TRUE) 
+                                      
+) %>% setView(lng = 180, lat = 26,zoom=4)  %>% addMarkers(quakes1$long, quakes1$lat, icon = leafIcons2  ,label = as.character(quakes1$mag) , clusterOptions = markerClusterOptions( disableClusteringAtZoom=6) )
+
+#icons(iconUrl = "http://simpleicon.com/wp-content/uploads/smile.png",iconWidth = 20,iconHeight = 20  )
+mymap
+
+leafIcons2 <- icons(
+  iconUrl = ifelse(quakes1$mag < 4.6,
+                   "http://simpleicon.com/wp-content/uploads/smile.png",
+                   "http://leafletjs.com/examples/custom-icons/leaf-red.png"
+  ),
+  iconWidth = 38, iconHeight = 95,
+  iconAnchorX = 22, iconAnchorY = 94,
+  shadowUrl = "http://leafletjs.com/examples/custom-icons/leaf-shadow.png",
+  shadowWidth = 50, shadowHeight = 64,
+  shadowAnchorX = 4, shadowAnchorY = 62
+)
+
+x <- 5* exp(-1*(  3*(0:33) ))
+plot(0:33,x,type="l")
+  leafIcons <- icons(
+    iconUrl = ifelse(quakes1$mag < 4.6,
+                     "http://leafletjs.com/examples/custom-icons/leaf-green.png",
+                     "http://leafletjs.com/examples/custom-icons/leaf-red.png"
+    ),
+    iconWidth = 38, iconHeight = 95,
+    iconAnchorX = 22, iconAnchorY = 94,
+    shadowUrl = "http://leafletjs.com/examples/custom-icons/leaf-shadow.png",
+    shadowWidth = 50, shadowHeight = 64,
+    shadowAnchorX = 4, shadowAnchorY = 62
+  )
+  
+  
+  install.packages("osmar")
+library(osmar)  
+
+  
+  url <- "http://osmar.r-forge.r-project.org/"
+  file <- "muenchen.osm.gz"
+  download.file(sprintf("%s%s", url, file), file)
+  system("gzip -d muenchen.osm.gz")
+  src <- osmsource_file(file = "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/Input_data/_maps/_openstreetmaps/south-america-latest.osm")
+
+  muc_bbox <- center_bbox(-79.145508,-4.565474,-66.445313,12.683215)
+  muc <- get_osm(muc_bbox, src)
+  muc
+  
+  
+  
+  c('SQLite', 'OSM') %in% ogrDrivers()$name
+  
+  ogrListLayers('//dapadfs/Workspace_cluster_9/gap_analysis_landraces/Input_data/_maps/_openstreetmaps/south-america-latest.osm')
+  
+  /mnt/workspace_cluster_9/gap_analysis_landraces/Input_data/_maps/_openstreetmaps/south-america-latest.osm
+  
