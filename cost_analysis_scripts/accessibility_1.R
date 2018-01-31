@@ -165,9 +165,11 @@ writeRaster(aust, "url" , format = "GTiff" , overwrite = T )
 
 require(sf)
 
-sp <- read_sf("Z:/Input_data/_maps/_openstreetmaps/shapefiles/africa_roads2.shp")
+wmask <- raster("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/Input_data/mask_wb_c_ant.tif")
+sp <- read_sf("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/Input_data/_maps/_openstreetmaps/shapefiles/american_roads.shp")
 
+r <- raster()
 
-
+mrast <- rasterize(sp, r, fiel="highway", mask = wmask)
 
 
