@@ -119,3 +119,5 @@ bg <- randomPoints(mask, 500 )
 
 plot(!is.na(mask), legend=FALSE)
 points(bg, cex=0.5)
+
+###comment
