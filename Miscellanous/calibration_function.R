@@ -3,7 +3,7 @@ CreateMXArgs <- function(calibration){
   mxnt.args<- c("linear=TRUE")
   
   if (!is.null(calibration)) {
-    best.ind<- which.min(calibration$tuning$deltaAICc)
+    best.ind <- which.min(calibration$tuning$deltaAICc)
     features <- calibration$tuning$classes[best.ind]
     betamultiplier <- calibration$tuning$regMult[best.ind]
     if(grepl("q", features)){
@@ -59,7 +59,7 @@ Calibration_function<-function(spData,save,sp_Dir,ommit){
     calibration <- trainMaxNet(data = spData[,c(1,4:ncol(spData))], regMult = seq(0.5, 6, 0.5), out = c('tuning'), verbose = TRUE)#, jackknife = F,forceLinear=T)
     
     if(save==T){
-      write.csv(calibration$tuning,paste0(sp_Dir,"/","calibration.csv"),header=T,quote=F)
+      write.csv(calibration$tuning,paste0(sp_Dir,"/","calibration.csv"),quote=F,row.names = F)
     }else{
       cat("Not file to save","\n")
     }
