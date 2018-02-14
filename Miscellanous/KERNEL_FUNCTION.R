@@ -45,8 +45,8 @@ raster_kernel<-function(species,mask,occurrences,out_dir,spatstat,scale){
     kernel <- raster::raster(kernel);rm(w,bw_dig);gc()
     
     if(scale==T){
-      kernel< - kernel/max(kernel[],na.rm=T)
-    }else{
+      kernel <- kernel/max(kernel[],na.rm=T)
+    }else{ 
       kernel <- kernel
          }
   
@@ -64,7 +64,7 @@ raster_kernel<-function(species,mask,occurrences,out_dir,spatstat,scale){
     kernel<- raster::raster(res);rm(res,rAsc);gc()
     
     if(scale==T){
-      kernel< - kernel/max(kernel[],na.rm=T)
+      kernel <- kernel/max(kernel[],na.rm=T)
     }else{
       kernel <- kernel
     }
