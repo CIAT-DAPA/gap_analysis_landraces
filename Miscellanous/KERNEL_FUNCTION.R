@@ -94,7 +94,7 @@ raster_kernel<-function(species,mask,occurrences,out_dir,spatstat,scale){
 
 
 
-speciesList <- c("Mesoamerican","Andean")
+#speciesList <- c("Mesoamerican","Andean")
 
 ### Calling paths to perform analysis
 # root <- "U:"
