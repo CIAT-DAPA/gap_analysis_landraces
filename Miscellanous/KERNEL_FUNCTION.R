@@ -55,11 +55,6 @@ raster_kernel<-function(species,mask,occurrences,out_dir,spatstat,scale){
     rAsc <- asc.from.raster(mask);rAsc <- adehabitatMA::asc2spixdf(rAsc);gc()
     kernel <- adehabitatHR::kernelUD(occurrences,h="href",grid=rAsc)
     
-    if(scale==T){
-      kernel< - kernel/max(kernel[],na.rm=T)
-    }else{
-      kernel <- kernel
-    }
     
     res <- as.data.frame(kernel[[1]])
     sp::coordinates(res) <- coordinates(kernel)
@@ -67,7 +62,14 @@ raster_kernel<-function(species,mask,occurrences,out_dir,spatstat,scale){
     sp::proj4string(res) <- CRS(proj4string(kernel))
     
     kernel<- raster::raster(res);rm(res,rAsc);gc()
-  }
+    
+    if(scale==T){
+      kernel< - kernel/max(kernel[],na.rm=T)
+    }else{
+      kernel <- kernel
+    }
+    
+    }
   
   
   ### Rasterizing density object
