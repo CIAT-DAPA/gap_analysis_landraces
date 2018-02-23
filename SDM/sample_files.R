@@ -79,9 +79,9 @@ samples_create <- function(occFile,occName,backDir,occDir,swdDir,mask,current_cl
       
       descrCor <- cor(swdSample[,-c(1:5)])
       highlyCorDescr <- findCorrelation(descrCor, cutoff = .70)
-      colnames(descrCor)[highlyCorDescr]
+      #colnames(descrCor)[highlyCorDescr]
       swdSample <- swdSample[,!colnames(swdSample) %in% (colnames(descrCor)[highlyCorDescr])]
-     }
+    }
     if(correlation==2){
       cat("Using VIF  approach","\n")
       
@@ -103,9 +103,9 @@ samples_create <- function(occFile,occName,backDir,occDir,swdDir,mask,current_cl
       descrCor <- vifstep(swdSample[,vars],th=10)
       highlyCorDescr <- descrCor@excluded
       swdSample <- swdSample[,!colnames(swdSample) %in% highlyCorDescr]
-  }
+    }
     cat("Saving csv files","\n")
-
+    
     write.csv(swdSample_Complete, outSWDComplete_Name, quote=F, row.names=F)
     write.csv(occ, outBackName, quote=F, row.names=F)
     write.csv(occSample, outOccName, quote=F, row.names=F)
@@ -117,6 +117,6 @@ samples_create <- function(occFile,occName,backDir,occDir,swdDir,mask,current_cl
   }
   return(swdSample)
 }
-  
+
 
 

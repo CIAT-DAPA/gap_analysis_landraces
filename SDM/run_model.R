@@ -9,22 +9,22 @@ baseDir <- "//dapadfs/Workspace_cluster_9/gap_analysis_landraces"
 #software directory
 srcDir <- paste(baseDir,"/Scripts",sep="")
 
-source(paste(srcDir,"/SDMs/config.R",sep=""))
-
 #Temporal directory for Temporal raster files
 raster::rasterOptions(tmpdir="D:/TEMP/CSOSSA")
 
 #Calling Species to run
-
 occName <- "Andean" #"Mesoamerican"
+
+source(paste(srcDir,"/SDMs/config.R",sep=""))
+
 extension_r <- ".tif"
 clsModel <- ".RF"
 correlation <- 3 #1 Correlation, 2 VIF, 3 PCA +VIF
 var_names <- model_driver(occName,extension_r,all=F,overwrite=F,clsModel,correlation=correlation)
 
-##########################################################
-###swd file and occurrence data
-##########################################################
+
+#swd file and occurrence data
+
 
 swdFile <- paste0(swdDir,"/swd_",occName,".csv")
 spData <- read.csv(swdFile)
@@ -36,12 +36,6 @@ mask <- raster(paste(baseDir,"/Input_data/mask_wb_c_ant_AMERICAS.tif",sep=""))
 clim_layer <- lapply(paste0(climDir,"/","/",paste0(var_names,".tif")),raster)
 clim_layer <- stack(clim_layer)
 
-
-
-#Run buffer approach
-cat("Creating buffer around 50 Km","\n")
-x <- create_buffers(xy=spData[which(spData[,1]==1),c("lon","lat")], msk=mask, buff_dist=0.5, format="GTiff", filename=paste0(gap_outDir,"/","buffer.tif"))
-
 #Calibration step
 cat("Performing calibration step","\n")
 
@@ -50,15 +44,13 @@ if(file.exists(paste0(sp_Dir,"/","calibration.csv"))){
   feat <- CreateMXArgs(calibration);
   beta <- feat[(grepl("betamultiplier=",feat))];beta <- as.numeric(gsub("betamultiplier=","",beta))
   feat <- feat[(!grepl("betamultiplier=",feat))]
-  
-
   rm(calibration)
 } else {
   feat <- Calibration_function(spData=spData,save=T,sp_Dir=sp_Dir,ommit=F)
-beta <- feat[(grepl("betamultiplier=",feat))];beta <- as.numeric(gsub("betamultiplier=","",beta))
-
-feat <- feat[(!grepl("betamultiplier=",feat))]
-
+  beta <- feat[(grepl("betamultiplier=",feat))];beta <- as.numeric(gsub("betamultiplier=","",beta))
+  
+  feat <- feat[(!grepl("betamultiplier=",feat))]
+  
 }
 
 #running SDMs
@@ -77,8 +69,22 @@ cat("projecting models","\n")
 detach("package:caret", unload=TRUE) # MANDATORY!
 
 model <- projecting_function(m2,m2_eval,model_outDir,nCores=5,obj.size=3)
-
+model <- model
 #final evaluation table
 cat("Validating model","\n")
 m2_eval_final <- final_evaluation(m2_eval,occName)
 
+
+#Run buffer approach
+cat("Creating buffer around 50 Km","\n")
+buffer <- create_buffers(xy=spData[which(spData[,1]==1),c("lon","lat")], msk=mask, buff_dist=0.5, format="GTiff", filename=paste0(gap_outDir,"/","buffer.tif"))
+buffer[which(buffer[]==0)] <- NA; buffer[which(buffer[]!=0)] <- 10
+
+#gap maps
+cat("Making gap map")
+
+gap_map <- sum(model,buffer,na.rm=T)
+gap_map[which(gap_map[]==10)] <- NA 
+gap_map[which(gap_map[]==11)] <- NA 
+gap_map[which(gap_map[]==0)] <- NA 
+writeRaster(gap_map,paste0(gap_outDir,"/","gap_map.tif"))
