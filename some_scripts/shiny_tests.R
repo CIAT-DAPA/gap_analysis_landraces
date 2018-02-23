@@ -1080,3 +1080,166 @@ library(osmar)
   
   /mnt/workspace_cluster_9/gap_analysis_landraces/Input_data/_maps/_openstreetmaps/south-america-latest.osm
   
+  
+  
+  
+  
+  
+  header <- dashboardHeader(
+    title = "Survey - Crop Landraces Gap Analysis",titleWidth = 400
+    
+  )
+  sidebar<-dashboardSidebar(
+    sidebarMenu( id = "menu",
+                 menuItem("Beans Geenepools",tabName = "geneBeans", icon = icon("dashboard"), startExpanded = TRUE,
+                          menuSubItem("Introduction",tabName="intro"),
+                          menuSubItem("Andean beans", tabName = "Andean"),
+                          menuSubItem("Mesoamerican beans", tabName = "Mesoamerican")
+                          
+                 )#End menu item beans genepool
+                 
+    )
+    
+    
+  )
+    
+  
+  
+  
+  
+  body <- dashboardBody(  tabBox(id="tabset1" 
+    
+    ,tabPanel("Crops and expert name",selectInput("crop","Select crop variety:",c("-- Please select crop --" ,"Potato" ,       "Barley"  ,      "Banana"  ,      "Rice"  ,        "Chickpea" ,     "Common bean" ,  "Wheat (bread)" ,"Wheat (durum)" ,"Cassava"   ,    "Maize" ,       
+                                                                                 "Yam" ,          "Grass pea" ,    "Lentil"  ,      "Sweet potato" , "Sorghum" ,      "Groundnut" ,    "Cowpea"    ,    "Pea"    ,       "Faba bean"   ,  "Pigeonpea" ,   
+                                                                                 
+                                                                                 "Finger millet", "Pearl millet" , "Forages"   ),selected = NULL),textInput('nombre',"Please type your full name")
+              ,bsButton("keep",label = " Save",size = "large",block=F,style="primary",icon("hand-o-right")),bsTooltip(id = "keep", title = "Save name", placement = "right", trigger = "hover")
+             
+             
+    )
+    
+    ,tabPanel( "Occurrence", box(width=12,tagList(
+
+  tags$head(  HTML( '  
+
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.0.2/leaflet.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.0.2/leaflet-src.js"></script>
+<script src="https://code.jquery.com/ui/1.12.0/jquery-ui.js"></script>
+<script src = "https://rawgit.com/Wildhoney/Leaflet.FreeDraw/master/dist/leaflet-freedraw.web.js" ></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+
+<style type="text/css">
+.map {
+               z-index: 0;
+              width:1000px; 
+              height:500px; 
+              color:#0000FF; 
+              background-color: black; 
+              overflow: hidden;
+}
+
+ .map-container {
+              margin: auto;
+width: 60%;
+border: 3px solid #151515;
+padding: 10px;
+ }
+
+</style>
+<script>
+
+$(document).ready(function(){
+
+$("#tabset1 a[data-toggle=\'tab\']").click(function () {
+ setTimeout(function(){ map.invalidateSize();}, 1000);
+
+
+});
+
+});
+
+</script>
+
+ ') )
+    
+,tags$body(
+div(id="map" ,class="map map-container"
+   
+    
+    
+)
+
+,HTML('
+
+
+      <script>
+
+var map;
+
+map = new L.Map(document.querySelector("#map") , {center: [51.505, -0.09],
+zoom: 13 , preferCanvas: false, trackResize: false } );
+
+var osmUrl="https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}@2x.png";
+
+var osm = new L.TileLayer(osmUrl  );		
+
+map.setView(new L.LatLng(50.73743, 7.098206800000071),9);
+map.addLayer(osm);
+
+const freeDraw = new FreeDraw({mode: FreeDraw.ALL , leaveModeAfterCreate: true });
+      map.addLayer(freeDraw); 
+
+
+
+$("#keep").click( function(){
+
+setTimeout(function(){ map.invalidateSize();}, 1000);
+
+
+});
+
+
+     </script>
+      
+      
+      ') 
+  )
+  
+  )
+
+)
+)
+
+
+
+)
+)
+
+  
+  ui <- dashboardPage(
+    header,
+    sidebar,#dashboardSidebar(disable = F),
+    body
+  )
+  
+  server <- function(input, output, session) {
+    
+    observeEvent(input$keep,{
+      #input$crop!="-- Please select crop --" && 
+   
+        updateTabsetPanel(session, "tabset1",
+                          selected = "Occurrence")
+        
+      
+      
+      
+      
+    })
+  }
+  
+  shinyApp(ui, server)
+  
+  
+  
+  

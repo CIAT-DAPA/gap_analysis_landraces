@@ -88,4 +88,7 @@ plot(delanuay[delanuay$ID == 958,])
 ### ACP and Clustering proposal
 
 
+cost <- raster("Z:/Input_data/_friction_surface/cost_distances/prueba_cost4OSM.tif")
+dgp1 <- raster("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/Input_data/raster_sdm/dist_to_GP1.tif") 
+slope <- raster()
 

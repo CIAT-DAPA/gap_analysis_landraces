@@ -89,7 +89,9 @@ fluidRow(
     fill-opacity: .75;
 } </style>')
                           ) 
-                          , tags$body( div(id="map",style="width:95%; height:600px; color:#0000FF; background-color: black" ,tags$script( type="text/javascript", charset="UTF-8", '  
+                          , tags$body( 
+
+                                        div( id="map",style="width:95%; height:600px; color:#0000FF; background-color: black" ,tags$script( type="text/javascript", charset="UTF-8", '  
 
  var map;
 
@@ -114,7 +116,9 @@ map.addLayer(freeDraw);
    
 }  );
                                                                                                                                            
-                                                                                                                                             ' ) ) 
+                                                                                                                                            
+                                                                                                                                            
+                                               ' ) ) 
                                        
                                        
                                        ,tags$button(id="freedraw",
