@@ -55,7 +55,7 @@ CreateMXArgs <- function(calibration){
 
 Calibration_function<-function(spData,save,sp_Dir,ommit){
    library(devtools)
-  require(maxnet)
+  #require(maxnet)
   if(!require(enmSdm)){
     install_github('adamlilith/omnibus')
     install_github('adamlilith/enmSdm')
@@ -92,7 +92,7 @@ if(ommit==F){
   #Testing if the calibration was made
   if(exists("calibration")){
     calibration <- calibration
-  }else{
+  } else {
     cat("The calibration was not successful. Using default parametr using Default options","\n")
     calibration <- NULL
   }
@@ -100,16 +100,16 @@ if(ommit==F){
 if(save==T){
   #Saving the calibration file
   write.csv(calibration,paste0(sp_Dir,"/","calibration.csv"),quote=F,row.names = F)
-           }else{
+           } else {
   cat("Not file to save","\n")
            }
-  }else{
+  } else {
   cat("Ommiting calibration step","\n")
   calibration <- NULL
   }
 args <- CreateMXArgs(calibration)
 return(args)
-cat("Done calibration step","\n")
+cat("Calibration step Done!","\n")
 
 }
 
