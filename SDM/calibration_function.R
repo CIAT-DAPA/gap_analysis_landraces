@@ -80,6 +80,7 @@ if(ommit==F){
   # spData2 <- rbind(spData2_pres,spData2_bg)
   
   #Calibration using MaxEnt instead of Maxnet R package.
+  cat("Performing calibration step","\n")
   tryCatch(expr = {calibration <- enmSdm::trainMaxEnt(data = spData[,c(1,4:ncol(spData))], regMult = seq(0.5, 6, 0.5), out = 'tuning', verbose = FALSE,jackknife = F)#, jackknife = F,forceLinear=T))
   },
   error = function(e){
@@ -108,6 +109,8 @@ if(save==T){
   }
 args <- CreateMXArgs(calibration)
 return(args)
+cat("Done calibration step","\n")
+
 }
 
 
