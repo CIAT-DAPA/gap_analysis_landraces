@@ -5,25 +5,20 @@
 #####################################
 #https://cran.r-project.org/web/packages/adehabitatHR/adehabitatHR.pdf
 
-require(spatstat);require(raster);require(sp);require(adehabitatHR);require(SDMTools)
+require(spatstat);require(raster);require(sp);require(adehabitatHR);require(SDMTools);require(KernSmooth)
 
 ###############
 
-raster_kernel <- function(species,mask,occurrences,out_dir,spatstat,scale){
-  cat("Reading mask and occurrences for: ",species,"\n")
+raster_kernel <- function(mask,occurrences,out_dir,kernel_method,scale){
+  cat("Reading mask and occurrences","\n")
   
   ### Reading occurrences 
   sp::coordinates(occurrences) <- ~lon+lat
   crs(occurrences) <- crs(mask)
   
-  if(spatstat==TRUE){
-    ver<-"SPAT"
-    } else {
-      ver<-""  
-    }
   #####
-  if(spatstat==TRUE){
-    cat("Using Kernel Classical version for: ",species,"\n")
+  if(kernel_method==1){
+    cat("Using Kernel Classical version","\n")
     
     
     ### Transforming mask to owin object 
@@ -36,11 +31,11 @@ raster_kernel <- function(species,mask,occurrences,out_dir,spatstat,scale){
     occurrences_ppp <- spatstat::ppp(x=occurrences@coords[,1],y=occurrences@coords[,2],window=w)
     
     ### Calculating Cross Validated Bandwidth Selection for Kernel Density usingh MSE
-    cat("Cross Validated Bandwidth Selection for Kernel Density usingh MSE for: ",species,"\n")
+    cat("Cross Validated Bandwidth Selection for Kernel Density usingh MSE","\n")
     bw_dig <- spatstat::bw.diggle(occurrences_ppp)
     
     ### Calculating density
-    cat("Calculating Kernel density using Cross Validated Bandwidth Selection for Kernel Density parameter for: ",species,"\n")
+    cat("Calculating Kernel density using Cross Validated Bandwidth Selection for Kernel Density parameter ","\n")
     
     kernel <- spatstat::density.ppp(x=occurrences_ppp,sigma=bw_dig,at="pixels",verbose=F,diggle=T)
     kernel <- raster::raster(kernel);rm(w,bw_dig);gc()
@@ -51,8 +46,8 @@ raster_kernel <- function(species,mask,occurrences,out_dir,spatstat,scale){
       kernel <- kernel
          }
   
-    } else {
-    cat("Using Adehabitat Kernel UD version for: ",species,"\n")
+    } else if(kernel_method==2){
+    cat("Using Adehabitat Kernel UD version","\n")
     rAsc <- asc.from.raster(mask);rAsc <- adehabitatMA::asc2spixdf(rAsc);gc()
     kernel <- adehabitatHR::kernelUD(occurrences,h="href",grid=rAsc)
     
@@ -70,6 +65,30 @@ raster_kernel <- function(species,mask,occurrences,out_dir,spatstat,scale){
       kernel <- kernel
       }
     
+    } else if(kernel_method==3){
+      
+      est <- KernSmooth::bkde2D(occurrences@coords, 
+                                bandwidth=c(dpik(occurrences@coords[,1]),dpik(occurrences@coords[,2])), 
+                                gridsize=c(ncol(mask),nrow(mask)),
+                                range.x=list(c(extent(mask)[1],extent(mask)[2]),c(extent(mask)[3],extent(mask)[4])))
+      est$fhat[est$fhat<0.00001] <- 0 ## ignore very small values
+      
+      
+      est.raster <-  raster(list(x=est$x1,y=est$x2,z=est$fhat))
+      #projection(est.raster) <- CRS("+init=epsg:4326")
+      xmin(est.raster) <- extent(mask)[1]
+      xmax(est.raster) <- extent(mask)[2]
+      ymin(est.raster) <- extent(mask)[3]
+      ymax(est.raster) <- extent(mask)[4]
+      
+      kernel <- est.raster;rm(est);gc()
+      
+      if(scale==T){
+        kernel <- kernel/max(kernel[],na.rm=T)
+      } else {
+        kernel <- kernel
+      }
+      
     }
   
   
@@ -83,8 +102,8 @@ raster_kernel <- function(species,mask,occurrences,out_dir,spatstat,scale){
   kernel <- kernel * mask
   
   ### Saving raster object
-  cat("Saving raster object to be used for: ",species,"\n")
-  raster::writeRaster(kernel,paste0(out_dir,"/",species,"_",ver,"_Kernel.tif"))
+  cat("Saving raster object to be used","\n")
+  raster::writeRaster(kernel,paste0(out_dir,"/","Kernel.tif"))
   
   return(kernel)
   
