@@ -15,6 +15,7 @@ source(paste(srcDir,"/SDMs/model_driver.R",sep=""))
 source(paste(srcDir,"/SDMs/create_buffers.R",sep=""))
 source(paste(srcDir,"/SDMs/sdm_approach_function.R",sep=""))
 source(paste(srcDir,"/SDMs/projecting_function.R",sep=""))
+source(paste(srcDir,"/Miscellanous/kernel_function.R",sep=""))
 
 #working directories
 cat("Loading working directories","\n")
@@ -26,6 +27,8 @@ swdDir <- paste(baseDir,"/Input_data/SDMs/swd",sep="")
 climDir <- paste(baseDir,"/Input_data/raster_sdm/2_5m_Americas_1",sep="")
 modDir <- paste(baseDir,"/Results/SDM_modelling",sep=""); if (!file.exists(modDir)) {dir.create(modDir)}
 densDir <- paste(baseDir,"/Results/accession_density",sep=""); if (!file.exists(densDir)) {dir.create(densDir)}
+current_clim_layer_Dir <- paste(baseDir,"/Input_data/raster_sdm/2_5m",sep="")
+
 
 #species model output directories
 cat("Loading species model output directories","\n")
