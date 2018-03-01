@@ -9,15 +9,16 @@ require(spatstat);require(raster);require(sp);require(adehabitatHR);require(SDMT
 
 ###############
 
-raster_kernel<-function(species,mask,occurrences,out_dir,spatstat,scale){
+raster_kernel <- function(species,mask,occurrences,out_dir,spatstat,scale){
   cat("Reading mask and occurrences for: ",species,"\n")
   
   ### Reading occurrences 
-  sp::coordinates(occurrences)<-~lon+lat
+  sp::coordinates(occurrences) <- ~lon+lat
   crs(occurrences) <- crs(mask)
   
   if(spatstat==TRUE){
-    ver<-"SPAT"}else{
+    ver<-"SPAT"
+    } else {
       ver<-""  
     }
   #####
@@ -46,11 +47,11 @@ raster_kernel<-function(species,mask,occurrences,out_dir,spatstat,scale){
     
     if(scale==T){
       kernel <- kernel/max(kernel[],na.rm=T)
-    }else{ 
+    } else { 
       kernel <- kernel
          }
   
-    }else{
+    } else {
     cat("Using Adehabitat Kernel UD version for: ",species,"\n")
     rAsc <- asc.from.raster(mask);rAsc <- adehabitatMA::asc2spixdf(rAsc);gc()
     kernel <- adehabitatHR::kernelUD(occurrences,h="href",grid=rAsc)
@@ -65,9 +66,9 @@ raster_kernel<-function(species,mask,occurrences,out_dir,spatstat,scale){
     
     if(scale==T){
       kernel <- kernel/max(kernel[],na.rm=T)
-    }else{
+    } else {
       kernel <- kernel
-    }
+      }
     
     }
   
