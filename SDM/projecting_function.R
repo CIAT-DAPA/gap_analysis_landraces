@@ -137,6 +137,6 @@ if (!file.exists(paste(model_outDir,"/",occName,"_prj_ens_MCAA_thr.tif",sep=""))
    prj_stk_ens_th <-  raster(paste(model_outDir,"/",occName,"_prj_ens_MCAA_thr.tif",sep=""))
   }
   #_prj_thr_MCAA_thr.tif
-  return(prj_mdn_q_th)
+  return(prj_th)
   cat("Done!","\n")
 }

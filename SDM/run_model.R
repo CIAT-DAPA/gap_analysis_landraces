@@ -13,7 +13,7 @@ srcDir <- paste(baseDir,"/Scripts",sep="")
 raster::rasterOptions(tmpdir="D:/TEMP/CSOSSA")
 
 #Calling Species to run
-occName <- "Mesoamerican" #"Mesoamerican"
+occName <- "Mesoamerican" #"Andean"
 
 source(paste(srcDir,"/SDMs/config.R",sep=""))
 
@@ -72,8 +72,12 @@ model <- projecting_function(m2,m2_eval,model_outDir,nCores=5,obj.size=3)
 
 #final evaluation table
 cat("Validating model","\n")
-m2_eval_final <- final_evaluation(m2_eval,occName)
 
+if(!file.exists(paste0(eval_sp_Dir,"/","Final_evaluation.csv"))){
+m2_eval_final <- final_evaluation(m2_eval,occName)
+} else {
+  m2_eval_final <-  read.csv(paste0(eval_sp_Dir,"/","Final_evaluation.csv"),header=T)
+}
 
 #Run buffer approach
 cat("Creating buffer around 50 Km","\n")
@@ -107,3 +111,12 @@ kernel <- raster_kernel(mask=mask,occurrences=spData[spData[,1]==1,],out_dir=gap
 } else {
 kernel <- raster(paste0(gap_outDir,"/","kernel.tif")) 
 }
+
+
+#Gathering Kernel gap indicator
+if(!file.exists(paste0(gap_outDir,"/","Kernel_indicator.tif"))){
+kernel_indicator <- kernel_indicator(kernel,friction,model_outDir,gap_outDir)
+} else {
+  kernel_indicator <- raster(paste0(gap_outDir,"/","Kernel_indicator.tif"))   
+}  
+

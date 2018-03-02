@@ -5,7 +5,7 @@
 ASD15_function <- function(model_outDir){
   ###ASD15
   esdCpt <- raster(paste(model_outDir,"/",occName,"_prj_std.tif",sep=""))
-  dumm <- raster(paste(model_outDir,"/",occName,"_prj_median_q_thr.tif",sep=""))
+  dumm <- raster(paste(model_outDir,"/",occName,"_prj_median_thr.tif",sep=""))
   
   esdCpt[which(dumm[] < 0.001)] <- NA
   
@@ -19,7 +19,7 @@ ASD15_function <- function(model_outDir){
   esdCpt_a15[which(esdCpt[] < 0.15)] <- 0
   
   #make a raster of area
-  dist_area <- area(esdCpt)
+  dist_area <- raster::area(esdCpt)
   
   #calculate size of distribution within native area, and within thresholded distribution
   #total, and above 0.15 STD.

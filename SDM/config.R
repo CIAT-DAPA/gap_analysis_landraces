@@ -16,7 +16,7 @@ source(paste(srcDir,"/SDMs/create_buffers.R",sep=""))
 source(paste(srcDir,"/SDMs/sdm_approach_function.R",sep=""))
 source(paste(srcDir,"/SDMs/projecting_function.R",sep=""))
 source(paste(srcDir,"/Miscellanous/kernel_function.R",sep=""))
-
+source(paste(srcDir,"/Miscellanous/kernel_indicator.R",sep=""))
 #working directories
 cat("Loading working directories","\n")
 
@@ -39,5 +39,11 @@ eval_sp_Dir_rep <- paste0(eval_sp_Dir,"/","replicates");if(!file.exists(eval_sp_
 model_outDir <- paste0(sp_Dir,"/","prj_models"); if(!file.exists(model_outDir)){dir.create(model_outDir)}
 model_outDir_rep <- paste0(model_outDir,"/","replicates");if(!file.exists(model_outDir_rep)){dir.create(model_outDir_rep)}
 gap_outDir <- paste0(sp_Dir,"/","gap_models"); if(!file.exists(gap_outDir)){dir.create(gap_outDir)}
+gap_del_outDir <- paste0(gap_outDir,"/","delaunay"); if(!file.exists(gap_del_outDir)){dir.create(gap_del_outDir)}
+#Loading files to perform Delaunay analysis
+
+#cont_mask <- paste(baseDir,"/Input_data/_maps/GAUL_2014/G2014_2013_0_NO_ANT.shp",sep="")
+cont_mask <- paste(baseDir,"/Input_data/_maps/GAUL_2014/CONTINENTAL.shp",sep="")
+friction <- paste(baseDir,"/Input_data/_friction_surface/frsurface_4.tif",sep="")
 #
 cat(" ","\n")
