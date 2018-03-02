@@ -13,7 +13,7 @@ srcDir <- paste(baseDir,"/Scripts",sep="")
 raster::rasterOptions(tmpdir="D:/TEMP/CSOSSA")
 
 #Calling Species to run
-occName <- "Mesoamerican" #"Andean"
+occName <- "Andean" #"Andean"
 
 source(paste(srcDir,"/SDMs/config.R",sep=""))
 
@@ -115,7 +115,7 @@ kernel <- raster(paste0(gap_outDir,"/","kernel.tif"))
 
 #Gathering Kernel gap indicator
 if(!file.exists(paste0(gap_outDir,"/","Kernel_indicator.tif"))){
-kernel_indicator <- kernel_indicator(kernel,friction,model_outDir,gap_outDir)
+kernel_indicator <- kernel_indicator(kernel,friction,model_outDir,gap_outDir,reverse=T)
 } else {
   kernel_indicator <- raster(paste0(gap_outDir,"/","Kernel_indicator.tif"))   
 }  
