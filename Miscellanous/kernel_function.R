@@ -41,7 +41,8 @@ raster_kernel <- function(mask,occurrences,out_dir,kernel_method,scale){
     kernel <- raster::raster(kernel);rm(w,bw_dig);gc()
     
     if(scale==T){
-      kernel <- kernel/max(kernel[],na.rm=T)
+      #kernel <- kernel/max(kernel[],na.rm=T)
+      kernel <- raster::scale(kernel,center=F,scale = T)
     } else { 
       kernel <- kernel
          }
@@ -60,7 +61,8 @@ raster_kernel <- function(mask,occurrences,out_dir,kernel_method,scale){
     kernel<- raster::raster(res);rm(res,rAsc);gc()
     
     if(scale==T){
-      kernel <- kernel/max(kernel[],na.rm=T)
+      #kernel <- kernel/max(kernel[],na.rm=T)
+      kernel <- raster::scale(kernel,center=F,scale = T)
     } else {
       kernel <- kernel
       }
@@ -84,7 +86,9 @@ raster_kernel <- function(mask,occurrences,out_dir,kernel_method,scale){
       kernel <- est.raster;rm(est);gc()
       
       if(scale==T){
-        kernel <- kernel/max(kernel[],na.rm=T)
+        
+        #kernel <- kernel/max(kernel[],na.rm=T)
+        kernel <- raster::scale(kernel,center=F,scale = T)
       } else {
         kernel <- kernel
       }
