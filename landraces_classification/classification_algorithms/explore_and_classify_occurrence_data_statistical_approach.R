@@ -7,7 +7,7 @@ options(warn = -1); options(scipen = 999); g <- gc(reset = T); rm(list = ls())
 
 OSys <- Sys.info()[1]
 OSysPath <- switch(OSys, "Linux" = "/mnt", "Windows" = "//dapadfs")
-root     <- switch(OSys, "Linux" = "/mnt/workspace_cluster_9", "Windows" = "//dapadfs/Workspace_cluster_9")
+root     <- switch(OSys, "Linux" = "/mnt/workspace_cluster_9/gap_analysis_landraces", "Windows" = "//dapadfs/Workspace_cluster_9/gap_analysis_landraces")
 
 # Load packages
 suppressMessages(if(!require(tidyverse)){install.packages("tidyverse");library(tidyverse)}else{library(tidyverse)})
@@ -36,13 +36,21 @@ suppressMessages(if(!require(assertthat)){install.packages("assertthat");library
 suppressMessages(if(!require(nnet)){install.packages("nnet");library(nnet)}else{library(nnet)})
 suppressMessages(if(!require(ROSE)){install.packages("ROSE");library(ROSE)}else{library(ROSE)})
 suppressMessages(if(!require(DMwR)){install.packages("DMwR");library(DMwR)}else{library(DMwR)})
+suppressMessages(if(!require(crayon)){devtools::install_github("r-lib/crayon");library(crayon)}else{library(crayon)})
 
 
 
 # Load data
 #file://dapadfs/Workspace_cluster_9/gap_analysis_landraces/Input_data/_occurrence_data/_ciat_data/Bean/BEAN-GRP-COORDINATES-CLIMATE-HUMAN-FACTORS.RDS
-genotypic_climate <- readRDS("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/Input_data/_datosAndres/acp/data4modeling.RDS")
-table(genotypic_climate$Race.interpreted.ACID)
+
+
+genotypic_climate <- readRDS(paste0(root,"/Input_data/_datosAndres/acp/data4modeling.RDS") )
+
+
+names(genotypic_climate)[1:10]
+names(g2)[1:10]
+ 
+ table(genotypic_climate$Race.interpreted.ACID)
 rownames(genotypic_climate) <- genotypic_climate$ID
 #barplot(table(genotypic_climate$Genepool.predicted)/sum(table(genotypic_climate$Genepool.predicted)))
 # Descriptive analysis
@@ -80,7 +88,7 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
   # Train models
   # ---------------------------------------------------------------- #
  
-  cat("\n>>>> Starting training process\n\n")
+  cat( red$bgBlue$bold("\n>>>> Starting training process\n\n"))
   
   if( length(grep("Color_",names(data_gen) ) )!= 0 ){  
     data_gen[,grep("Color_",names(data_gen) )]<- data_gen[,grep("Color_",names(data_gen) )] %>% mutate_all(., funs(as.factor(.)))
@@ -99,7 +107,7 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
       numeric <- numeric[,-highlyCorDescr]
       }
     
-    vec <- which(names(genepool_data) != names(numeric))
+    #vec <- which( names(numeric) %in%  names(genepool_data) )
     
     genepool_data <- eval(parse(text = paste0("data.frame(", y[i], "=", "genepool_data$", y[i], ",", "numeric", ")")))
     return(genepool_data)
@@ -187,7 +195,7 @@ data_gen <- data_gen %>% dplyr::filter(., Genepool.protein != "Hybrid (Meso x An
   
 
 nzp <-   nearZeroProp(genepool_data , y = y[1] )
-  if(length(nzv)!=0){
+  if(length(nzp)!=0){
     genepool_data <- genepool_data[,-nzp]
     
   }  
@@ -266,12 +274,13 @@ if(i == 1){
 } #end validating overfitting    
 rm(i)  
   # Define parameters to train models
-  
+ 
+ 
   set.seed(825); ctrol2 <-  trainControl(method = "LGOCV", p = 0.8, number = 10, savePredictions = T, verboseIter = TRUE )
 
     
   n<- nrow(genepool_data)*0.2
-  cat(paste("Sample size of Testing genepool-data:",n,"\n"))
+  cat(  red$bgWhite$bold("Sample size of Testing genepool-data:" %+% red$bgYellow$underline(n) %+%  "\n" ) )
   rm(n)
   # In case of imbalance: ctrol2 <- trainControl(method = "LGOCV", p = 0.8, number = 1, savePredictions = T, sampling = "down")
   
@@ -279,19 +288,22 @@ rm(i)
   # Model 1
   # Bagged Flexible Discriminant Analysis
   ##########################################
-  
-  cat("Running FDA ...\n")
+  set.seed(825)
+  cat(bold("Running FDA ...\n"))
   data_in <- only_numeric(genepool_data,i=1)
   eval(parse(text = paste0("FDA <- train(", y[1], " ~ ., data = data_in, method = 'bagFDA', trControl = ctrol2)"))) # FDA training
-  cat("finishing FDA ...\n")
+  cat(green$bold("finishing FDA ...\n"))
   
+  paste(names(FDA$bestTune),"=="  ,FDA$bestTune,collapse = "&")
+  
+  df1 <- FDA$pred %>% dplyr::filter(., eval(parse(text = paste(names(FDA$bestTune),"=="  ,FDA$bestTune,collapse = "&")))    ) %>% dplyr::select(., pred ) 
 
   ##########################################
   # Model 2
   # GLM: Logistic Regression Model
   ##########################################
-  
-  cat("Running GLM ...\n")
+  set.seed(825)
+  cat(bold("Running GLM ...\n"))
   vf <- colinearity(genepool_data,i=1)
   #vf<- data.frame(vf,genepool_data[,-which(names(genepool_data) %in% names(vf))])
   pos <- which(sapply(vf, is.factor))
@@ -299,56 +311,78 @@ rm(i)
     vf[,pos[i]] <- make.names((vf[,pos[i]]))
   }
   eval(parse(text = paste0("glmFit1 <- train(", y[1], " ~ ., data = vf, method = 'glm', family = 'binomial', trControl = ctrol2)"))) # GLM training
-  cat("finishing GLM ...\n")
+  cat(green$bold("finishing GLM ...\n"))
+  
+
+  df2 <- glmFit1$pred  %>% dplyr::select(., pred )
+  
   ##########################################
   # Model 3
   # Random Forest
   ##########################################
-  
-  cat("Running Random Forest ...\n")
+  set.seed(825)
+  cat(bold("Running Random Forest ...\n"))
   grid <- expand.grid(mtry = round((ncol(genepool_data)-4)/3))
   eval(parse(text = paste0("Rforest <- train(", y[1], " ~ ., data = genepool_data, method = 'rf', tuneGrid = grid, importance = TRUE, ntree = 2000, metric = 'Accuracy', trControl = ctrol2)"))) # RF training
-  cat("finishing Rforest ...\n")
+  cat(green$bold("finishing Rforest ...\n"))
   
- 
+  
+  
+  
+  df3 <- Rforest$pred %>% dplyr::filter(., eval(parse(text = paste(names(Rforest$bestTune),"=="  ,Rforest$bestTune,collapse = "&")))    ) %>% dplyr::select(., pred )
+  
   ##########################################
   # Model 4
   # Support Vector Machines
   ##########################################
-  
-  cat("Running Support Vector Machine ...\n\n")
+  set.seed(825)
+  cat(bold("Running Support Vector Machine ...\n\n"))
   eval(parse(text = paste0("svmFit <- train(", y[1], " ~ ., data = genepool_data, method = 'svmRadial', tuneLength = 9, trControl = ctrol2, importance = T)")))
-  cat("finishing SVM ...\n")
+  cat(green$bold("finishing SVM ...\n"))
   
   
+  df4 <- svmFit$pred %>% dplyr::mutate(., sigma = round(sigma,3) )%>%dplyr::filter(., eval(parse(text = paste(names(svmFit$bestTune),"=="  , round(svmFit$bestTune,3),collapse = "&")))    ) %>% dplyr::select(., pred )
+  
+ 
   #########################################
   #  Model 5
   #  K-nn
   ########################################
-  
-  cat("Running K nearest-neighbour ...\n")
+  set.seed(825)
+  cat(bold("Running K nearest-neighbour ...\n"))
   eval( parse( text= paste0("knnFit<-train(",y[1],"~.,data = genepool_data, method= 'knn', tuneLength = 10, trControl = ctrol2, preProcess = c('center','scale' ) ) " ) ))
-  cat("Finishing K nearest-neighbour ...\n")
+  cat(green$bold("Finishing K nearest-neighbour ...\n"))
   
+  df5 <- knnFit$pred %>% dplyr::filter(., eval(parse(text = paste(names(knnFit$bestTune),"=="  ,knnFit$bestTune,collapse = "&")))    ) %>% dplyr::select(., pred , obs, Resample)
   
+   
+  ####### ACCURACY FOR ENSAMBLE CLASSIFICATION #####
+  ensamble.df <-  data.frame(df1, df2, df3, df4, df5)
+  rm(df1, df2, df3, df4, df5)
+  
+  names(ensamble.df) <- c("FDA.pred", "glmFit1.pred", "Rforest.pred", "svmFit.pred","knnFit.pred", "test.obs", "resample")
+  
+  ensamble.df <- ensamble.df %>% dplyr::mutate(., ensamble = apply(dplyr::select(., FDA.pred, glmFit1.pred, Rforest.pred, svmFit.pred, knnFit.pred ) , 1, function(x){  tt<- table(x); return(names(tt[which.max(tt)]))   }) , resample = factor(resample) ) %>% dplyr::select(., test.obs, ensamble, resample)
+  
+  tabl <- function(test,obs){ table(test,obs )}
+  
+  accu.ensamble <- ensamble.df %>% dplyr::group_by(resample) %>% dplyr::do(., CM = tabl( unlist(.$ensamble) , unlist(.$test.obs) ) ) %>%  dplyr::mutate(., accu = sum(diag(CM))/sum(CM)  ) %>%  dplyr::select(., accu) %>% as.matrix()
+  ###### END ACCURACY FOR ENSAMBLE ######
+ 
+
   # ---------------------------------------------------------------- #
   # Predict new cases
   # ---------------------------------------------------------------- #
   
-  cat(">>>> Starting predicting process\n\n")
+  cat( red$bgCyan$bold$underline(  ">>>> Starting predicting process\n\n"))
 
   
   genepool_na <- data_gen %>% 
-    dplyr::filter(., Analysis == area & To.use.ACID == 1) %>% `rownames<-`(.$ID) %>%
-    dplyr::select(., -ID, -Analysis, -To.use.ACID)
+    dplyr::filter(., Analysis == area) %>% .[-which(.$To.use.ACID == 0 ),]  %>% `rownames<-`(.$ID) %>%
+    dplyr::select(., -ID, -Analysis, -To.use.ACID , -eval(parse(text =y[2]  )) )
   
-  genepool_na <- genepool_na[!complete.cases(eval(parse(text = paste0("data_gen$", y[1])))),]
   
-  if( y[1] == "Genepool.interpreted.ACID" ){
-    if(assertthat::has_name( genepool_na, "Race.interpreted.ACID")){ genepool_na$Race.interpreted.ACID <- NULL}
-    if(assertthat::has_name( genepool_na, "Subgroup.interpreted.ACID")){ genepool_na$Subgroup.interpreted.ACID <- NULL}
-  } 
-  
+  genepool_na <- genepool_na[!complete.cases(eval(parse(text = paste0("genepool_na$", y[1])))),]
   
  # genepool_na <- genepool_na[, names(genepool_data)]
   if(assertthat::has_name( genepool_na, "Genepool.protein")){genepool_na$Genepool.protein <- as.character(genepool_na$Genepool.protein)
@@ -396,6 +430,9 @@ rm(i)
 
   names(predictions) <- model_type
   
+  #ensemble models 
+  predictions <-  predictions %>%  as.data.frame(.) %>% dplyr::mutate(., ensemble = apply(dplyr::select(., FDA, glmFit1, Rforest, svmFit, knnFit ) , 1, function(x){  tt<- table(x); return(names(tt[which.max(tt)]))   })   )  %>% `rownames<-`(row.names(genepool_na))
+
   accu.FDA <- mean(FDA$finalModel$oob[,1])
   
   accu.glmFit1 <- mean(apply(gd <- data.frame(glmFit1$resampledCM[,1:4]), 1, function(x){
@@ -408,10 +445,12 @@ rm(i)
     (x[1] + x[4]) /sum(x)
   }))
   accu.knn <- max(knnFit$results$Accuracy)
-  accuracy <- c(accu.FDA, accu.glmFit1, accu.Rforest, accu.svm, accu.knn)
-  names(accuracy) <- model_type
+  accuracy <- c(accu.FDA, accu.glmFit1, accu.Rforest, accu.svm, accu.knn, mean(accu.ensamble) )
   
   
+  names(accuracy) <- c(model_type, "ensamble")
+  
+  cat(black$bgGreen$bold( ">>>>> Predicting process Genepool Finished"  )  )
   
   
   
@@ -420,7 +459,7 @@ rm(i)
   #------------------------------------------------------ ^ -------------------------------
   if( !is.na( y[2])  ){
     
-    cat("Starting predictions proccess to beans race...  \n")
+    cat( red$bgWhite$bold("+++++ Starting predictions proccess to beans race...  \n"))
     
 
     eval(parse(text = paste0("data_gen$", y[2], " <- as.character(data_gen$", y[2], ")")))
@@ -446,8 +485,8 @@ rm(i)
     
     # Apply filters
     row.names(data_gen) <- data_gen$ID
-    genepool_data <- data_gen %>% 
-      dplyr::filter(., Analysis == area & To.use.ACID == 1) %>% `rownames<-`(.$ID) %>% dplyr::select(., -ID, -Analysis, -To.use.ACID)  
+    genepool_data <- data_gen %>%
+      dplyr::filter(., Analysis == area & To.use.ACID == 1) %>% `rownames<-`(.$ID)  %>% dplyr::select(., -ID, -Analysis, -To.use.ACID) 
     
     genepool_data<- genepool_data[complete.cases(genepool_data),]
     
@@ -462,7 +501,7 @@ rm(i)
  
     
     nzp <-   nearZeroProp(genepool_data , y = y[2] )
-    if(length(nzv)!=0){
+    if(length(nzp)!=0){
       genepool_data <- genepool_data[,-nzp]
       
     }  
@@ -473,7 +512,7 @@ rm(i)
     set.seed(825); ctrol2 <- trainControl(method = "LGOCV", p = 0.8, number = 10, savePredictions = T, verboseIter = TRUE)
     
     n<- nrow(genepool_data)*0.2
-    cat(paste("Sample size of Testing race-data:",n,"\n"))
+    cat(  red$bgWhite$bold$underline(paste("Sample size of Testing race-data:",n,"\n")))
     rm(n)
     
     # In case of imbalance: ctrol2 <- trainControl(method = "LGOCV", p = 0.8, number = 1, savePredictions = T, sampling = "down")
@@ -483,28 +522,34 @@ rm(i)
     # Bagged Flexible Discriminant Analysis
     ##########################################
     
-    
-    cat("Running FDA ...\n")
+    set.seed(825)
+    cat(bold("Running FDA ...\n"))
     data_in <- only_numeric(genepool_data,i=2)
     data_in<-   eval( parse( text= paste0( "data.frame(  data_in,", y[1], "= genepool_data$",y[1],  ")") ) )
     eval(parse(text = paste0("FDA.race <- train(", y[2], " ~ ., data = data_in, method = 'bagFDA', trControl = ctrol2)"))) # FDA training
-    cat("finishing FDA ...\n")
+    cat(green$bold("finishing FDA ...\n"))
+    
+    
+    df1 <- FDA.race$pred %>% dplyr::filter(., eval(parse(text = paste(names(FDA.race$bestTune),"=="  ,FDA.race$bestTune,collapse = "&")))    )  %>% dplyr::mutate(., Resample = factor(Resample))   #  %>% dplyr::select(., pred ) 
+    
+    
+    
     ##########################################
     # Model 2
     # multinomial model
     ##########################################
-    
-    cat("Running multinom glm ...\n")
+    set.seed(825)
+    cat(bold("Running multinom glm ...\n"))
     vf <- colinearity(genepool_data,i=2)
     vf<-  eval( parse( text= paste0( "data.frame( vf,", y[1], "= genepool_data$",y[1],  ")") ) )
     #vf<- data.frame(vf,genepool_data[,-which(names(genepool_data) %in% names(vf))])
     
     # vf$Race.interpreted.ACID<-c(0,1,2,3,4)[vf$Race.interpreted.ACID]
     # vf$Genepool.interpreted.ACID<-c(0,1)[vf$Genepool.interpreted.ACID]
-  
-    vf$Race.interpreted.ACID<-relevel(genepool_data$Race.interpreted.ACID,ref="Durango-Jalisco")
     
-    set.seed(1200)
+    vf$Race.interpreted.ACID<- relevel(genepool_data$Race.interpreted.ACID,ref="Durango-Jalisco")
+    
+    set.seed(825)
     #genepool_data<- colinearity(genepool_data)
     folds<-modelr::crossv_kfold(vf,k=6)
     
@@ -516,53 +561,81 @@ rm(i)
     multi<-  eval (parse( text= paste0(" multi %>% dplyr::mutate(., cm=purrr::map2(test,tested, ~table(data.frame(.x)$",y[2],",.y)  )   )  %>% mutate(., accuracy=purrr::map(cm, function(x){ sum(diag(x))/sum(x)}  )  )"    )))
     
     #select the best model#
-    multi.model<- multi[which(unlist(multi$accuracy)==max(unlist(multi$accuracy))),"model"]$model
+    multi.model<- multi[which.max(unlist(multi$accuracy)),"model"]$model
     
+    cat(green$bold("Finishing Multinomial Regression ... \n"))
     
- 
+     
+    df2 <- df1 %>% dplyr::group_by(Resample) %>% dplyr::do(., test.df = vf[ .$rowIndex,] ) %>% dplyr::mutate(.,  preds = predict( multi.model, newdata = .$test.df )) 
     
-    mean(unlist(multi$accuracy))
+    df2 <- unlist(df2$preds)
+    
+    df1 <- df1 %>%  dplyr::select(., pred)   
+      
     ##########################################
     # Model 3
     # Random Forest
     ##########################################
-   
-    cat("Running Random Forest ...\n")
+    set.seed(825)
+    cat(bold("Running Random Forest ...\n"))
     grid <- expand.grid(mtry = round((ncol(genepool_data)-4)/3))
     eval(parse(text = paste0("Rforest.race <- train(", y[2], " ~ ., data = genepool_data, method = 'rf', tuneGrid = grid, importance = TRUE, ntree = 2000, metric = 'Accuracy', trControl = ctrol2)"))) # RF training
-    cat("finishing Rforest ...\n")
+    cat(green$bold("finishing Rforest ...\n"))
+    
+    df3 <- Rforest.race$pred %>% dplyr::filter(., eval(parse(text = paste(names(Rforest.race$bestTune),"=="  ,Rforest.race$bestTune,collapse = "&")))    )  %>% dplyr::mutate(., Resample = factor(Resample))  %>% dplyr::select(., pred ) 
+    
     ##########################################
     # Model 4
     # Support Vector Machines
     ##########################################
-    
-    cat("Running Support Vector Machine ...\n\n")
+    set.seed(825)
+    cat(bold("Running Support Vector Machine ...\n\n"))
     eval(parse(text = paste0("svmFit.race <- train(", y[2], " ~ ., data = genepool_data[,-which( names(genepool_data)==", 'y[1]' ,") ], method = 'svmRadial', tuneLength = 9, trControl = ctrol2, importance = T)")))
-    cat("finishing SVM ...\n")
+    cat(green$bold("finishing SVM ...\n"))
+    
+    df4 <- svmFit.race$pred %>% dplyr::mutate(., sigma = round(sigma,3))%>% dplyr::filter(., eval(parse(text = paste(names(svmFit.race$bestTune),"=="  , round(svmFit.race$bestTune, 3 ),collapse = "&")))    )  %>% dplyr::mutate(., Resample = factor(Resample))  %>% dplyr::select(., pred ) 
+    
     
     ##########################################
     # Model 5
     # K- nearest neighbor
     ##########################################
-    
-    cat("Running Support Vector Machine ...\n\n")
+    set.seed(825)
+    cat(bold("Running Support Vector Machine ...\n\n"))
     eval(parse(text = paste0("knnFit.race <- train(", y[2], " ~ ., data = genepool_data[,-which( names(genepool_data)==", 'y[1]' ,") ], method = 'knn', tuneLength = 10, trControl = ctrol2, preProcess = c('center','scale' ) )")))
-    cat("finishing SVM ...\n")
+    cat(green$bold("finishing SVM ...\n"))
+    
+    df5 <-knnFit.race$pred %>% dplyr::filter(., eval(parse(text = paste(names(knnFit.race$bestTune),"=="  ,knnFit.race$bestTune,collapse = "&")))    )  %>% dplyr::mutate(., Resample = factor(Resample))  %>% dplyr::select(., pred , obs, Resample ) 
+    
+    ####### ACCURACY FOR ENSAMBLE CLASSIFICATION RACE #####
+    ensamble.df.race <-  data.frame(df1, df2, df3, df4, df5)
+    rm(df1, df2, df3, df4, df5)
+    
+    names(ensamble.df.race) <- c("FDA.pred", "multinom.pred", "Rforest.pred", "svmFit.pred","knnFit.pred", "test.obs", "resample")
+    
+    ensamble.df.race <- ensamble.df.race %>% dplyr::mutate(., ensamble = apply(dplyr::select(., FDA.pred, multinom.pred, Rforest.pred, svmFit.pred, knnFit.pred ) , 1, function(x){  tt<- table(x); return(names(tt[which.max(tt)]))   }) , resample = factor(resample) ) %>% dplyr::select(., test.obs, ensamble, resample)
+    
+    tabl <- function(test,obs){ table(test,obs )}
+    
+    accu.ensamble.race <- ensamble.df.race %>% dplyr::group_by(resample) %>% dplyr::do(., CM = tabl( unlist(.$ensamble) , unlist(.$test.obs) ) ) %>%  dplyr::mutate(., accu = sum(diag(CM))/sum(CM)  ) %>%  dplyr::select(., accu) %>% as.matrix()
+    
+    ###### END ACCURACY FOR ENSAMBLE RACE  ######
     
     
-    cat(">>>> Starting predicting process for race...\n\n")
+    cat( red$bgWhite$bold(">>>> Starting predicting process for race...\n\n"))
     
     #genepool_na <- data_gen[!complete.cases(eval(parse(text = paste0("data_gen$", y[2])))),]
     
     df<-as.data.frame(data_gen[, y[2] ])
     row.names(df)<- row.names(data_gen)
-    genepool_na_race<- base::merge(df,data.frame(genepool_na, predictions$Rforest) , by = "row.names" )
+    
+    genepool_na_race<- base::merge(df,data.frame(genepool_na, predictions$ensemble) , by = "row.names" ) ## revisar esto
     genepool_na_race<-genepool_na_race %>% dplyr::select(., -Row.names,-Genepool.interpreted.ACID) 
     
-    row.names(genepool_na_race)<-row.names(data.frame(genepool_na, predictions$Rforest))
+    row.names(genepool_na_race)<-row.names(data.frame(genepool_na, predictions$ensemble))
     
     names(genepool_na_race)[ which( names(genepool_na_race)== "data_gen[, y[2]]"   ) ]<-y[2]    
-    names(genepool_na_race)[ which( names(genepool_na_race)== "predictions.Rforest"   ) ]<- y[1]
+    names(genepool_na_race)[ which( names(genepool_na_race)== "predictions.ensemble"   ) ]<- y[1]
     
     if(assertthat::has_name(genepool_na_race, "Subgroup.interpreted.ACID")){ genepool_na_race$Subgroup.interpreted.ACID <-NULL}
   
@@ -587,13 +660,13 @@ rm(i)
       if( !is.null( model$method) ){
       if(model$method == "rf"){ pred <- predict(model, newdata = genepool_na_race[,-which(names(genepool_na_race) == y[2])]  ) }
       if(model$method == "svmRadial"){ pred <- predict(model, newdata = genepool_na_race[,-which(names(genepool_na_race) == y[2])]) }
-      if(model$method == "bagFDA"){ pred <- predict(model, newdata = genepool_na_race[, names(data_in)[-which(names(genepool_na_race) == y[2])] ] ,type = "raw") }
+      if(model$method == "bagFDA"){ pred <- predict(model, newdata = genepool_na_race[,    which(names(genepool_na_race)   %in%  names(data_in)[-which(names(data_in) == y[2])] ) ]  ,type = "raw") }
       if(model$method == "knn"){pred <- predict(model, newdata= genepool_na_race %>% dplyr::select(., - eval(parse(text = y[2])))  )  }
         }else{
       
  
         
-        vf_p <- genepool_na_race[,names(vf)[-which(names(vf) == y[2])]]
+        vf_p <- genepool_na_race[,    which(names(genepool_na_race)   %in%  names(vf)[-which(names(vf) == y[2])] ) ]
         
         pos <- which(sapply(vf_p, is.factor))
         if(length(pos)!=0){
@@ -612,8 +685,12 @@ rm(i)
       return(pred)
     } )
    
+    predictions_race <- data.frame(predictions_race)
     names(predictions_race)<- model_type
-    data_predicted_race <- data.frame(genepool_na_race, predictions_race)
+    
+    predictions_race <- predictions_race  %>% dplyr::mutate(., ensemble = apply(dplyr::select(., FDA.race, multi.model,  Rforest.race, svmFit.race,  knnFit.race ) , 1, function(x){  tt<- table(x); return(names(tt[which.max(tt)]))   })   ) %>% `rownames<-`(row.names(genepool_na_race))
+
+    #data_predicted_race <- data.frame(genepool_na_race, predictions_race)
     
     accu.FDA.race <- mean(FDA.race$finalModel$oob[,1])
     
@@ -624,26 +701,34 @@ rm(i)
     
     accu.svm.race <- sum(unlist(diag(matrix(svmFit.race$resampledCM[1:(n.lev*n.lev)],n.lev,n.lev,byrow = T))))/ sum( unlist(matrix(svmFit.race$resampledCM[1:(n.lev*n.lev)],n.lev,n.lev,byrow = T)))
     accu.knn.race <- max(knnFit.race$results$Accuracy)
-
-    accuracy_race <- c(accu.FDA.race, accu.multinom, accu.Rforest.race, accu.svm.race, accu.knn.race)
- 
-    names(accuracy_race) <- model_type
+    accu.ensamble.race <- mean(accu.ensamble.race)
+    
+    
+    accuracy_race <- c(accu.FDA.race, accu.multinom, accu.Rforest.race, accu.svm.race, accu.knn.race, accu.ensamble.race)
+    
+    names(accuracy_race) <- c(model_type, "ensemble.race")
   
   }#end if() to race
   
   
-  cat("Saving data...\n")
+  cat(red$bgGreen$bold("Saving data...\n"))
  
   if( !is.null(y[1]) ){
     
       if(length(y)==2){
-        cat(">>>> Process done\n")
-        return(  list(data_predicted_genepool = data.frame(genepool_na, predictions), accuracy.genepool = accuracy, data_predicted_race= data.frame(genepool_na_race, predictions_race), accuracy.race = accuracy_race ,data = data_gen)  )
+        #df <- base::merge(data_gen, predictions, by = "row.names", all.x = TRUE ) 
+        #row.names(df) <- row.names(data_gen)
         
+        #df2 <- base::merge(data_gen, predictions_race, by = "row.names", all.x = TRUE )
+        #row.names(df2) <- row.names(data_gen)
+        
+        return( 
+          list(data_predicted_genepool = predictions   , accuracy.genepool = accuracy, data_predicted_race = predictions_race  , accuracy.race = accuracy_race ,data = data_gen)  )
+        cat(black$bgGreen$underline$bold(">>>> Process done  (>:D) \n"))      #data_predicted_genepool = data.frame(genepool_na, predictions)
       }else{
        
-        return(list(data_predicted = data.frame(genepool_na, predictions), models_accuracy = accuracy, data = data_gen))
-        
+        return(list(data_predicted = predictions , models_accuracy = accuracy, data = data_gen))
+        cat(black$bgGreen$underline$bold(">>>> Process done  (>:D) \n"))
       }
    
   }else{ 
@@ -652,9 +737,38 @@ rm(i)
 }# en function to classify
 
 predictions <- genepool_predicted(data_gen = genotypic_climate, c("Genepool.interpreted.ACID","Race.interpreted.ACID"), area = "Americas")
-df<-predictions[[2]];df
-df2<-predictions[[4]];df2
-predictions
+
+
+data <- readRDS(paste0(root,"/Input_data/_datosAndres/acp/data4modeling.RDS") )
+df<- base::merge(data, predictions$data_predicted_genepool, by = "row.names", all.x = TRUE, all.y=TRUE   )
+df2<-base::merge(data, predictions$data_predicted_race, by = "row.names", all.x = TRUE   )
+
+
+write.csv(df, file = paste0(root,"/runs/results/common_bean/lvl_1/classification/genepool_predicted.csv") )
+
+write.csv(df2, file = paste0(root,"/runs/results/common_bean/lvl_2/classification/race_predicted.csv") )
+
+
+
+write.table(predictions$accuracy.genepool, file = paste0(root, "/runs/results/common_bean/lvl_1/classification/genepool_accuracy.txt")  )
+write.table(predictions$accuracy.race, file = paste0(root, "/runs/results/common_bean/lvl_2/classification/race_accuracy.txt")  )
+######### ENSEMBLE MODEL TO CLASSIFY #########
+
+# https://www.sciencedirect.com/science/article/pii/S1566253504000417   ------> "Classifier selection for majority voting" 
+#Thomas, P., Neves, M., Rocktäschel, T., & Leser, U. (2013). WBI-DDI: drug-drug interaction extraction using majority voting. In Second Joint Conference on Lexical and Computational Semantics (* SEM), Volume 2: Proceedings of the Seventh International Workshop on Semantic Evaluation (SemEval 2013) (Vol. 2, pp. 628-635).
+
+
+ predictions$data_predicted_genepool %>% dplyr::mutate(., ensemble = apply(dplyr::select(., FDA, glmFit1, Rforest, svmFit, knnFit ) , 1, function(x){  tt<- table(x); return(names(tt[which.max(tt)]))   })   ) 
+
+
+######## END ENSEMBLE CLASSIFICATION ######
+
+
+#save predictions in each folder as well
+ predictions$data_predicted_genepool %>% dplyr::filter(., Genepool.interpreted.ACID == "Mesoamerican" ) %>% saveRDS(., file = paste0(root, "/Input_data/_datosAndres/acp/mesoamerican/PRED_meso.rds"))
+ predictions$data_predicted_genepool %>% dplyr::filter(., Genepool.interpreted.ACID == "Andean" ) %>% saveRDS(., file = paste0(root, "/Input_data/_datosAndres/acp/andean/PRED_andean.rds"))
+
+ 
 saveRDS(predictions, "/home/hachicanoy/genepool_predictions.RDS")
 
 data_gen$Genepool.predicted <- NA

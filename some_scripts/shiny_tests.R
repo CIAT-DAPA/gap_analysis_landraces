@@ -22,7 +22,7 @@ Row {data-height=600}
   ##double all 'a' or 'b's;  "\" must be escaped, i.e., 'doubled'
 gsub("([ab])", "\\1_\\1_", "abc and ABC")
 
-  
+  read.csv("//dapadfs/Workspace_cluster_9/Coffee_Cocoa2/_chirps/_data/_tbl/_precWC/_allHND/months3_wet.csv")
   
   ### Unemployment
   
@@ -1242,4 +1242,14 @@ setTimeout(function(){ map.invalidateSize();}, 1000);
   
   
   
+  aq <- transform(airquality, Month = factor(Month, labels = month.abb[5:9]))
+  aq <- subset(aq, Month != "Jul")
+  table(           aq $Month)
+ c <- droplevels(aq, exclude = if( levels(aq) < 30) NULL else NA   )  
+  table(c$Month)
   
+df
+  (droplevels(df)$Growth.habit)
+table(df$Growth.habit)
+
+
