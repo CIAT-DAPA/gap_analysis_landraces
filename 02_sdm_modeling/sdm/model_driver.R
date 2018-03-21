@@ -46,7 +46,7 @@ model_driver <- function(sp_Dir, mask, occName, extension_r, all, overwrite, cls
     
     cat(">>> Variables for SDM process have been selected. Loading ...\n")
     var_names <- read.csv(paste0(sp_Dir, "/sdm_variables_selected.csv"))
-    var_names <- as.character(var_names)
+    var_names <- as.character(var_names$x)
     
   }
   
