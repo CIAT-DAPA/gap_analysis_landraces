@@ -9,9 +9,10 @@ require(spatstat);require(raster);require(sp);require(adehabitatHR);require(SDMT
 
 ###############
 
-raster_kernel <- function(mask,occurrences,out_dir,kernel_method,scale){
+raster_kernel <- function(mask, occurrences, out_dir, kernel_method, scale){
   cat("Reading mask and occurrences","\n")
   
+  mask <- raster(mask)
   ### Reading occurrences 
   sp::coordinates(occurrences) <- ~lon+lat
   crs(occurrences) <- crs(mask)
