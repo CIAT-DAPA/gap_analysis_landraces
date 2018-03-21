@@ -94,7 +94,7 @@ cost_dist_function(code = paste0(sp_Dir_input,"/","cost_dist.py"),
 extension_r <- ".tif"
 clsModel <- "ensemble"
 correlation <- 3 #1 Correlation, 2 VIF, 3 PCA +VIF
-var_names <- model_driver(mask, occName, extension_r, all = F, overwrite = T, clsModel, correlation = correlation)
+var_names <- model_driver(spDir, mask, occName, extension_r, all = F, overwrite = T, clsModel, correlation = correlation)
 
 
 # Loading SWD file and occurrence data
@@ -180,7 +180,7 @@ if(!file.exists(paste0(gap_outDir, "/Kernel_indicator.tif"))){
   kernel_indicator <- kernel_indicator(kernel, friction, model_outDir, gap_outDir, reverse = T)
 } else {
   kernel_indicator <- raster(paste0(gap_outDir,"/Kernel_indicator.tif"))   
-}  
+}
 
 method = "foreach"
 
