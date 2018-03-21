@@ -94,7 +94,7 @@ cost_dist_function(code = paste0(sp_Dir_input,"/","cost_dist.py"),
 extension_r <- ".tif"
 clsModel <- "ensemble"
 correlation <- 3 #1 Correlation, 2 VIF, 3 PCA +VIF
-var_names <- model_driver(spDir, mask, occName, extension_r, all = F, overwrite = T, clsModel, correlation = correlation)
+var_names <- model_driver(sp_Dir, mask, occName, extension_r, all = F, overwrite = T, clsModel, correlation = correlation)
 
 
 # Loading SWD file and occurrence data

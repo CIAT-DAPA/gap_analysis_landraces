@@ -11,9 +11,9 @@
 
 #source functions
 
-model_driver <- function(spDir, mask, occName, extension_r, all, overwrite, clsModel, correlation){
+model_driver <- function(sp_Dir, mask, occName, extension_r, all, overwrite, clsModel, correlation){
   
-  if(!file.exists(paste0(spDir, "/sdm_variables_selected.csv"))){
+  if(!file.exists(paste0(sp_Dir, "/sdm_variables_selected.csv"))){
     
     cat(">>> Variables for SDM process have not been selected. Processing ...\n")
     
@@ -38,14 +38,14 @@ model_driver <- function(spDir, mask, occName, extension_r, all, overwrite, clsM
     
     #Getting variables to use in the SDM
     var_names <- colnames(swd)[!colnames(swd) %in% c("id", "species", "status", "lon", "lat")]
-    write.csv(x = var_names, file = paste0(spDir, "/sdm_variables_selected.csv"), row.names = F)
+    write.csv(x = var_names, file = paste0(sp_Dir, "/sdm_variables_selected.csv"), row.names = F)
     
     return(var_names)
     
   } else {
     
     cat(">>> Variables for SDM process have been selected. Loading ...\n")
-    var_names <- read.csv(paste0(spDir, "/sdm_variables_selected.csv"))
+    var_names <- read.csv(paste0(sp_Dir, "/sdm_variables_selected.csv"))
     var_names <- as.character(var_names)
     
   }
