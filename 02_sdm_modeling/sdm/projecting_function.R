@@ -18,8 +18,9 @@ projecting_function <-function(m2, m2_eval, model_outDir, nCores, obj.size){
                        newdata = clim_layer,
                        mean = F,
                        overwrite = F,
-                       nc = nCores,
-                       method = "foreach",
+                       # nc = nCores,
+                       # method = "foreach",
+                       parallelSettings = list(ncore = nCores, method = "foreach"),
                        obj.size = obj.size,
                        filename = paste0(model_outDir_rep,"/",occName,"_prj_rep-",m_i,".tif"))#,obj.size=3)
         
