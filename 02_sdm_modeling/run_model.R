@@ -34,6 +34,11 @@ level_3 <- NULL # level 3
 x <- config_crop_dirs(baseDir, crop, level_1, level_2, level_3); rm(x)
 ##########
 
+# Preparing inputs for each unit of analysis
+level <- "lvl_1"
+occName <- "mesoamerican" # andean
+source(paste(srcDir, "/preprocessing/config.R", sep = ""))
+
 
 # Selecting randomly an accession coordinate
 # Creating a buffer of 50 km (100 km, ...) around the selected point
@@ -42,29 +47,62 @@ x <- config_crop_dirs(baseDir, crop, level_1, level_2, level_3); rm(x)
 # variable selection? (esto deberia quedar escrito solo para llamarlo)
 # maxent calibration?, maxent run, cost distance, kernel density
 # 5, 10, 20, 50, 100, 150
-eval_method <- function(vars, calibration){
-  # Select randomly a point
+
+# Temporal files
+# Crop
+# Level
+# LevelName
+#
+
+validation_process <- function(occName = "mesoamerican", sp_Dir,
+                               buffer_radius = 0.5) # Radius of 50 km for excluding occurrences
+  {
+  
+  valDir <- paste0(sp_Dir, "/gap_validation")
+  
+  cat(">>> Loading occurrence data ... \n")
+  swdFile <- paste0(swdDir, "/swd_", occName, ".csv")
+  spData <- read.csv(swdFile)
+  spData <- spData[,c(3:ncol(spData))]
+  names(spData)[1] <- occName
+  spData <- spData[which(spData[,1] == 1),]
+  
+  cat(">>> Loading kernel density map for all points ... \n")
+  kernel <- raster(paste0(sp_Dir, "/gap_models/Kernel.tif"))
+  
+  cat(">>> Select a point using kernel density as weights or pick one according to a criteria ... \n")
   set.seed(1234)
-  pnt <- base::sample(x = 1:nrow(occ_data), size = 1, replace = F)
-  # Create a buffer around it
-  create_buffers(xy = spData[pnt, c("lon", "lat")], msk = mask, buff_dist = 0.5, format = "GTiff", filename = paste0("Define_output_directory/testing_buffer.tif"))
-  rm(pnt)
-  # Identify and exclude of the analysis points within the buffer radius
-  id_pnts <- sp::over(x = spData[,c("lon", "lat")], y = testing_buffer)
-  exclData <- spData[id_pnts,]
-  write.csv(x = exclData, file = "Guardar_este_archivo")
-  spDataUpt <- spData[-id_pnts,]; rm(id_pnts)
-  write.csv(x = spDataUpt, file = "Guardar_este_archivo")
-  # Load same variables
-  ...
-  # Load same feature parameters
-  ...
+  pnt <- base::sample(x = 1:nrow(spData), size = 1, replace = F, prob = raster::extract(x = kernel, y = spData[,c("lon", "lat")]))
+  
+  cat(">>> Create a buffer around the point ... \n")
+  radius <- create_buffers(xy = spData[pnt, c("lon", "lat")], msk = mask, buff_dist = buffer_radius, format = "GTiff", filename = paste0(valDir, "/buffer_radius_to_omit.tif"))
+  
+  cat(">>> Identify and exclude of the analysis points within the buffer radius ... \n")
+  id_pnts <- raster::extract(x = radius, y = spData[,c("lon", "lat")])
+  pnt_excl <- spData[which(id_pnts == 1),]
+  write.csv(x = pnt_excl, file = paste0(valDir, "/coordinates_to_exclude.csv"), row.names = F)
+  spData_upt <- spData[which(id_pnts != 1),]; rm(id_pnts)
+  write.csv(x = spData_upt, file = paste0(valDir, "/occ_", occName, "_updated.csv"), row.names = F)
+  
+  cat(">>> Load same variables for SDM ... \n")
+  vars <- read.csv(paste0(sp_Dir, "/sdm_variables_selected.csv"))
+  vars <- as.character(vars$x)
+  
+  cat(">>> Load calibrated feature parameters for SDM ... \n")
+  calibration <- read.csv(paste0(sp_Dir, "/calibration.csv"))
+  feat <- CreateMXArgs(calibration)
+  beta <- feat[(grepl("betamultiplier=", feat))]; beta <- as.numeric(gsub("betamultiplier=", "", beta))
+  feat <- feat[(!grepl("betamultiplier=", feat))]
+  rm(calibration)
+  
   # Run maxent model again
-  tm <- sdm_approach_function(occName, spDataUpt, sp_Dir, eval_sp_Dir, model_outDir, var_names, nCores = 5, nReplicates = 5, beta, feat)
+  m <- sdm_approach_function(occName = occName, spData = spData_upt, sp_Dir = sp_Dir,
+                             eval_sp_Dir = valDir, model_outDir = valDir, var_names = vars,
+                             nCores = 5, nFolds = 1, beta, feat)
   # Evaluate maxent again
-  evaluation_function(tm, eval_sp_Dir)
+  m2_eval <- evaluation_function(m, eval_sp_Dir = valDir)
   # Projecting the model again
-  model <- projecting_function(tm, m2_eval, model_outDir, nCores = 5, obj.size = 3)
+  model <- projecting_function(m, m2_eval, model_outDir = valDir, nCores = 5, obj.size = 3)
   # Creating a new cost distance
   cost_dist_function()
   # Creating a new kernel density
@@ -74,10 +112,11 @@ eval_method <- function(vars, calibration){
   # Evaluating adding the excluded points
 }
 
-# Preparing inputs for each unit of analysis
-level <- "lvl_1"
-occName <- "mesoamerican" # andean
-source(paste(srcDir, "/preprocessing/config.R", sep = ""))
+
+
+
+
+
 
 # Creating the cost distance function according with the level of analysis
 cost_dist_function(code = paste0(sp_Dir_input,"/","cost_dist.py"),
