@@ -65,23 +65,22 @@ validation_process <- function(occName = "mesoamerican", sp_Dir,
   spData <- read.csv(swdFile)
   spData <- spData[,c(3:ncol(spData))]
   names(spData)[1] <- occName
-  spData <- spData[which(spData[,1] == 1),]
   
   cat(">>> Loading kernel density map for all points ... \n")
   kernel <- raster(paste0(sp_Dir, "/gap_models/Kernel.tif"))
   
   cat(">>> Select a point using kernel density as weights or pick one according to a criteria ... \n")
   set.seed(1234)
-  pnt <- base::sample(x = 1:nrow(spData), size = 1, replace = F, prob = raster::extract(x = kernel, y = spData[,c("lon", "lat")]))
+  pnt <- base::sample(x = 1:nrow(spData[which(spData[,1] == 1),]), size = 1, replace = F, prob = raster::extract(x = kernel, y = spData[which(spData[,1] == 1), c("lon", "lat")]))
   
   cat(">>> Create a buffer around the point ... \n")
   radius <- create_buffers(xy = spData[pnt, c("lon", "lat")], msk = mask, buff_dist = buffer_radius, format = "GTiff", filename = paste0(valDir, "/buffer_radius_to_omit.tif"))
   
   cat(">>> Identify and exclude of the analysis points within the buffer radius ... \n")
-  id_pnts <- raster::extract(x = radius, y = spData[,c("lon", "lat")])
-  pnt_excl <- spData[which(id_pnts == 1),]
+  id_pnts <- raster::extract(x = radius, y = spData[which(spData[,1] == 1), c("lon", "lat")])
+  pnt_excl <- spData[which(spData[,1] == 1)[which(id_pnts == 1)],]
   write.csv(x = pnt_excl, file = paste0(valDir, "/coordinates_to_exclude.csv"), row.names = F)
-  spData_upt <- spData[which(id_pnts != 1),]; rm(id_pnts)
+  spData_upt <- spData[base::setdiff(1:nrow(spData), which(spData[,1] == 1)[which(id_pnts == 1)]),]; rm(id_pnts)
   write.csv(x = spData_upt, file = paste0(valDir, "/occ_", occName, "_updated.csv"), row.names = F)
   
   cat(">>> Load same variables for SDM ... \n")
@@ -96,9 +95,10 @@ validation_process <- function(occName = "mesoamerican", sp_Dir,
   rm(calibration)
   
   # Run maxent model again
-  m <- sdm_approach_function(occName = occName, spData = spData_upt, sp_Dir = sp_Dir,
-                             eval_sp_Dir = valDir, model_outDir = valDir, var_names = vars,
-                             nCores = 5, nFolds = 1, beta, feat)
+  m <- sdm_approach_function(occName = occName, spData = spData_upt,
+                             model_outDir = valDir, var_names = vars,
+                             nCores = 5, nFolds = 2, beta = beta, feat = feat)
+  
   # Evaluate maxent again
   m2_eval <- evaluation_function(m, eval_sp_Dir = valDir)
   # Projecting the model again
