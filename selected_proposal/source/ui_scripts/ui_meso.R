@@ -56,37 +56,10 @@ fluidRow(
               #          ,bsButton("keep.m",label = " Save",size = "large",block=F,style="primary",icon("hand-o-right")),bsTooltip(id = "keep.m", title = "Save name", placement = "right", trigger = "hover"))
               #          
               
-              tabPanel("Occurrence",   box(background ="black",solidHeader = TRUE,width = 8,leafletOutput("mymap4.m",height = 500,width = "100%") ) 
-                       
-                       
-                       , box(solidHeader = F,width = 4, tagList(div( tags$h3(HTML("<b>1. Current distribution of landraces </b>"))),
-                                                                tags$h5(HTML("<p align=justify> This map plots the distribution of accessions labled as landraces within the CIAT collection. 
-                                                                                In the background of this map, the pink color shows the area where common bean is produced, according to Mapspam. 
-                                                                               Please revise this map, and help us to identify any points that seem wrong. Draw a polygon around any dubious points.<br/> <br/> Landrace is a complicated term. Here we define a landrace as having two essential features: 
-                                                                             <br/> <br/> A). Being tied to a place (undergoing natural selection in a place for a significant period of time). <br/> <br/>
-                                                                             B). Farmer reproduced (farmers save the seed/propagules and replant the landrace,
-                                                                             rather than purchasing from the formal seed sector).
-                                                                             </p>")),
-                                                                textAreaInput("txt_m0","Write a note or comment:",height = "150px")
-                                                                ,div(style="position:relative;width: 100%",bsButton("done0_m", size="large",label = "Save", block = F, style="primary",icon("cloud-download")),
-                                                                     bsTooltip(id = "done0_m", title = "Save your work", placement = "right", trigger = "hover")
-                                                                     
-                                                                     ,div(style="float:right;width:95px",bsButton("next0.m", size="large",label = "Next", block = F, style="primary",icon("forward"))
-                                                                          ,bsTooltip(id = "next0.m", title = "Go to next question", placement = "left", trigger = "hover")
-                                                                          
-                                                                          
-                                                                          )
-                                                                )
-                                                                
-                                                                
-                                                                ,busyIndicator(text = "wait a moment pls...",img = "http://www.cameronbarnes.com/images/loading.gif", wait=200)
-                                                                
-                                                                )   )
-                       
-              )
               
               
-              ,tabPanel("1. Cultivars",box(background ="black",solidHeader = TRUE,width = 8,leafletOutput("mymap5.m",height = 500,width = "100%")
+              
+              tabPanel("1. Cultivars",box(background ="black",solidHeader = TRUE,width = 8,leafletOutput("mymap5.m",height = 500,width = "100%")
                                            
                                            
               )

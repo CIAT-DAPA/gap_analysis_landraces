@@ -1331,3 +1331,36 @@ ggplot(df,aes_string(x="Dim.1",y="Dim.2",color="gen.pred", shape="gen.pred")) + 
 
 http://1.2.0.1/reg.php?ah_goal=politicas.html&ah_login=true&url=E2B8F3578D88E9BF2388F2468A984E8A8C28109A19
 
+
+ui <- dashboardPage(
+  dashboardHeader(), 
+  dashboardSidebar(
+    sidebarMenu(
+      # Setting id makes input$tabs give the tabName of currently-selected tab
+      id = "tabs",
+      
+      menuItem("Beans Geenepools",tabName = "geneBeans", icon = icon("dashboard"), startExpanded = TRUE),
+      menuItem("Introduction",tabName="introm", menuSubItem("lagran",tabName = "lagr"), menuSubItem("lagran2",tabName = "lagr2")),
+      menuItem("Andean beans", tabName = "Andean"),
+      menuItem("Mesoamerican beans", tabName = "Mesoamerican")
+      
+    ),
+    textOutput("res")
+  ),
+  dashboardBody(
+    tabItems(
+      tabItem("geneBeans", "Dashboard tab content"),
+      tabItem("lagr", "Widgets tab content"),
+      tabItem("Andean", "Sub-item 1 tab content"),
+      tabItem("Mesoamerican", "Sub-item 2 tab content") 
+    )
+  )
+)
+
+server <- function(input, output, session) {
+  output$res <- renderText({
+    paste("You've selected:", input$tabs)
+  })
+}
+
+shinyApp(ui, server)
