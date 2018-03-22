@@ -119,10 +119,10 @@ validation_process <- function(occName = "mesoamerican", sp_Dir,
 
 
 # Creating the cost distance function according with the level of analysis
-cost_dist_function(code = paste0(sp_Dir_input,"/","cost_dist.py"),
-                   envDir = paste0(sp_Dir_input,"/","raster"),
+cost_dist_function(code = paste0(sp_Dir_input, "/cost_dist.py"),
+                   envDir = paste0(sp_Dir_input, "/raster"),
                    lyr = friction,
-                   outDir = paste0(sp_Dir_input,"/","raster"),
+                   outDir = paste0(sp_Dir_input, "/raster"),
                    classResults = classResults,
                    occName = occName,
                    mask = mask,
@@ -162,7 +162,7 @@ if(file.exists(paste0(sp_Dir, "/calibration.csv"))){
 
 # Running SDMs
 cat("Running modeling approach","\n")
-m2 <- sdm_approach_function(occName, spData, sp_Dir, eval_sp_Dir, model_outDir, var_names, nCores = 5, nFolds = 10, beta, feat)
+m2 <- sdm_approach_function(occName = occName, spData = spData, model_outDir = sp_Dir, var_names = var_names, nCores = 5, nFolds = 5, beta, feat)
 
 # Model evaluation per replicates (nReplicates x 5)
 cat("Evaluating models performance\n")
@@ -220,13 +220,3 @@ if(!file.exists(paste0(gap_outDir, "/Kernel_indicator.tif"))){
 } else {
   kernel_indicator <- raster(paste0(gap_outDir,"/Kernel_indicator.tif"))   
 }
-
-method = "foreach"
-
-1
-2
-3
-sdmSetting(formula,data,methods,interaction.depth=1,n=1,replication=NULL,cv.folds=NULL,
-           test.percent=NULL,bg=NULL,bg.n=NULL,var.importance=NULL,response.curve=TRUE,
-           var.selection=FALSE,ncore=1L,modelSettings=NULL,seed=NULL,parallelSettings=NULL,...)
-
