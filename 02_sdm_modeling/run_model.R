@@ -105,7 +105,7 @@ validation_process <- function(occName = "mesoamerican", sp_Dir,
   model <- projecting_function(m, m2_eval, model_outDir = valDir, nCores = 5, obj.size = 3)
   # Creating a new cost distance
   cost_dist_function(code = paste0(valDir, "/cost_dist.py"),
-                     envDir = paste0(sp_Dir_input, "/raster"),
+                     envDir = paste0("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/input_data/by_crop/common_bean/raster"),
                      lyr = friction,
                      outDir = paste0(valDir, "/raster"),
                      classResults = classResults,
