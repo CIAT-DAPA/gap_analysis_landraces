@@ -1,4 +1,4 @@
-#load libraries
+# Load libraries
 cat("Loading R packages","\n")
 suppressMessages(if(!require(sdm)){install.packages("sdm");library(sdm)}else{library(sdm)})
 suppressMessages(if(!require(raster)){install.packages("raster");library(raster)}else{library(raster)})
@@ -9,11 +9,8 @@ suppressMessages(if(!require(maptools)){install.packages("maptools");library(map
 suppressMessages(if(!require(deldir)){install.packages("deldir");library(deldir)}else{library(deldir)})
 suppressMessages(if(!require(rgeos)){install.packages("rgeos");library(rgeos)}else{library(rgeos)})
 
-
-#source functions
+# Source functions
 cat("Loading R scripts","\n")
-
-
 source(paste(srcDir,"/preprocessing/cost_distance_function.R",sep=""))
 source(paste(srcDir,"/sdm/sample_files.R",sep=""))
 source(paste(srcDir,"/sdm/null_model.R",sep=""))
@@ -27,13 +24,11 @@ source(paste(srcDir,"/sdm/projecting_function.R",sep=""))
 source(paste(srcDir,"/miscellanous/kernel_function.R",sep=""))
 source(paste(srcDir,"/miscellanous/kernel_indicator.R",sep=""))
 
-#working directories
+# Working directories
 cat("Loading working directories","\n")
-
-
 #Calling input dir and results dir
-input_data_dir <-  paste0(baseDir,"/input_data")
-results_dir <-  paste0(baseDir,"/results")
+input_data_dir <-  paste0(baseDir, "/input_data")
+results_dir <-  paste0(baseDir, "/results")
 
 aux_dir <- paste(input_data_dir,"/auxiliar_rasters",sep="")
 climDir <- paste(input_data_dir,"/generic_rasters",sep="")
@@ -72,10 +67,9 @@ gap_del_outDir <- paste0(gap_outDir,"/","delaunay"); if(!file.exists(gap_del_out
 #Loading files to perform Delaunay analysis
 
 #cont_mask <- paste(baseDir,"/Input_data/_maps/GAUL_2014/G2014_2013_0_NO_ANT.shp",sep="")
- #cont_mask <- paste(shp_dir,"/GAUL_2014/CONTINENTAL.shp",sep="")
+#cont_mask <- paste(shp_dir,"/GAUL_2014/CONTINENTAL.shp",sep="")
 cont_mask <- paste(shp_dir,"/GAUL_2014/CONTINENTAL_20km.shp",sep="")
 
- friction <- paste(aux_dir,"/friction_surface.tif",sep="")
- mask <- paste0(mask_dir,"/","mask_Americas.tif")
-   #
+friction <- paste(aux_dir,"/friction_surface.tif",sep="")
+mask <- paste0(mask_dir,"/mask_world.tif")
 cat(" ","\n")

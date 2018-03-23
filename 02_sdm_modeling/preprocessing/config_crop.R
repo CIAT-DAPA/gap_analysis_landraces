@@ -1,6 +1,5 @@
 
-
-config_crop_dirs <- function(baseDir,crop,level_1,level_2,level_3){
+config_crop_dirs <- function(baseDir, crop, level_1, level_2, level_3){
 
 # input_data directory
 input_data_dir <-  paste0(baseDir,"/input_data")
@@ -61,42 +60,3 @@ if(length(level_3)>0){
    }) 
   }
 }
-
-
-
-
-#Base dir to perform analysis
-baseDir <- "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs"
-
-crop <- c(
-   "common_bean"
-  # "potato",
-  # "barley",
-  # "banana",
-  # "rice",
-  # "chickpea",
-  # "wheat_bread",
-  # "wheat_durum",
-  # "cassava",
-  # "maize",
-  # "yam",
-  # "grass_pea",
-  # "lentil",
-  # "sweet_potato",
-  # "sorghum",
-  # "groundnut",
-  # "cowpea",
-  # "pea",
-  # "faba_bean",
-  # "pigeonpea",
-  # "finger_millet",
-  # "pearl_millet",
-  # "forages"
-)
-# 
-# level_1 <- c("andean","mesoamerican")
-# level_2 <- c("nueva_granada","peru","chile","durango-Jalisco","mesoamerica","guatemala")
-# 
-# level_3 <- NULL
-
-#x <- config_crop_dirs(baseDir,crop,level_1,level_2,level_3)
