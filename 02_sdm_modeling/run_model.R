@@ -123,17 +123,16 @@ validation_process <- function(occName = "mesoamerican", sp_Dir,
 
 
 
-
+mask <- "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/input_data/mask/mask_world.tif"
 
 # Creating the cost distance function according with the level of analysis
 cost_dist_function(code = paste0(sp_Dir_input, "/cost_dist.py"),
-                   envDir = paste0(sp_Dir_input, "/raster"),
+                   envDir = paste0("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/input_data/by_crop/common_bean/raster"),
                    lyr = friction,
                    outDir = paste0(sp_Dir_input, "/raster"),
                    classResults = classResults,
                    occName = occName,
-                   mask = mask,
-                   occDir = occDir
+                   mask = mask
 )
 
 # Model driver function for preparing which variables will be selected to run SDMs and creation of SWD files
