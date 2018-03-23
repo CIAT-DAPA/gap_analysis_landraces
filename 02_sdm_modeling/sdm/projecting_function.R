@@ -1,4 +1,5 @@
 require(raster)
+require(foreach)
 
 projecting_function <-function(m2, m2_eval, model_outDir, nCores, obj.size){
   
@@ -6,7 +7,19 @@ projecting_function <-function(m2, m2_eval, model_outDir, nCores, obj.size){
   n_projs <- length(list.files(path = model_outDir_rep, pattern = "_prj_th_rep-"))
   if(n_projs != nrow(m2_eval)*.5){
     
-    # Predicting replicates 
+    # Predicting replicates
+    p2m_all <- foreach::foreach()
+    
+    suppressMessages(library(doMC))
+    
+    # Procesadores en su servidor
+    registerDoMC(8)
+    
+    # Run DSSAT in parallel
+    Run <- foreach(i = 1:dim(crop_mgmt)[1]) %dopar% {
+      run_dssat(input_data, i, dir_dssat, dir_base)
+    }
+    
     p2m_all <-lapply(1:nrow(m2_eval),function(m_i){
       
       if (!file.exists(paste0(model_outDir_rep,"/",occName,"_prj_rep-",m_i,".tif"))) {
