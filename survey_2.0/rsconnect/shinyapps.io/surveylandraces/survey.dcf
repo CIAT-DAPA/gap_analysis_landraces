@@ -1,0 +1,10 @@
+name: survey
+title: Survey
+account: surveylandraces
+server: shinyapps.io
+appId: 213971
+bundleId: 978427
+url: https://surveylandraces.shinyapps.io/survey/
+when: 1505224857.3043
+asMultiple: FALSE
+asStatic: FALSE

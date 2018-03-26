@@ -1,0 +1,13 @@
+name: survey_v2_beta
+title: survey_v2_beta
+username:
+account: surveylandraces
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 302314
+bundleId: 1282443
+url: https://surveylandraces.shinyapps.io/survey_v2_beta/
+when: 1521724890.90475
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: harvest_area_shapefile_simplify/harvest_area.dbf|harvest_area_shapefile_simplify/harvest_area.prj|harvest_area_shapefile_simplify/harvest_area.shp|harvest_area_shapefile_simplify/harvest_area.shx|presence_data/presence_beans_cleaned.csv

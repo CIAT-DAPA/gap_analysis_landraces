@@ -1,0 +1,49 @@
+tags$html( h1(HTML("<b>How to complete our survey</b>")),
+                                
+                                h3( HTML( " <p align=justify > The aim of this survey is ask about your knowledge in spatial distribution
+                                            of landraces crops. Below you will find a short tutorial about how to deal with the maps, 
+											at the end of this tutorial there is a button that redirect to the first question,  Then:   </p>" )),
+                                
+                                #p(style="align=justify","Below you will find a short tutorial to handle drawing and editing tools of the polygons."),
+                                h3(HTML("<b> 1.  Type your full name then press the save button to advance. </b>")),
+                                
+                                div(style="text-align:center",img(src="name_and_croptype.gif",width="1000px", height="300px",aling="left")),
+                                
+                                h3(HTML("<b>2. Questions</b>")),
+                                h3(HTML("<p align=justify> This survey has 2 pages of questions, related to:
+
+                                         <br></br> A) Current distribution of landraces.
+                                         <br></br> B) Gaps in CGIAR collections for landraces. 
+                                         
+                                        <br></br> On each page, please draw your
+                                        best understanding of the requested information, and add any notes or comments helpful in interpretation.</p> ")),
+                                                           
+                                                           h3(HTML("<b>2. Drawing tools</b>")),
+                                                           h3(HTML("<p align=justify>On  each map the tools are located at top left. You can zoom in the map with + or - buttons in the  draw toolbar or you can use the mouse wheel. </p>")),
+                                                           div(style="text-align:center",img(src="maps_tools.PNG",width="800px", height="400px",aling="left")),
+                                                           
+                                                           h3(HTML("<p align=justify>Please draw a shape, being sure to complete the shape by reconnecting to the starting point.
+                                                                   </P>")),
+                                                           div(style="text-align:center",img(src="drawing_polygon.gif",width="800px", height="400px",aling="left")),
+                                                           
+                                                           h3(HTML("<p align=justify>  You can undo your work as needed. Save your work when you are done.       </p>")),
+                                                           
+                                                           div(style="text-align:center",img(src="edit_polygon.gif",width="800px", height="400px",aling="left")),
+                                                           
+                                                           h3(HTML("<b> 4. Final revision </b>")),
+                                                           h3(HTML("<p align=justify> On the final page of the survey, you have the opportunity to review your work before finalizing.
+                                                                   Feel free to return to any section needing further editing. </p>")),
+                                                           div(style="text-align:center",img(src="review_polygon.gif",width="800px", height="400px",aling="left")),
+                                                           
+                                                           div(style="position: relative;width:100%",h3(HTML("<font color=white >nothing to see here</font>"))),
+                                                           div(style=" border:3px solid #ff0000;align:center",bsButton("introd", size="large",label = HTML("<b><font color=black> Go to survey</font></b>"), block = T, style="primary",icon("hand-o-right"))
+               
+               )
+                                
+                                
+                                
+                                
+                                
+                      
+                      
+                                )
