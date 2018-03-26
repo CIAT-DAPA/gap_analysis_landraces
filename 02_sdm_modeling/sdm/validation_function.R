@@ -1,3 +1,46 @@
+# Validation process: landrace gap analysis
+# Harold Achicanoy
+# CIAT, March 2018
+
+# R options
+g <- gc(reset = T); rm(list = ls()); options(warn = -1); options(scipen = 999)
+
+# Base directory
+OSys <- Sys.info()[1]
+baseDir   <- switch(OSys,
+                    "Linux" = "/mnt/workspace_cluster_9/gap_analysis_landraces/runs",
+                    "Windows" = "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs",
+                    "Darwin" = "~nfs/workspace_cluster_9/gap_analysis_landraces/runs")
+rm(OSys)
+
+# Software directory
+srcDir <- paste(baseDir, "/scripts", sep = "")
+#srcDir <- "D:/ToBackup/repositories/cwr-repo/gap_analysis_landraces/02_sdm_modeling"
+# NOT TO RUN (crops directories and subdirectories)
+# source(paste0(srcDir,"/preprocessing/pre_config.R"))
+
+# Choose a directory for temporal raster files
+raster::rasterOptions(tmpdir = choose.dir(default = "", caption = "Please select the temporary folder")) # "D:/TEMP/CSOSSA"
+# for testing: raster::tmpDir()
+
+# Calling species to run
+# Configuring crop directories to run
+source(paste0(srcDir, "/preprocessing/config_crop.R"))
+
+# Define crop, analysis level and creating needed directories
+crop <- "common_bean" # crop
+level_1 <- c("andean", "mesoamerican") # level 1: genepool
+level_2 <- c("nueva_granada", "peru", "chile", "durango-Jalisco", "mesoamerica","guatemala") # level 2: race
+level_3 <- NULL # level 3
+x <- config_crop_dirs(baseDir, crop, level_1, level_2, level_3); rm(x)
+##########
+
+# Preparing inputs for each unit of analysis
+level <- "lvl_1"
+occName <- "mesoamerican" # andean
+source(paste(srcDir, "/preprocessing/config.R", sep = ""))
+
+
 # Selecting randomly an accession coordinate
 # Creating a buffer of 50 km (100 km, ...) around the selected point
 # Identify and exclude of the analysis the points within the buffer radius
