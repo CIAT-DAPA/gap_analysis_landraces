@@ -40,14 +40,3 @@ cost_dist_function <-  function(code, envDir, lyr, outDir,classResults,occName,m
   print('Done...')
   
 }
-
-# 
-# cost_dist_function(code = paste0(sp_Dir_input,"/","cost_dist.py"),
-#            envDir = paste0(sp_Dir_input,"/","raster"),
-#            lyr = friction,
-#            outDir = paste0(sp_Dir_input,"/","raster"),
-#            classResults = classResults,
-#            occName = occName,
-#            mask = mask,
-#            occDir = occDir
-# )

@@ -128,7 +128,10 @@ cost_dist_function(code = paste0(sp_Dir_input, "/cost_dist.py"),
                    classResults = classResults,
                    occName = occName,
                    mask = mask
+                   envDir, friction, outDir, classResults, occName, occDir, mask
 )
+
+
 
 # Model driver function for preparing which variables will be selected to run SDMs and creation of SWD files
 extension_r <- ".tif"
@@ -214,6 +217,7 @@ if(!file.exists(paste0(gap_outDir,"/","kernel.tif"))){
   kernel <- raster(paste0(gap_outDir, "/kernel.tif")) 
 }
 
+# Put here environmental similarity index!!!
 
 # Gathering Kernel gap indicator
 if(!file.exists(paste0(gap_outDir, "/Kernel_indicator.tif"))){
