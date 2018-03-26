@@ -40,6 +40,17 @@ level <- "lvl_1"
 occName <- "mesoamerican" # andean
 source(paste(srcDir, "/preprocessing/config.R", sep = ""))
 
+# Pre-process classified data
+if(!file.exists(paste0(classResults, "/genepool_predicted_original.csv"))){
+  accessions_predicted <- read.csv(paste0(classResults, "/genepool_predicted.csv"))
+  accessions_predicted$Genepool.interpreted.ACID <- as.character(accessions_predicted$Genepool.interpreted.ACID)
+  accessions_predicted$ensemble[!is.na(accessions_predicted$Genepool.interpreted.ACID)] <- accessions_predicted$Genepool.interpreted.ACID[!is.na(accessions_predicted$Genepool.interpreted.ACID)]
+  accessions_predicted$X <- accessions_predicted$Row.names <- NULL
+  file.rename(from = paste0(classResults, "/genepool_predicted.csv"), to = paste0(classResults, "/genepool_predicted_original.csv"))
+  write.csv(accessions_predicted, paste0(classResults, "/genepool_predicted.csv"), row.names = F)
+  rm(accessions_predicted)
+}
+
 # Creating the cost distance function according with the level of analysis
 cost_dist_function(code = paste0(sp_Dir_input, "/cost_dist.py"),
                    outDir = gap_outDir,

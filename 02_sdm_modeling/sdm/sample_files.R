@@ -8,9 +8,9 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
   
   #load raster files
   cat("Loading raster files","\n")
-  current_clim_layer_generic <- lapply(paste0(climDir,"/",var_names_generic,extension_r),raster)
-  current_clim_layer_sp <- lapply(paste0(clim_spDir,"/",var_names_sp,extension_r),raster)
-  current_clim_layer <- stack(current_clim_layer_generic,current_clim_layer_sp)
+  current_clim_layer_generic <- lapply(paste0(climDir, "/world/", var_names_generic, extension_r), raster)
+  current_clim_layer_sp <- lapply(paste0(baseDir, "/input_data/by_crop/", crop, "/raster/world/", var_names_sp, extension_r), raster)
+  current_clim_layer <- stack(current_clim_layer_generic, current_clim_layer_sp)
   
   #background samples file name
   outBackName <- paste0(backDir,"/","bg_",occName,".csv")

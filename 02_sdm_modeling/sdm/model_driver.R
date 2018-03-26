@@ -25,9 +25,9 @@ model_driver <- function(sp_Dir, mask, occName, extension_r, all, overwrite, cls
     
     #SWD using all variables provided
     
-    var_names_generic <- list.files(climDir,pattern = paste0(extension_r,"$"),full.names = F);var_names_generic <-gsub(extension_r,"",var_names_generic)
-    var_names_sp <- list.files(clim_spDir,pattern = paste0(extension_r,"$"),full.names = F);var_names_sp <-gsub(extension_r,"",var_names_sp)
-    var_names_sp <- var_names_sp[!grepl("cost_dist",var_names_sp)]
+    var_names_generic <- list.files(paste0(climDir, "/world"), pattern = paste0(extension_r,"$"),full.names = F);var_names_generic <-gsub(extension_r,"",var_names_generic)
+    var_names_sp <- list.files(paste0(baseDir, "/input_data/by_crop/", crop, "/raster/world"), pattern = paste0(extension_r,"$"), full.names = F); var_names_sp <- gsub(extension_r, "", var_names_sp)
+    # var_names_sp <- var_names_sp[!grepl("cost_dist",var_names_sp)]
     
     # create occurrences, background, and swd (occ+bg)
     if(overwrite == T){
