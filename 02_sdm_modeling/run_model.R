@@ -46,7 +46,7 @@ cost_dist_function(code = paste0(sp_Dir_input, "/cost_dist.py"),
                    outDir = paste0(sp_Dir_input, "/raster"),
                    classResults = classResults,
                    occName = occName,
-                   mask = mask
+                   mask = mask,
                    envDir, friction, outDir, classResults, occName, occDir, mask
 )
 

@@ -48,7 +48,7 @@ sp_Dir_input <- paste0(input_data_dir,"/by_crop/",crop,"/",level,"/",occName)
 occDir <- paste(sp_Dir_input,"/occurrences",sep=""); if (!file.exists(occDir)) {dir.create(occDir)}
 backDir <- paste(sp_Dir_input,"/background",sep=""); if (!file.exists(backDir)) {dir.create(backDir)}
 swdDir <- paste(sp_Dir_input,"/swd",sep=""); if (!file.exists(swdDir)) {dir.create(swdDir)}
-clim_spDir <- paste(sp_Dir_input,"/raster",sep=""); if (!file.exists(clim_spDir)) {dir.create(clim_spDir)}
+clim_spDir <- paste(input_data_dir, "/by_crop/", crop, "/raster", sep = ""); if (!file.exists(clim_spDir)) {dir.create(clim_spDir)}
 
 
 cat("Loading species model output directories","\n")
@@ -58,6 +58,7 @@ eval_sp_Dir_rep <- paste0(eval_sp_Dir,"/","replicates");if(!file.exists(eval_sp_
 model_outDir <- paste0(sp_Dir,"/","prj_models"); if(!file.exists(model_outDir)){dir.create(model_outDir)}
 model_outDir_rep <- paste0(model_outDir,"/","replicates");if(!file.exists(model_outDir_rep)){dir.create(model_outDir_rep)}
 gap_outDir <- paste0(sp_Dir,"/","gap_models"); if(!file.exists(gap_outDir)){dir.create(gap_outDir)}
+gap_valDir <- paste0(sp_Dir,"/","gap_validation"); if(!file.exists(gap_valDir)){dir.create(gap_valDir)}
 gap_del_outDir <- paste0(gap_outDir,"/","delaunay"); if(!file.exists(gap_del_outDir)){dir.create(gap_del_outDir)}
 
 # modDir <- paste(results_dir,"/Results/SDM_modelling",sep=""); if (!file.exists(modDir)) {dir.create(modDir)}
