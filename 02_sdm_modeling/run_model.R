@@ -15,6 +15,7 @@ rm(OSys)
 
 # Software directory
 srcDir <- paste(baseDir, "/scripts", sep = "")
+#srcDir <- "D:/ToBackup/repositories/cwr-repo/gap_analysis_landraces/02_sdm_modeling"
 # NOT TO RUN (crops directories and subdirectories)
 # source(paste0(srcDir,"/preprocessing/pre_config.R"))
 
@@ -41,16 +42,13 @@ source(paste(srcDir, "/preprocessing/config.R", sep = ""))
 
 # Creating the cost distance function according with the level of analysis
 cost_dist_function(code = paste0(sp_Dir_input, "/cost_dist.py"),
-                   envDir = paste0("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/input_data/by_crop/common_bean/raster"),
-                   lyr = friction,
-                   outDir = paste0(sp_Dir_input, "/raster"),
+                   outDir = gap_outDir,
+                   friction = friction,
                    classResults = classResults,
                    occName = occName,
                    mask = mask,
-                   envDir, friction, outDir, classResults, occName, occDir, mask
+                   occDir = occDir
 )
-
-
 
 # Model driver function for preparing which variables will be selected to run SDMs and creation of SWD files
 extension_r <- ".tif"
