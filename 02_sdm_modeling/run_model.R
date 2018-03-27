@@ -15,7 +15,8 @@ rm(OSys)
 
 # Software directory
 srcDir <- paste(baseDir, "/scripts", sep = "")
-#srcDir <- "D:/ToBackup/repositories/cwr-repo/gap_analysis_landraces/02_sdm_modeling"
+# Analysis region: "americas", "world"
+region <- "americas"
 # NOT TO RUN (crops directories and subdirectories)
 # source(paste0(srcDir,"/preprocessing/pre_config.R"))
 
@@ -32,12 +33,12 @@ crop <- "common_bean" # crop
 level_1 <- c("andean", "mesoamerican") # level 1: genepool
 level_2 <- c("nueva_granada", "peru", "chile", "durango-Jalisco", "mesoamerica","guatemala") # level 2: race
 level_3 <- NULL # level 3
-x <- config_crop_dirs(baseDir, crop, level_1, level_2, level_3); rm(x)
+# x <- config_crop_dirs(baseDir, crop, level_1, level_2, level_3); rm(x)
 ##########
 
 # Preparing inputs for each unit of analysis
 level <- "lvl_1"
-occName <- "andean" # andean
+occName <- "mesoamerican" # "andean", "mesoamerican"
 source(paste(srcDir, "/preprocessing/config.R", sep = ""))
 
 # Pre-process classified data
@@ -75,8 +76,8 @@ spData <- spData[,c(3:ncol(spData))]
 names(spData)[1] <- occName
 
 # Loading raster files
-clim_layer <- lapply(paste0(climDir, "/world/", paste0(var_names,".tif")), raster)
-clim_layer <- stack(clim_layer)
+clim_layer <- lapply(paste0(climDir, "/", var_names, ".tif"), raster)
+clim_layer <- raster::stack(clim_layer)
 
 # Calibration step
 cat("Performing calibration step","\n")
@@ -110,7 +111,7 @@ m2_eval <- evaluation_function(m2, eval_sp_Dir)
 # Model projecting
 cat("Projecting models\n")
 # Detaching caret to avoid packages conflict
-detach("package:caret", unload = TRUE) # MANDATORY!
+# detach("package:caret", unload = TRUE) # MANDATORY!
 clim_table <- raster::as.data.frame(clim_layer, xy = T)
 clim_table <- clim_table[complete.cases(clim_table),]
 model <- projecting_function(m2, m2_eval, clim_table, mask, model_outDir, nCores = 5, obj.size = 3)

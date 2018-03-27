@@ -8,25 +8,25 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
   
   #load raster files
   cat("Loading raster files","\n")
-  current_clim_layer_generic <- lapply(paste0(climDir, "/world/", var_names_generic, extension_r), raster)
-  current_clim_layer_sp <- lapply(paste0(baseDir, "/input_data/by_crop/", crop, "/raster/world/", var_names_sp, extension_r), raster)
+  current_clim_layer_generic <- lapply(paste0(climDir, "/", var_names_generic, extension_r), raster)
+  current_clim_layer_sp <- lapply(paste0(baseDir, "/input_data/by_crop/", crop, "/raster/", region, "/", var_names_sp, extension_r), raster)
   current_clim_layer <- stack(current_clim_layer_generic, current_clim_layer_sp)
   
-  #background samples file name
-  outBackName <- paste0(backDir,"/","bg_",occName,".csv")
-  outOccName <- paste0(occDir,"/","occ_",occName,".csv")
-  outSWDName <- paste0(swdDir,"/","swd_",occName,".csv")
-  outSWDComplete_Name <- paste0(swdDir,"/","swd_Complete_",occName,".csv")
+  # background samples file name
+  outBackName <- paste0(backDir, "/bg_", occName, ".csv")
+  outOccName <- paste0(occDir, "/occ_", occName, ".csv")
+  outSWDName <- paste0(swdDir, "/swd_", occName, ".csv")
+  outSWDComplete_Name <- paste0(swdDir, "/swd_Complete_", occName, ".csv")
   #create background if it doesnt exist
   if (!file.exists(outBackName) | overwrite) {
     cat("Processing:", paste(occName), "\n")
    # spData <- readRDS(occFile)
-    spData <- read.csv(occFile,header=T)
+    spData <- read.csv(occFile, header = T)
     spData[,clsModel] <- tolower(spData[,clsModel])
     spData <- spData[which(spData[,clsModel] == occName),]
     
     #create random points
-    cat("Creating random points","\n")
+    cat("Creating random points\n")
     
     mask <- raster(mask)
     #verification of unique locations #commented out
@@ -36,8 +36,8 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
     #points(xycell, pch=21, col="black")
     
     #number of samples
-    nSamples <- length(unique(cellFromXY(mask,spData[,c("Longitude","Latitude")])))*10
-    cat("generating",nSamples, "pseudoabsences for n =",nSamples/10,"presences\n")
+    nSamples <- length(unique(cellFromXY(mask, spData[,c("Longitude", "Latitude")]))) * 10
+    cat("generating", nSamples, "pseudoabsences for n =", nSamples/10, "presences\n")
     
     xran <- xyFromCell(mask, which(!is.na(mask[])))
     xran <- cbind(cell=which(!is.na(mask[])), xran)
@@ -45,7 +45,7 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
     spDataCells <- unique(cellFromXY(mask, spData[,c("Longitude","Latitude")]))
     xran <- xran[c(!xran$cell %in% spDataCells),]
     set.seed(1234)
-    xranSample <- xran[sample(nrow(xran),size=nSamples,replace=F),]
+    xranSample <- xran[sample(nrow(xran), size = nSamples, replace = F),]
     row.names(xranSample) <- 1:nrow(xranSample)
     xranSample <- xranSample[,c("x","y")]
     names(xranSample) <- c("lon","lat")
@@ -54,16 +54,16 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
     cat(nrow(xranSample), "pseudoabsences generated for n =", nSamples/10, "presences\n")
     
     #extract variable data
-    ex_raster_env <- as.data.frame(raster::extract(current_clim_layer,xranSample))
-    z <- cbind(id=1:nrow(xranSample),species=occName,status=0,xranSample,ex_raster_env)
+    ex_raster_env <- as.data.frame(raster::extract(current_clim_layer, xranSample))
+    z <- cbind(id = 1:nrow(xranSample), species = occName, status = 0, xranSample, ex_raster_env)
     z <- z[complete.cases(z),]
-    cat(nrow(z), "pseudoabsences ready to use","\n")
+    cat(nrow(z), "pseudoabsences ready to use\n")
     occ <- z
     #preparing samples
-    occSample <- unique(spData[,c("Longitude","Latitude")])
-    names(occSample) <- c("lon","lat")
-    occ_env_data <- as.data.frame(raster::extract(current_clim_layer,occSample))
-    occSample <- cbind(id=1:nrow(occSample),species=occName,status=1,occSample,occ_env_data)
+    occSample <- unique(spData[,c("Longitude", "Latitude")])
+    names(occSample) <- c("lon", "lat")
+    occ_env_data <- as.data.frame(raster::extract(current_clim_layer, occSample))
+    occSample <- cbind(id = 1:nrow(occSample), species = occName, status = 1, occSample, occ_env_data)
     occSample <- occSample[complete.cases(occSample),]
     
     #prepare swd
