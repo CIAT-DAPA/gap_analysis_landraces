@@ -13,10 +13,10 @@ calc_env_score <- function(wd,crop_name,level,lv_name,clus_method="kmeans") {
   require(raster); require(sdm); require(distances); require(matrixStats)
   
   #directories
-  res_dir <- paste(wd,"/results/",crop_name,"/lvl_",level,"/",lv_name,sep="")
+  res_dir <- paste(wd,"/results/",crop_name,"/lvl_",level,"/",lv_name,"/",region,sep="")
   sdm_dir <- paste(res_dir,"/prj_models",sep="")
-  occ_dir <- paste(wd,"/input_data/by_crop/",crop_name,"/lvl_",level,"/",lv_name,"/occurrences",sep="")
-  env_dir <- paste(wd,"/input_data/generic_rasters/americas",sep="")
+  occ_dir <- paste(wd,"/input_data/by_crop/",crop_name,"/lvl_",level,"/",lv_name,"/",region,"/occurrences",sep="")
+  env_dir <- paste(wd,"/input_data/generic_rasters/",region,sep="")
   
   #load sdm object
   sdm_obj <- read.sdm(paste(res_dir,"/sdm.sdm",sep=""))

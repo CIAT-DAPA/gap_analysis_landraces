@@ -1,13 +1,19 @@
 #Julian Ramirez-Villegas
 #March 2018
 
-#produce gap maps
-library(raster); library(rasterVis); library(maptools)
-data(wrld_simpl)
+#make figure for historical (yield mean)
+#tplot <- gap_class_plot(gap_class,cols=c('grey70', 'goldenrod3', 'red2'),new_ext=extent(-130,-25,-45,35))
+#pdf("~/nfs/phaseolus_landrace_gaps.pdf", height=7,width=10)
+#print(tplot)
+#dev.off()
 
 #######
 #plotting function
 gap_class_plot <- function(rsin,cols=c('grey70', 'goldenrod3', 'red2'),new_ext=NULL) {
+  #produce gap maps
+  library(raster); library(rasterVis); library(maptools)
+  data(wrld_simpl)
+  
   #prepare raster
   if (!is.null(new_ext)) {rsin <- crop(rsin, new_ext)}
   rsin <- ratify(rsin)
@@ -31,10 +37,4 @@ gap_class_plot <- function(rsin,cols=c('grey70', 'goldenrod3', 'red2'),new_ext=N
   #return object
   return(p)
 }
-
-#make figure for historical (yield mean)
-tplot <- gap_class_plot(gap_class,cols=c('grey70', 'goldenrod3', 'red2'),new_ext=extent(-130,-25,-45,35))
-pdf("~/nfs/phaseolus_landrace_gaps.pdf", height=7,width=10)
-print(tplot)
-dev.off()
 
