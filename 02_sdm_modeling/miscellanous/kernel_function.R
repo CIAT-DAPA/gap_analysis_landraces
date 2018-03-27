@@ -110,7 +110,7 @@ raster_kernel <- function(mask, occurrences, out_dir, kernel_method, scale){
   
   ### Saving raster object
   cat("Saving raster object to be used","\n")
-  raster::writeRaster(kernel,paste0(out_dir,"/","Kernel.tif"))
+  raster::writeRaster(kernel, paste0(out_dir, "/kernel.tif"))
   
   return(kernel)
   

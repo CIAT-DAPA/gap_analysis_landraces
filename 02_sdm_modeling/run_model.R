@@ -37,7 +37,7 @@ x <- config_crop_dirs(baseDir, crop, level_1, level_2, level_3); rm(x)
 
 # Preparing inputs for each unit of analysis
 level <- "lvl_1"
-occName <- "mesoamerican" # andean
+occName <- "andean" # andean
 source(paste(srcDir, "/preprocessing/config.R", sep = ""))
 
 # Pre-process classified data
@@ -75,7 +75,7 @@ spData <- spData[,c(3:ncol(spData))]
 names(spData)[1] <- occName
 
 # Loading raster files
-clim_layer <- lapply(paste0(climDir, "/", paste0(var_names,".tif")), raster)
+clim_layer <- lapply(paste0(climDir, "/world/", paste0(var_names,".tif")), raster)
 clim_layer <- stack(clim_layer)
 
 # Calibration step
@@ -94,7 +94,14 @@ if(file.exists(paste0(sp_Dir, "/calibration.csv"))){
 
 # Running SDMs
 cat("Running modeling approach","\n")
-m2 <- sdm_approach_function(occName = occName, spData = spData, model_outDir = sp_Dir, var_names = var_names, nCores = 5, nFolds = 5, beta, feat)
+m2 <- sdm_approach_function(occName = occName,
+                            spData = spData,
+                            model_outDir = sp_Dir,
+                            var_names = var_names,
+                            nCores = 5,
+                            nFolds = 5,
+                            beta = beta,
+                            feat = feat)
 
 # Model evaluation per replicates (nReplicates x 5)
 cat("Evaluating models performance\n")

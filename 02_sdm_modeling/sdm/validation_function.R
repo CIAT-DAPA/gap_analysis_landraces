@@ -13,53 +13,27 @@ baseDir   <- switch(OSys,
                     "Darwin" = "~nfs/workspace_cluster_9/gap_analysis_landraces/runs")
 rm(OSys)
 
-# Software directory
 srcDir <- paste(baseDir, "/scripts", sep = "")
-#srcDir <- "D:/ToBackup/repositories/cwr-repo/gap_analysis_landraces/02_sdm_modeling"
-# NOT TO RUN (crops directories and subdirectories)
-# source(paste0(srcDir,"/preprocessing/pre_config.R"))
-
-# Choose a directory for temporal raster files
 raster::rasterOptions(tmpdir = choose.dir(default = "", caption = "Please select the temporary folder")) # "D:/TEMP/CSOSSA"
-# for testing: raster::tmpDir()
-
-# Calling species to run
-# Configuring crop directories to run
 source(paste0(srcDir, "/preprocessing/config_crop.R"))
 
-# Define crop, analysis level and creating needed directories
 crop <- "common_bean" # crop
 level_1 <- c("andean", "mesoamerican") # level 1: genepool
 level_2 <- c("nueva_granada", "peru", "chile", "durango-Jalisco", "mesoamerica","guatemala") # level 2: race
 level_3 <- NULL # level 3
 x <- config_crop_dirs(baseDir, crop, level_1, level_2, level_3); rm(x)
-##########
-
-# Preparing inputs for each unit of analysis
 level <- "lvl_1"
 occName <- "mesoamerican" # andean
 source(paste(srcDir, "/preprocessing/config.R", sep = ""))
 
-
-# Selecting randomly an accession coordinate
-# Creating a buffer of 50 km (100 km, ...) around the selected point
-# Identify and exclude of the analysis the points within the buffer radius
-# Run all the analysis:
-# variable selection? (esto deberia quedar escrito solo para llamarlo)
+# Validation process
 # maxent calibration?, maxent run, cost distance, kernel density
 # 5, 10, 20, 50, 100, 150
 
-# Temporal files
-# Crop
-# Level
-# LevelName
-#
-
-validation_process <- function(occName = "mesoamerican", sp_Dir,
+validation_process <- function(occName = "mesoamerican",
+                               gap_valDir = gap_valDir,
                                buffer_radius = 0.5) # Radius of 50 km for excluding occurrences
 {
-  
-  valDir <- paste0(sp_Dir, "/gap_validation")
   
   cat(">>> Loading occurrence data ... \n")
   swdFile <- paste0(swdDir, "/swd_", occName, ".csv")
