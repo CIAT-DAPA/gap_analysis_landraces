@@ -37,7 +37,7 @@ x <- config_crop_dirs(baseDir, crop, level_1, level_2, level_3); rm(x)
 
 # Preparing inputs for each unit of analysis
 level <- "lvl_1"
-occName <- "mesoamerican" # andean
+occName <- "andean" # andean
 source(paste(srcDir, "/preprocessing/config.R", sep = ""))
 
 # Pre-process classified data
@@ -75,7 +75,7 @@ spData <- spData[,c(3:ncol(spData))]
 names(spData)[1] <- occName
 
 # Loading raster files
-clim_layer <- lapply(paste0(climDir, "/", paste0(var_names,".tif")), raster)
+clim_layer <- lapply(paste0(climDir, "/world/", paste0(var_names,".tif")), raster)
 clim_layer <- stack(clim_layer)
 
 # Calibration step
@@ -94,7 +94,14 @@ if(file.exists(paste0(sp_Dir, "/calibration.csv"))){
 
 # Running SDMs
 cat("Running modeling approach","\n")
-m2 <- sdm_approach_function(occName = occName, spData = spData, model_outDir = sp_Dir, var_names = var_names, nCores = 5, nFolds = 5, beta, feat)
+m2 <- sdm_approach_function(occName = occName,
+                            spData = spData,
+                            model_outDir = sp_Dir,
+                            var_names = var_names,
+                            nCores = 5,
+                            nFolds = 5,
+                            beta = beta,
+                            feat = feat)
 
 # Model evaluation per replicates (nReplicates x 5)
 cat("Evaluating models performance\n")
@@ -104,11 +111,13 @@ m2_eval <- evaluation_function(m2, eval_sp_Dir)
 cat("Projecting models\n")
 # Detaching caret to avoid packages conflict
 detach("package:caret", unload = TRUE) # MANDATORY!
-model <- projecting_function(m2, m2_eval, model_outDir, nCores = 5, obj.size = 3)
+clim_table <- raster::as.data.frame(clim_layer, xy = T)
+clim_table <- clim_table[complete.cases(clim_table),]
+model <- projecting_function(m2, m2_eval, clim_table, mask, model_outDir, nCores = 5, obj.size = 3)
 
 # Final evaluation table
 cat("Validating model","\n")
-if(!file.exists(paste0(eval_sp_Dir,"/Final_evaluation.csv"))){
+if(!file.exists(paste0(eval_sp_Dir, "/Final_evaluation.csv"))){
   m2_eval_final <- final_evaluation(m2_eval, occName)
 } else {
   m2_eval_final <-  read.csv(paste0(eval_sp_Dir, "/Final_evaluation.csv"), header = T)
@@ -117,7 +126,11 @@ if(!file.exists(paste0(eval_sp_Dir,"/Final_evaluation.csv"))){
 # Run buffer approach
 cat("Creating buffer around 50 Km\n")
 if(!file.exists(paste0(gap_outDir, "/buffer.tif"))){
-  buffer <- create_buffers(xy = spData[which(spData[,1] == 1), c("lon", "lat")], msk = mask, buff_dist = 0.5, format = "GTiff", filename = paste0(gap_outDir, "/buffer.tif"))
+  buffer <- create_buffers(xy = spData[which(spData[,1] == 1), c("lon", "lat")],
+                           msk = mask,
+                           buff_dist = 0.5,
+                           format = "GTiff",
+                           filename = paste0(gap_outDir, "/buffer.tif"))
   buffer[which(buffer[] == 0)] <- NA; buffer[which(buffer[] != 0)] <- 10
 } else {
   buffer <- raster(paste0(gap_outDir, "/buffer.tif"))
@@ -137,10 +150,14 @@ if(!file.exists(paste0(gap_outDir, "/gap_map.tif"))){
   gap_map <- raster(paste0(gap_outDir, "/gap_map.tif"))
 }
 
-#Kernel function #1 spatstat, #2 Adehabitat, #3 Kernsmooth
-if(!file.exists(paste0(gap_outDir,"/","kernel.tif"))){
-  occurrences=spData[spData[,1]==1,]
-  kernel <- raster_kernel(mask = mask, occurrences = spData[spData[,1] == 1,], out_dir = gap_outDir, kernel_method = 3, scale = T)
+# Kernel function #1 spatstat, #2 Adehabitat, #3 Kernsmooth
+if(!file.exists(paste0(gap_outDir, "/kernel.tif"))){
+  occurrences <- spData[spData[,1] == 1,]
+  kernel <- raster_kernel(mask = mask,
+                          occurrences = spData[spData[,1] == 1,],
+                          out_dir = gap_outDir,
+                          kernel_method = 3,
+                          scale = T)
 } else {
   kernel <- raster(paste0(gap_outDir, "/kernel.tif")) 
 }
@@ -151,5 +168,5 @@ if(!file.exists(paste0(gap_outDir,"/","kernel.tif"))){
 if(!file.exists(paste0(gap_outDir, "/Kernel_indicator.tif"))){
   kernel_indicator <- kernel_indicator(kernel, friction, model_outDir, gap_outDir, reverse = T)
 } else {
-  kernel_indicator <- raster(paste0(gap_outDir,"/Kernel_indicator.tif"))   
+  kernel_indicator <- raster(paste0(gap_outDir, "/Kernel_indicator.tif"))   
 }

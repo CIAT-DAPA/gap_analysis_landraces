@@ -20,6 +20,7 @@ source(paste(srcDir,"/sdm/evaluation_function.R",sep=""))
 source(paste(srcDir,"/sdm/model_driver.R",sep=""))
 source(paste(srcDir,"/sdm/create_buffers.R",sep=""))
 source(paste(srcDir,"/sdm/sdm_approach_function.R",sep=""))
+source(paste(srcDir,"/sdm/do_projections.R",sep=""))
 source(paste(srcDir,"/sdm/projecting_function.R",sep=""))
 source(paste(srcDir,"/miscellanous/kernel_function.R",sep=""))
 source(paste(srcDir,"/miscellanous/kernel_indicator.R",sep=""))
@@ -53,13 +54,13 @@ clim_spDir <- paste(input_data_dir, "/by_crop/", crop, "/raster", sep = ""); if 
 
 cat("Loading species model output directories","\n")
 sp_Dir <- paste0(results_dir,"/",crop,"/",level,"/",occName); if (!file.exists(sp_Dir)) {dir.create(sp_Dir)}
-eval_sp_Dir <- paste0(sp_Dir,"/","evaluation"); if(!file.exists(eval_sp_Dir)){dir.create(eval_sp_Dir)}
-eval_sp_Dir_rep <- paste0(eval_sp_Dir,"/","replicates");if(!file.exists(eval_sp_Dir_rep)){dir.create(eval_sp_Dir_rep)}
-model_outDir <- paste0(sp_Dir,"/","prj_models"); if(!file.exists(model_outDir)){dir.create(model_outDir)}
-model_outDir_rep <- paste0(model_outDir,"/","replicates");if(!file.exists(model_outDir_rep)){dir.create(model_outDir_rep)}
-gap_outDir <- paste0(sp_Dir,"/","gap_models"); if(!file.exists(gap_outDir)){dir.create(gap_outDir)}
-gap_valDir <- paste0(sp_Dir,"/","gap_validation"); if(!file.exists(gap_valDir)){dir.create(gap_valDir)}
-gap_del_outDir <- paste0(gap_outDir,"/","delaunay"); if(!file.exists(gap_del_outDir)){dir.create(gap_del_outDir)}
+eval_sp_Dir <- paste0(sp_Dir,"/evaluation"); if(!file.exists(eval_sp_Dir)){dir.create(eval_sp_Dir)}
+eval_sp_Dir_rep <- paste0(eval_sp_Dir,"/replicates");if(!file.exists(eval_sp_Dir_rep)){dir.create(eval_sp_Dir_rep)}
+model_outDir <- paste0(sp_Dir,"/prj_models"); if(!file.exists(model_outDir)){dir.create(model_outDir)}
+model_outDir_rep <- paste0(model_outDir,"/replicates");if(!file.exists(model_outDir_rep)){dir.create(model_outDir_rep)}
+gap_outDir <- paste0(sp_Dir,"/gap_models"); if(!file.exists(gap_outDir)){dir.create(gap_outDir)}
+gap_valDir <- paste0(sp_Dir,"/gap_validation"); if(!file.exists(gap_valDir)){dir.create(gap_valDir)}
+gap_del_outDir <- paste0(gap_outDir,"/delaunay"); if(!file.exists(gap_del_outDir)){dir.create(gap_del_outDir)}
 
 # modDir <- paste(results_dir,"/Results/SDM_modelling",sep=""); if (!file.exists(modDir)) {dir.create(modDir)}
 # densDir <- paste(baseDir,"/Results/accession_density",sep=""); if (!file.exists(densDir)) {dir.create(densDir)}
