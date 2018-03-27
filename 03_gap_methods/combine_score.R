@@ -12,7 +12,7 @@
 calc_gap_score <- function(wd,crop_name,level,lv_name,region,gap_method="cost_dist") {
   #load libraries
   require(raster)
-
+  
   #directories
   res_dir <- paste(wd,"/results/",crop_name,"/lvl_",level,"/",lv_name,"/",region,sep="")
   sdm_dir <- paste(res_dir,"/prj_models",sep="")
