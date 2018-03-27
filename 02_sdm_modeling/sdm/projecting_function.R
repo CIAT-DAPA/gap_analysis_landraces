@@ -1,7 +1,7 @@
 require(raster)
 require(foreach)
 
-projecting_function <-function(m2, m2_eval, model_outDir, nCores, obj.size){
+projecting_function <-function(m2, m2_eval, clim_table, mask, model_outDir, nCores, obj.size){
   
   # Creating projected models replicates directory
   n_projs <- length(list.files(path = model_outDir_rep, pattern = "_prj_th_rep-"))
@@ -14,16 +14,18 @@ projecting_function <-function(m2, m2_eval, model_outDir, nCores, obj.size){
         
         cat("...processing model replicate =", m_i, "\n")
         
-        p2m <- predict(object = m2, method = "maxent",
-                       w = m_i,
-                       newdata = clim_layer,
-                       mean = F,
-                       overwrite = F,
-                       # nc = nCores,
-                       # method = "foreach",
-                       parallelSettings = list(ncore = nCores, method = "foreach"),
-                       obj.size = obj.size,
-                       filename = paste0(model_outDir_rep,"/",occName,"_prj_rep-",m_i,".tif"))#,obj.size=3)
+        p2m <- do.projections(k = m_i, pnts = clim_table, tmpl_raster = mask)
+        writeRaster(p2m, paste0(model_outDir_rep,"/",occName,"_prj_rep-",m_i,".tif"), format="GTiff")
+        #p2m <- predict(object = m2, method = "maxent",
+        #               w = m_i,
+        #               newdata = clim_layer,
+        #               mean = F,
+        #               overwrite = F,
+        #               # nc = nCores,
+        #               # method = "foreach",
+        #               parallelSettings = list(ncore = nCores, method = "foreach"),
+        #               obj.size = obj.size,
+        #               filename = paste0(model_outDir_rep,"/",occName,"_prj_rep-",m_i,".tif"))#,obj.size=3)
         
         #thresholding
         p2m_th <- p2m
