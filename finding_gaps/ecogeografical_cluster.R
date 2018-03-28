@@ -119,12 +119,11 @@ writeRaster(to_rasterize,filename= paste0( gap_outDir, "/ecogeo_hclust_mahalanob
 
 cat(red$bgWhite$bold(paste("Process Done... Pls check the Path:", gap_outDir,"\n   \n \n")))
 
-rm( SPF, r, to_rasterize); g <- gc(): rm(g); removeTmpFiles(h =1)
+
 
 
 }# ENDCLUSTER FUNCTION
 
  
-ecogeo_clustering(  n.sample = 10000, k.clust = 11)
 
 
