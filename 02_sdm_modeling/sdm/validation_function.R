@@ -32,10 +32,10 @@ source(paste(srcDir, "/preprocessing/config.R", sep = ""))
 # 5, 10, 20, 50, 100, 150
 
 gap_valDir <- "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/results/common_bean/lvl_1/mesoamerican/americas/gap_validation/buffer_100km"
-
 validation_process <- function(occName = occName,
                                gap_valDir = gap_valDir,
-                               buffer_radius = 1) # Radius of 50 km for excluding occurrences
+                               buffer_radius = 1, # Radius of 100 km for excluding occurrences
+                               density_pattern = 3) # Density pattern (1: low density, 2: medium density, 3: high density)
 {
   
   cat(">>> Loading occurrence data ... \n")
@@ -46,14 +46,20 @@ validation_process <- function(occName = occName,
   
   cat(">>> Loading kernel density map for all points ... \n")
   kernel <- raster(paste0(sp_Dir, "/gap_models/kernel.tif"))
+  kernel_class <- raster(paste0(sp_Dir, "/gap_models/kernel_classes.tif"))
+  
+  kernel_class[kernel_class[] != density_pattern] <- NA
+  kernel_upt <- raster::mask(x = kernel, mask = kernel_class)
   
   cat(">>> Select a point using kernel density as weights or pick one according to a criteria ... \n")
   occ <- spData[which(spData[,1] == 1),]
   set.seed(1234)
-  pnt <- base::sample(x = 1:nrow(occ), size = 1, replace = F, prob = raster::extract(x = kernel, y = occ[,c("lon", "lat")]))
+  probList <- raster::extract(x = kernel_upt, y = occ[,c("lon", "lat")])
+  probList[is.na(probList)] <- 0
+  pnt <- base::sample(x = 1:nrow(occ), size = 1, replace = F, prob = probList)
   
   cat(">>> Create a buffer around the point ... \n")
-  radius <- create_buffers(xy = occ[pnt, c("lon", "lat")], msk = mask, buff_dist = buffer_radius, format = "GTiff", filename = paste0(gap_valDir, "/01_selected_points/buffer_radius_to_omit.tif"))
+  radius <- create_buffers(xy = occ[pnt, c("lon", "lat")], msk = mask, buff_dist = buffer_radius, format = "GTiff", filename = paste0(gap_valDir, "/01_selected_points/buffer_radius_to_omit2.tif"))
   
   cat(">>> Identify and exclude of the analysis points within the buffer radius ... \n")
   id_pnts <- raster::extract(x = radius, y = occ[,c("lon", "lat")])
@@ -89,8 +95,7 @@ validation_process <- function(occName = occName,
   feat <- feat[(!grepl("betamultiplier=", feat))]
   rm(calibration)
   
-  # Run maxent model again
-  cat("Running modeling approach","\n")
+  cat(">>> Running maxent model approach, evaluate and project ...\n")
   m2 <- sdm_approach_function(occName = occName,
                               spData = rbind(spData_upt, spData[which(spData[,1] == 0),]),
                               model_outDir = paste0(gap_valDir, "/02_sdm_results"),
@@ -99,12 +104,15 @@ validation_process <- function(occName = occName,
                               nFolds = 5,
                               beta = beta,
                               feat = feat)
+  m2_eval <- evaluation_function(m2, eval_sp_Dir = paste0(gap_valDir, "/02_sdm_results/evaluation"), spData = rbind(spData_upt, spData[which(spData[,1] == 0),]))
+  model_outDir_rep <- paste0(gap_valDir, "/02_sdm_results/prj_models/replicates")
+  clim_layer <- lapply(paste0(climDir, "/", vars, ".tif"), raster)
+  clim_layer <- raster::stack(clim_layer)
+  clim_table <- raster::as.data.frame(clim_layer, xy = T)
+  clim_table <- clim_table[complete.cases(clim_table),]
+  model <- projecting_function(m2, m2_eval, clim_table, mask, model_outDir = paste0(gap_valDir, "/02_sdm_results/prj_models"), nCores = 5, obj.size = 3)
   
-  # Evaluate maxent again
-  m2_eval <- evaluation_function(m2, eval_sp_Dir = paste0(gap_valDir, "/02_sdm_results/evaluation"))
-  # Projecting the model again
-  model <- projecting_function(m2, m2_eval, model_outDir = paste0(gap_valDir, "/02_sdm_results/evaluation"), nCores = 5, obj.size = 3)
-  # Creating a new cost distance
+  cat(">>> Creating a new cost distance ...\n")
   cost_dist_function(code = paste0(valDir, "/cost_dist.py"),
                      envDir = paste0("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/input_data/by_crop/common_bean/raster"),
                      lyr = friction,
@@ -114,14 +122,20 @@ validation_process <- function(occName = occName,
                      mask = mask,
                      occDir = occDir)
   
-
-  # Creating a new kernel density
+  cat(">>> Creating a new kernel density ...\n")
   kernel <- raster_kernel(mask = mask,
                           occurrences = spData_upt[spData_upt[,1] == 1,],
                           out_dir = paste0(gap_valDir, "/03_gap_models"),
                           kernel_method = 3,
                           scale = T)
-  # And finaly calculate the indicator of gap once more
-  gap_indicator(..., type = "sdm_costD") # "sdm_kDensity", "sdm_costD_kDensity"
-  # Evaluating adding the excluded points
+  
+  cat(">>> Creating a new environmental distance ...\n")
+  calc_env_score(wd, crop_name = "common_bean", level = "1", lv_name = "mesoamerican", clus_method = "kmeans")
+
+  cat(">>> Calculating gap indicator ...\n")
+  calc_gap_score(wd, crop_name = "common_bean", level = "1", lv_name = "mesoamerican", region = "americas", gap_method = "cost_dist")
+  
+  cat(">>> Evaluate with exclude points ...\n")
+  
+
 }

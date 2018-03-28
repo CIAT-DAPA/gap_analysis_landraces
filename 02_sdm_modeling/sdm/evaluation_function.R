@@ -39,7 +39,7 @@ ASD15_function <- function(model_outDir){
 ####Evaluation per_replicate###
 ###############################
 
-evaluation_function <- function(m2, eval_sp_Dir){
+evaluation_function <- function(m2, eval_sp_Dir, spData){
   suppressMessages(if(!require(sdm)){install.packages("sdm");library(sdm)}else{library(sdm)})
   
   cat("Performing evaluation for 10 thresholds\n")

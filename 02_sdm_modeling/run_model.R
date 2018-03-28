@@ -106,7 +106,7 @@ m2 <- sdm_approach_function(occName = occName,
 
 # Model evaluation per replicates (nReplicates x 5)
 cat("Evaluating models performance\n")
-m2_eval <- evaluation_function(m2, eval_sp_Dir)
+m2_eval <- evaluation_function(m2, eval_sp_Dir, spData)
 
 # Model projecting
 cat("Projecting models\n")
@@ -134,6 +134,17 @@ if(!file.exists(paste0(gap_outDir, "/kernel.tif"))){
                           scale = T)
 } else {
   kernel <- raster(paste0(gap_outDir, "/kernel.tif")) 
+}
+if(!file.exists(paste0(gap_outDir, "/kernel_classes.tif"))){
+  kernel <- raster(paste0(gap_outDir, "/kernel.tif"))
+  kernel[kernel[] == 0] <- NA
+  kernel <- kernel * 10000
+  qVals <- raster::quantile(x = kernel[], probs = c(.60, .90), na.rm = T)
+  kernel_class <- raster::reclassify(kernel, c(-Inf,qVals[1],1, qVals[1],qVals[2],2, qVals[2],Inf,3))
+  writeRaster(kernel_class, paste0(gap_outDir, "/kernel_classes.tif"), format = "GTiff")
+  rm(kernel, kernel_class, qVals); gc()
+} else {
+  kernel_class <- raster(paste0(gap_outDir, "/kernel_classes.tif")) 
 }
 
 # Put here environmental similarity index!!!
