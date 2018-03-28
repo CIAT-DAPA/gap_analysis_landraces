@@ -148,5 +148,19 @@ if(!file.exists(paste0(gap_outDir, "/kernel_classes.tif"))){
 }
 
 # Put here environmental similarity index!!!
+calc_env_score(lv_name = "mesoamerican",
+               clus_method = "hclust_mahalanobis",
+               sdm_dir,
+               gap_dir,
+               occ_dir,
+               env_dir,
+               out_dir)
 
 # Put here gap methods indices!!!
+calc_gap_score(wd,
+               crop_name = "common_bean",
+               level = "1",
+               lv_name = "mesoamerican",
+               region = "americas",
+               clus_method = "hclust_mahalanobis",
+               gap_method = "cost_dist")
