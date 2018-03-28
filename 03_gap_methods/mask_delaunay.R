@@ -6,14 +6,16 @@
 
 #test function
 #wd <- "~/nfs/workspace_cluster_9/gap_analysis_landraces/runs"
-#msk <- raster::shapefile(paste(wd,"/input_data/shapefiles/GAUL_2014/CONTINENTAL_20km.shp",sep=""))
 #crop_name <- "common_bean"; level <- "1"; lv_name <- "mesoamerican"; region <- "americas"
+#msk <- raster::shapefile(paste(wd,"/input_data/shapefiles/GAUL_2014/CONTINENTAL_20km.shp",sep=""))
+#delaunay <- raster::shapefile(paste(wd,"/results/",crop_name,"/lvl_",level,"/",lv_name,"/",region,"/gap_models/delaunay/raw_delaunay.shp",sep=""))
+#mask_delaunay(dp_obj=delaunay, msk, wd)
 
 #dp_obj: delaunay polygons SpatialPolygonsDataFrame
 #msk:    raster or shapefile file with which dp_obj will be cut
 #wd:     working directory
 
-mask_delaunay <- function(dp_obj, msk, wd){
+mask_delaunay <- function(dp_obj, msk, wd, crop_name, level, lv_name, region){
   #load packages
   require(raster); require(rgeos); require(geosphere)
   
