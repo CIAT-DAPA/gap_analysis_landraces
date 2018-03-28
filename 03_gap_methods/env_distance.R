@@ -5,21 +5,23 @@
 #and return environmental score
 
 #test function
+#crop_name="common_bean"; level="1"; lv_name="mesoamerican"; region="americas"
 #wd <- "~/nfs/workspace_cluster_9/gap_analysis_landraces/runs"
-#env_score <- calc_env_score(wd,crop_name="common_bean",level="1",lv_name="mesoamerican",region="americas",clus_method="hclust_mahalanobis")
+#wd <- "Z:/workspace_cluster_9/gap_analysis_landraces/runs"
+#res_dir <- paste(wd,"/results/",crop_name,"/lvl_",level,"/",lv_name,"/",region,sep="")
+#sdm_dir <- paste(res_dir,"/prj_models",sep="")
+#occ_dir <- paste(wd,"/input_data/by_crop/",crop_name,"/lvl_",level,"/",lv_name,"/",region,"/occurrences",sep="")
+#env_dir <- paste(wd,"/input_data/generic_rasters/",region,sep="")
+#gap_dir <- paste(res_dir,"/gap_models/", sep="")
+#out_dir <- gap_dir
+#env_score <- calc_env_score(lv_name="mesoamerican",clus_method="hclust_mahalanobis",sdm_dir,gap_dir,occ_dir,env_dir,out_dir)
 
-calc_env_score <- function(wd,crop_name,level,lv_name,region,clus_method="hclust_mahalanobis") {
+calc_env_score <- function(lv_name,clus_method="hclust_mahalanobis",sdm_dir,gap_dir,occ_dir,env_dir,out_dir) {
   #load packages
   require(raster); require(sdm); require(distances); require(matrixStats)
   
-  #directories
-  res_dir <- paste(wd,"/results/",crop_name,"/lvl_",level,"/",lv_name,"/",region,sep="")
-  sdm_dir <- paste(res_dir,"/prj_models",sep="")
-  occ_dir <- paste(wd,"/input_data/by_crop/",crop_name,"/lvl_",level,"/",lv_name,"/",region,"/occurrences",sep="")
-  env_dir <- paste(wd,"/input_data/generic_rasters/",region,sep="")
-  
   #load sdm object
-  sdm_obj <- read.sdm(paste(res_dir,"/sdm.sdm",sep=""))
+  sdm_obj <- read.sdm(paste(sdm_dir,"/./../sdm.sdm",sep=""))
   
   #load sdm projection
   sdm_prj <- raster(paste(sdm_dir,"/",lv_name,"_prj_median.tif",sep=""))
@@ -29,12 +31,13 @@ calc_env_score <- function(wd,crop_name,level,lv_name,region,clus_method="hclust
   occ_data <- read.csv(paste(occ_dir,"/occ_",lv_name,".csv",sep=""),header=T)
   
   #load environmental layers
-  env_names <- names(sdm_obj@data@features)[2:ncol(sdm_obj@data@features)][c(2,14,19)]
+  env_names <- names(sdm_obj@data@features)[2:ncol(sdm_obj@data@features)]
+  if ("monthCountByTemp10" %in% env_names) env_names <- env_names[-which(env_names=="monthCountByTemp10")]
   env_data <- stack(paste(env_dir,"/",env_names,".tif",sep=""))
   env_data <- readAll(env_data)
   
   #load cluster dataset
-  clus_rs <- raster(paste(res_dir,"/gap_models/ecogeo_",clus_method,".tif",sep=""))
+  clus_rs <- raster(paste(gap_dir,"/ecogeo_",clus_method,".tif",sep=""))
   
   #list of clusters
   lclus <- unique(na.omit(clus_rs[]))
@@ -46,14 +49,14 @@ calc_env_score <- function(wd,crop_name,level,lv_name,region,clus_method="hclust
     cat("i=",i,"\n")
     #get accessions from that cluster
     euc_occ <- occ_data
-    euc_occ$cluster <- extract(clus_rs, euc_occ[,c("lon","lat")])
+    euc_occ$cluster <- raster::extract(clus_rs, euc_occ[,c("lon","lat")])
     euc_occ <- euc_occ[complete.cases(euc_occ),]
     euc_occ <- euc_occ[which(euc_occ$cluster == i),env_names]
     
     #extract cluster data
     xy_clus <- data.frame(cellid=which(clus_rs[] == i))
     xy_clus <- cbind(xy_clus, xyFromCell(clus_rs, xy_clus$cellid))
-    xy_clus <- cbind(xy_clus, extract(env_data, xy_clus[,c("x","y")]))
+    xy_clus <- cbind(xy_clus, raster::extract(env_data, xy_clus[,c("x","y")]))
     xy_clus <- xy_clus[,env_names]
     
     #matrix of cluster data
@@ -88,8 +91,8 @@ calc_env_score <- function(wd,crop_name,level,lv_name,region,clus_method="hclust
   rs_euc_norm <- rs_euc / max(rs_euc[],na.rm=T)
   
   #write output
-  writeRaster(rs_euc, paste(res_dir,"/gap_models/euclidean_dist_",clus_method,".tif",sep=""),format="GTiff")
-  writeRaster(rs_euc_norm, paste(res_dir,"/gap_models/env_score_",clus_method,".tif",sep=""),format="GTiff")
+  writeRaster(rs_euc, paste(out_dir,"/euclidean_dist_",clus_method,".tif",sep=""),format="GTiff")
+  writeRaster(rs_euc_norm, paste(out_dir,"/env_score_",clus_method,".tif",sep=""),format="GTiff")
   
   #return rasters
   return(rs_euc_norm)
