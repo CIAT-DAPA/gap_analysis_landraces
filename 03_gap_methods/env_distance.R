@@ -6,9 +6,9 @@
 
 #test function
 #wd <- "~/nfs/workspace_cluster_9/gap_analysis_landraces/runs"
-#env_score <- calc_env_score(wd, crop_name="common_bean",level="1",lv_name="mesoamerican",clus_method="kmeans")
+#env_score <- calc_env_score(wd,crop_name="common_bean",level="1",lv_name="mesoamerican",region="americas",clus_method="hclust_mahalanobis")
 
-calc_env_score <- function(wd,crop_name,level,lv_name,clus_method="kmeans") {
+calc_env_score <- function(wd,crop_name,level,lv_name,region,clus_method="hclust_mahalanobis") {
   #load packages
   require(raster); require(sdm); require(distances); require(matrixStats)
   
@@ -34,7 +34,7 @@ calc_env_score <- function(wd,crop_name,level,lv_name,clus_method="kmeans") {
   env_data <- readAll(env_data)
   
   #load cluster dataset
-  clus_rs <- raster(paste(res_dir,"/gap_models/env_clust_",clus_method,".tif",sep=""))
+  clus_rs <- raster(paste(res_dir,"/gap_models/ecogeo_",clus_method,".tif",sep=""))
   
   #list of clusters
   lclus <- unique(na.omit(clus_rs[]))
@@ -88,8 +88,8 @@ calc_env_score <- function(wd,crop_name,level,lv_name,clus_method="kmeans") {
   rs_euc_norm <- rs_euc / max(rs_euc[],na.rm=T)
   
   #write output
-  writeRaster(rs_euc, paste(res_dir,"/gap_models/euclidean_dist.tif",sep=""),format="GTiff")
-  writeRaster(rs_euc_norm, paste(res_dir,"/gap_models/env_score.tif",sep=""),format="GTiff")
+  writeRaster(rs_euc, paste(res_dir,"/gap_models/euclidean_dist_",clus_method,".tif",sep=""),format="GTiff")
+  writeRaster(rs_euc_norm, paste(res_dir,"/gap_models/env_score_",clus_method,".tif",sep=""),format="GTiff")
   
   #return rasters
   return(rs_euc_norm)

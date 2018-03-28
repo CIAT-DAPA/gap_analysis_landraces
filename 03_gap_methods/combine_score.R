@@ -7,9 +7,9 @@
 #function details
 #note: gap_method can be "cost_dist" "kernel" or "delaunay"
 #wd <- "~/nfs/workspace_cluster_9/gap_analysis_landraces/runs"
-#calc_gap_score(wd,crop_name="common_bean",level="1",lv_name="mesoamerican",region="americas",gap_method="cost_dist")
+#calc_gap_score(wd,crop_name="common_bean",level="1",lv_name="mesoamerican",region="americas",clus_method="hclust_mahalanobis",gap_method="cost_dist")
 
-calc_gap_score <- function(wd,crop_name,level,lv_name,region,gap_method="cost_dist") {
+calc_gap_score <- function(wd,crop_name,level,lv_name,region,clus_method="hclust_mahalanobis",gap_method="cost_dist") {
   #load libraries
   require(raster)
   
@@ -60,7 +60,7 @@ calc_gap_score <- function(wd,crop_name,level,lv_name,region,gap_method="cost_di
   }
   
   #load environmental score (per-cluster env. distance)
-  env_score <- raster(paste(res_dir,"/gap_models/env_score.tif",sep=""))
+  env_score <- raster(paste(res_dir,"/gap_models/env_score_",clus_method,".tif",sep=""))
   env_score <- readAll(env_score)
   
   #produce a single gap map by multiplying the three scores: p(x), geo_score, env_score

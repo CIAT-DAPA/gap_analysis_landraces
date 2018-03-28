@@ -1,14 +1,31 @@
-# Carson's Voronoi polygons function
-#x <- shapefile(paste0(occDir,"/","Occ.shp"))
-delaunaypolygons <- function(x,cont_mask,mask,gap_del_outDir) {
-  if(!file.exists(paste0(gap_del_outDir,"/","delaunay/delaunay.shp"))){
-    require(deldir);require(sp);require(raster);require(rgeos)
-    cont_mask<-shapefile(cont_mask);gc()
-    if (.hasSlot(x, 'coords')) {
-      crds <- x@coords  
-    } else crds <- x
+#Julian Ramirez-Villegas
+#March 2018
+
+####
+#based on Carson Farmer's Voronoi polygons function (http://carsonfarmer.com/2009/09/voronoi-polygons-with-r/), 
+#changed to produce Delaunay triangles instead.
+####
+#Note: revision on 27th March removed Chrys code to intersect polygons
+#      with continents. This is because the intersection is now made with
+#      the SDM in the function mask_delaunay_sdm.R
+####
+
+#test function
+#wd <- "~/nfs/workspace_cluster_9/gap_analysis_landraces/runs"
+#crop_name <- "common_bean"; level <- "1"; lv_name <- "mesoamerican"; region <- "americas"
+#occ_dir <- paste(wd,"/input_data/by_crop/",crop_name,"/lvl_",level,"/",lv_name,"/",region,"/occurrences",sep="")
+#sp_occ <- shapefile(paste0(occ_dir,"/Occ.shp"))
+#dp <- delaunaypolygons(sp_occ, outdir="~/nfs")
+
+delaunaypolygons <- function(x, outdir) {
+  #load required packages
+  require(deldir);require(sp);require(raster);require(rgeos); require(rgdal)
+  
+  #if polygons do not exist then create them
+  if(!file.exists(paste0(outdir,"/delaunay/raw_delaunay.shp"))){
+    #create spatial polygons from triangulation
+    if (.hasSlot(x, 'coords')) {crds <- x@coords} else {crds <- x}
     z <- deldir(crds[,1], crds[,2])
-    #w <- tile.list(z) #for Voronoi
     w <- triang.list(z) #for Delaunay
     polys <- vector(mode='list', length=length(w))
     for (i in seq(along=polys)) {
@@ -30,30 +47,19 @@ delaunaypolygons <- function(x,cont_mask,mask,gap_del_outDir) {
       data_df <- rbind(data_df,d_i)
     }
     row.names(data_df) <- sapply(slot(SP, 'polygons'), function(x) slot(x, 'ID'))
-    #ax <- sapply(slot(SP, 'polygons'), function(x) slot(x, 'Polygons'))
-    #ax <- sapply(ax, function(x) slot(x, 'coords'))
-    #points(ax[[1]]@labpt[1], ax[[1]]@labpt[2],pch=20,col="red")
-    #data.frame(x=crds[,1],y=crds[,2], row.names=sapply(slot(SP, 'polygons'), function(x) slot(x, 'ID')))
-    delaunay <- SpatialPolygonsDataFrame(SP, data=data_df)
-    delaunay_int <- gIntersection(delaunay,cont_mask,byid = TRUE)
-    cent <- gCentroid(delaunay_int,byid = TRUE)
-    dist <- distanceFromPoints(raster(mask),cent); dist <- dist/1000
-    dist <- dist*raster(mask)
-    p.df <- data.frame( ID=names(delaunay_int));colnames(p.df) <- "ID"
-    row.names(p.df) <- p.df$ID
-    p <- SpatialPolygonsDataFrame(delaunay_int, p.df)
-    p$ID2 <-  1:length(p)
-    p$area <- geosphere::areaPolygon(x = p) / 1000000
-    del_ras <- rasterize(x=p,y=mask2,mask=FALSE,field="ID2",na.rm=T)
-    #save files
-    writeRaster(dist,paste0(gap_del_outDir,"/","dist_centroid.tif"))
-    writeOGR(p,paste0(gap_del_outDir,"/","delaunay"),"delaunay", driver="ESRI Shapefile")
-    writeRaster(del_ras,paste0(gap_del_outDir,"/","polygon.tif"))
-    #plot(cent,add=T)
-  } else {
-    p <- raster::shapefile(paste0(gap_del_outDir,"/","delaunay/delaunay.shp"))
     
+    #make SpatialPointsDataFrame object with data file, and assign projection
+    delaunay <- SpatialPolygonsDataFrame(SP, data=data_df)
+    proj4string(delaunay) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+    
+    #write files
+    gwd <- getwd(); setwd(paste(outdir,"/delaunay",sep=""))
+    rgdal::writeOGR(obj=delaunay, dsn=".", layer="raw_delaunay", driver="ESRI Shapefile")
+    setwd(gwd)
+  } else {
+    #load shapefile
+    delaunay <- raster::shapefile(paste0(outdir,"/delaunay/raw_delaunay.shp"))
   }
-  
-  return(p)
+  #return file
+  return(delaunay)
 }
