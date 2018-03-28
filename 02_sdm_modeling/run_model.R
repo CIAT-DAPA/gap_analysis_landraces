@@ -38,7 +38,7 @@ level_3 <- NULL # level 3
 
 # Preparing inputs for each unit of analysis
 level <- "lvl_1"
-occName <- "mesoamerican" # "andean", "mesoamerican"
+occName <- "andean" # "andean", "mesoamerican"
 source(paste(srcDir, "/preprocessing/config.R", sep = ""))
 
 # Pre-process classified data
@@ -124,33 +124,6 @@ if(!file.exists(paste0(eval_sp_Dir, "/Final_evaluation.csv"))){
   m2_eval_final <-  read.csv(paste0(eval_sp_Dir, "/Final_evaluation.csv"), header = T)
 }
 
-# Run buffer approach
-cat("Creating buffer around 50 Km\n")
-if(!file.exists(paste0(gap_outDir, "/buffer.tif"))){
-  buffer <- create_buffers(xy = spData[which(spData[,1] == 1), c("lon", "lat")],
-                           msk = mask,
-                           buff_dist = 0.5,
-                           format = "GTiff",
-                           filename = paste0(gap_outDir, "/buffer.tif"))
-  buffer[which(buffer[] == 0)] <- NA; buffer[which(buffer[] != 0)] <- 10
-} else {
-  buffer <- raster(paste0(gap_outDir, "/buffer.tif"))
-}
-
-
-# Gap maps
-cat("Making gap map\n")
-
-if(!file.exists(paste0(gap_outDir, "/gap_map.tif"))){
-  gap_map <- sum(model, buffer, na.rm = T)
-  gap_map[which(gap_map[] == 10)] <- NA 
-  gap_map[which(gap_map[] == 11)] <- NA 
-  gap_map[which(gap_map[] == 0)] <- NA 
-  writeRaster(gap_map, paste0(gap_outDir, "/gap_map.tif"))
-} else {
-  gap_map <- raster(paste0(gap_outDir, "/gap_map.tif"))
-}
-
 # Kernel function #1 spatstat, #2 Adehabitat, #3 Kernsmooth
 if(!file.exists(paste0(gap_outDir, "/kernel.tif"))){
   occurrences <- spData[spData[,1] == 1,]
@@ -165,9 +138,4 @@ if(!file.exists(paste0(gap_outDir, "/kernel.tif"))){
 
 # Put here environmental similarity index!!!
 
-# Gathering Kernel gap indicator
-if(!file.exists(paste0(gap_outDir, "/Kernel_indicator.tif"))){
-  kernel_indicator <- kernel_indicator(kernel, friction, model_outDir, gap_outDir, reverse = T)
-} else {
-  kernel_indicator <- raster(paste0(gap_outDir, "/Kernel_indicator.tif"))   
-}
+# Put here gap methods indices!!!
