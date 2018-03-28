@@ -15,16 +15,19 @@
 #crop_name <- "common_bean"; level <- "1"; lv_name <- "mesoamerican"; region <- "americas"
 #occ_dir <- paste(wd,"/input_data/by_crop/",crop_name,"/lvl_",level,"/",lv_name,"/",region,"/occurrences",sep="")
 #sp_occ <- shapefile(paste0(occ_dir,"/Occ.shp"))
-#dp <- delaunaypolygons(sp_occ, outdir="~/nfs")
+#outdir <- "~/nfs"
+#msk <- raster::shapefile("~/nfs/delaunay/CONTINENTAL_20km.shp")
+#dp_obj <- delaunaypolygons(sp_occ, outdir="~/nfs")
 
 delaunaypolygons <- function(x, outdir) {
   #load required packages
   require(deldir);require(sp);require(raster);require(rgeos); require(rgdal)
   
   #if polygons do not exist then create them
-  if(!file.exists(paste0(outdir,"/delaunay/raw_delaunay.shp"))){
+  if (!file.exists(paste0(outdir,"/delaunay/raw_delaunay.shp"))){
     #create spatial polygons from triangulation
     if (.hasSlot(x, 'coords')) {crds <- x@coords} else {crds <- x}
+    crds <- unique(crds)
     z <- deldir(crds[,1], crds[,2])
     w <- triang.list(z) #for Delaunay
     polys <- vector(mode='list', length=length(w))
