@@ -7,17 +7,16 @@
 #function details
 #note: gap_method can be "cost_dist" "kernel" or "delaunay"
 #wd <- "~/nfs/workspace_cluster_9/gap_analysis_landraces/runs"
-#calc_gap_score(wd,crop_name="common_bean",level="1",lv_name="mesoamerican",region="americas",clus_method="hclust_mahalanobis",gap_method="cost_dist")
+#wd <- "Z:/gap_analysis_landraces/runs"
+#res_dir <- paste(wd,"/results/",crop_name,"/lvl_",level,"/",lv_name,"/",region,sep="")
+#sdm_dir <- paste(res_dir,"/prj_models",sep="")
+#gap_dir <- paste(res_dir,"/gap_models/", sep="")
+#out_dir <- gap_dir
+#calc_gap_score(lv_name="mesoamerican",clus_method="hclust_mahalanobis",gap_method="cost_dist",sdm_dir,gap_dir,out_dir)
 
-calc_gap_score <- function(wd,crop_name,level,lv_name,region,clus_method="hclust_mahalanobis",gap_method="cost_dist") {
+calc_gap_score <- function(lv_name,clus_method="hclust_mahalanobis",gap_method="cost_dist",sdm_dir,gap_dir,out_dir) {
   #load libraries
   require(raster)
-  
-  #directories
-  res_dir <- paste(wd,"/results/",crop_name,"/lvl_",level,"/",lv_name,"/",region,sep="")
-  sdm_dir <- paste(res_dir,"/prj_models",sep="")
-  occ_dir <- paste(wd,"/input_data/by_crop/",crop_name,"/lvl_",level,"/",lv_name,"/",region,"/occurrences",sep="")
-  env_dir <- paste(wd,"/input_data/generic_rasters/",region,sep="")
   
   #load sdm projection
   sdm_prj <- raster(paste(sdm_dir,"/",lv_name,"_prj_median.tif",sep=""))
@@ -26,7 +25,7 @@ calc_gap_score <- function(wd,crop_name,level,lv_name,region,clus_method="hclust
   #load specified gap_method raster
   if (gap_method == "cost_dist") {
     #load accession accessibility
-    occ_access <- raster(paste(res_dir,"/gap_models/cost_dist.tif",sep=""))
+    occ_access <- raster(paste(gap_dir,"/cost_dist.tif",sep=""))
     occ_access <- readAll(occ_access)
     occ_access <- crop(occ_access, sdm_prj)
     
@@ -37,7 +36,7 @@ calc_gap_score <- function(wd,crop_name,level,lv_name,region,clus_method="hclust
     geo_score <- geo_score / max(geo_score[], na.rm=T)
   } else if (gap_method == "kernel") {
     #method kernel, load kernel
-    kern_dens <- raster(paste(res_dir,"/gap_models/kernel.tif",sep=""))
+    kern_dens <- raster(paste(gap_dir,"/kernel.tif",sep=""))
     kern_dens <- readAll(kern_dens)
     kern_dens <- crop(kern_dens, sdm_prj)
     
@@ -49,7 +48,7 @@ calc_gap_score <- function(wd,crop_name,level,lv_name,region,clus_method="hclust
     geo_score <- 1-geo_score #kernel is density so low values would be gaps
   } else if (gap_method == "delaunay") {
     #method kernel, load kernel
-    del_triang <- raster(paste(res_dir,"/gap_models/delaunay.tif",sep=""))
+    del_triang <- raster(paste(gap_dir,"/delaunay.tif",sep=""))
     del_triang <- readAll(del_triang)
     del_triang <- crop(del_triang, sdm_prj)
     
@@ -60,7 +59,7 @@ calc_gap_score <- function(wd,crop_name,level,lv_name,region,clus_method="hclust
   }
   
   #load environmental score (per-cluster env. distance)
-  env_score <- raster(paste(res_dir,"/gap_models/env_score_",clus_method,".tif",sep=""))
+  env_score <- raster(paste(gap_dir,"/env_score_",clus_method,".tif",sep=""))
   env_score <- readAll(env_score)
   
   #produce a single gap map by multiplying the three scores: p(x), geo_score, env_score
@@ -79,8 +78,8 @@ calc_gap_score <- function(wd,crop_name,level,lv_name,region,clus_method="hclust
   gap_class[which(gap_score[] >= gap_thr[2])] <- 2
   
   #write gap_score and gap_class rasters
-  writeRaster(gap_score, paste(res_dir,"/gap_models/gap_score_",gap_method,".tif",sep=""), format="GTiff")
-  writeRaster(gap_class, paste(res_dir,"/gap_models/gap_class_",gap_method,".tif",sep=""), format="GTiff")
+  writeRaster(gap_score, paste(out_dir,"/gap_score_",gap_method,".tif",sep=""), format="GTiff")
+  writeRaster(gap_class, paste(out_dir,"/gap_class_",gap_method,".tif",sep=""), format="GTiff")
   
   #return stack with rasters
   rstk <- stack(c(gap_score,gap_class))
