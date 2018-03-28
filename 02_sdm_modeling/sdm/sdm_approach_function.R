@@ -19,7 +19,7 @@ sdm_approach_function <- function(occName, spData, model_outDir, var_names, nCor
                    n = 1, # Replicates
                    modelSettings = list(maxent = list(feat = feat, beta = beta)),
                    var.selection = F,
-                   parallelSettings = list(ncore = nCores, method = "foreach"),
+                   parallelSettings = list(ncore = nCores, method = "parallel"),
                    overwrite = F)
     
     #write model
