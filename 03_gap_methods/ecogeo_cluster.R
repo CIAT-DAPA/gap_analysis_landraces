@@ -53,7 +53,7 @@ environ_df <- environ %>% raster::rasterToPoints(x=.) %>%  as.data.frame(.) %>%
                       dplyr::mutate(., ID = 1:nrow(.)) %>%
                        dplyr::select(., ncol(.) , 1:(ncol(.)-1) )
 
-rm(pos, var_names, sdm_obj); g <- gc; rm(g); removeTmpFiles(h=1)
+rm(pos, var_names, sdm_obj); g <- gc; rm(g); removeTmpFiles(h=0)
 
 
 rownames(environ_df) <- environ_df$ID
@@ -93,13 +93,17 @@ set.seed(825)
 cat(bold("Running Flexible Discriminant Analisys ...\n   \n \n"))
 
 FDA <- train(clust ~ ., data = environR_clust[, 4:ncol(environR_clust)], method = 'bagFDA', trControl = ctrol2)
-cat(green$bold("finishing Rforest ...\n   \n \n"))
+cat(green$bold("finishing FDA ...\n   \n \n"))
 
+cat("Classifying the rest of occurrences \n \n \n")
 to_assign <- environ_df[-muestra, ]
-rownames(to_assign) <- rownames(environ_df[-muestra,])
+#rownames(to_assign) <- rownames(environ_df[-muestra,])
 to_assign$clust <-  predict(FDA, newdata = to_assign[,4:ncol(to_assign)]  )
+  
 to_assign$clust <- as.factor(to_assign$clust)
 environR_clust$clust <- as.factor(environR_clust$clust)
+  
+  cat("Binding both dataframes \n \n \n")
 environ_clust <- dplyr::bind_rows(environR_clust, to_assign)
 
 cat( red$bgwhite$bold("Starting rasterization and saving process \n   \n  \n"))
