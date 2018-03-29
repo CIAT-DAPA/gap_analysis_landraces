@@ -7,15 +7,14 @@
 
 
                 #### FUNCTION TO CREATE ECOGEOGRAFICAL CLUSTER##############
-ecogeo_clustering <- function( n.sample = 10000, k.clust = 11){
-  
-  
-  # Analysis region: "americas", "world"
-cat(red$bgWhite$bold("Importing packages..... \n \n \n"))
+ecogeo_clustering <- function(n.sample = 10000, k.clust = 11){
   
   suppressMessages(if(!require(pacman)){install.packages('pacman'); library(pacman)} else {library(pacman)})
   pacman::p_load(dplyr, psych, tm, raster, rgdal, rasterVis, rgeos, deldir, sp, tidyverse, FactoMineR, factoextra, ggdendro, 
                  rlang, fastcluster, sf , sdm, wordspace, ff, ggplot2, cluster, parallelDist, clusterR, caret, crayon) 
+
+  # Analysis region: "americas", "world"
+  cat(red$bgWhite$bold("Importing packages..... \n \n \n"))
   cat("Finished Importing process  \n   \n \n")
   
   
