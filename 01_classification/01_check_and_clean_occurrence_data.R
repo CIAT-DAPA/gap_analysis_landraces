@@ -133,6 +133,53 @@ rStack <- raster::stack(rStack)
 ciat <- data.frame(ciat, raster::extract(x = rStack, y = ciat %>% dplyr::select(Longitude, Latitude)))
 ciat$Altitude.1 <- NULL
 
+# ------------------------------------ #
+# USDA data
+# ------------------------------------ #
+
+usda <- read.csv(paste0(root, "/gap_analysis_landraces/Input_data/_occurrence_data/_GBIF_data_2017_11_27/WORLD/DATA_CLEANED_ALL_YEAR.csv"))
+usda <- usda[usda$SOURCE == "USDA",]; rownames(usda) <- 1:nrow(usda)
+usda <- usda %>% dplyr::select(ID, LONGITUDE, LATITUDE, SOURCE)
+names(usda) <- c("ID", "Longitude", "Latitude", "Source")
+usda$ID <- as.character(usda$ID)
+
+srtm <- raster::raster(paste0(OSysPath, "/data_cluster_4/observed/gridded_products/srtm/Altitude_30s/alt"))
+srtm.vals <- raster::extract(x = srtm,
+                             y = usda %>% dplyr::select(Longitude, Latitude))
+usda$Altitude <- srtm.vals; rm(srtm.vals)
+usda <- usda %>% dplyr::filter(Altitude <= 3500)
+
+rStack <- c(list.files(path = paste0(root, "/gap_analysis_landraces/runs/input_data/generic_rasters/world"),
+                     pattern = "*.tif$",
+                     full.names = T),
+            list.files(path = paste0(root, "/gap_analysis_landraces/runs/input_data/by_crop/common_bean/raster/world"),
+                       pattern = "*.tif$",
+                       full.names = T)
+            )
+rNames <- c(list.files(path = paste0(root, "/gap_analysis_landraces/runs/input_data/generic_rasters/world"),
+                       pattern = "*.tif$",
+                       full.names = F) %>% gsub(pattern = ".tif", replacement = "", x = .),
+            list.files(path = paste0(root, "/gap_analysis_landraces/runs/input_data/by_crop/common_bean/raster/world"),
+                       pattern = "*.tif$",
+                       full.names = F) %>% gsub(pattern = ".tif", replacement = "", x = .)
+)
+if(length(grep(pattern = "cost_dist", x = rStack) > 0)){
+  rStack <- rStack[base::setdiff(rStack, grep(pattern = "cost_dist", x = rStack))]
+}
+rStack <- raster::stack(rStack)
+usda <- data.frame(usda, raster::extract(x = rStack, y = usda %>% dplyr::select(Longitude, Latitude)))
+usda$Altitude.1 <- NULL
+
+# ------------------------------------ #
+# All data
+# ------------------------------------ #
+
+ciat <- read.csv(paste0(root, "/gap_analysis_landraces/ciat_db_processed_rasterVars.csv"))
+ciat$ID <- as.character(ciat$ID)
+usda$ID <- as.character(usda$ID)
+ciat2 <- dplyr::bind_rows(ciat, usda)
+ciat2$To_use_ACID[ciat2$To_use_ACID == 0] <- NA
+write.csv(ciat2, paste0(root, "/gap_analysis_landraces/ciat_usda_db_processed_rasterVars.csv"), row.names = F)
 
 # ------------------------------------ #
 # Counts
