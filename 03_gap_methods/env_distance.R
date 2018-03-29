@@ -37,7 +37,11 @@ calc_env_score <- function(lv_name,clus_method="hclust_mahalanobis",sdm_dir,gap_
   env_data <- readAll(env_data)
   
   #load cluster dataset
-  clus_rs <- raster(paste(gap_dir,"/ecogeo_",clus_method,".tif",sep=""))
+  if(!file.exists(paste(gap_dir,"/ecogeo_",clus_method,".tif",sep=""))){
+    clus_rs <- ecogeo_clustering(n.sample = 10000, k.clust = 11)
+  } else {
+    clus_rs <- raster(paste(gap_dir,"/ecogeo_",clus_method,".tif",sep=""))
+  }
   
   #list of clusters
   lclus <- unique(na.omit(clus_rs[]))

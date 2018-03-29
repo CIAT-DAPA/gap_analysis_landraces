@@ -16,7 +16,7 @@ rm(OSys)
 # Software directory
 srcDir <- paste(baseDir, "/scripts", sep = "")
 # Analysis region: "americas", "world"
-region <- "americas"
+region <- "world"
 # NOT TO RUN (crops directories and subdirectories)
 # source(paste0(srcDir,"/preprocessing/pre_config.R"))
 
@@ -147,20 +147,19 @@ if(!file.exists(paste0(gap_outDir, "/kernel_classes.tif"))){
   kernel_class <- raster(paste0(gap_outDir, "/kernel_classes.tif")) 
 }
 
-# Put here environmental similarity index!!!
-calc_env_score(lv_name = "mesoamerican",
+# Calculating environmental distance
+calc_env_score(lv_name = occName,
                clus_method = "hclust_mahalanobis",
-               sdm_dir,
-               gap_dir,
-               occ_dir,
-               env_dir,
-               out_dir)
+               sdm_dir = model_outDir,
+               gap_dir = gap_outDir,
+               occ_dir = occDir,
+               env_dir = climDir,
+               out_dir = gap_outDir)
 
-# Put here gap methods indices!!!
-calc_gap_score(wd,
-               crop_name = "common_bean",
-               level = "1",
-               lv_name = "mesoamerican",
-               region = "americas",
+# Calculating gap metrics
+calc_gap_score(lv_name = occName,
                clus_method = "hclust_mahalanobis",
-               gap_method = "cost_dist")
+               gap_method = "cost_dist", # Can be: "cost_dist", "kernel", "delaunay"
+               sdm_dir = model_outDir,
+               gap_dir = gap_outDir,
+               out_dir = gap_outDir)

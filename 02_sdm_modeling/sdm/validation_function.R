@@ -13,23 +13,35 @@ baseDir   <- switch(OSys,
                     "Darwin" = "~nfs/workspace_cluster_9/gap_analysis_landraces/runs")
 rm(OSys)
 
+# Software directory
 srcDir <- paste(baseDir, "/scripts", sep = "")
+# Analysis region: "americas", "world"
 region <- "americas"
+# NOT TO RUN (crops directories and subdirectories)
+# source(paste0(srcDir,"/preprocessing/pre_config.R"))
+
+# Choose a directory for temporal raster files
 raster::rasterOptions(tmpdir = choose.dir(default = "", caption = "Please select the temporary folder")) # "D:/TEMP/CSOSSA"
+# for testing: raster::tmpDir()
+
+# Calling species to run
+# Configuring crop directories to run
 source(paste0(srcDir, "/preprocessing/config_crop.R"))
 
+# Define crop, analysis level and creating needed directories
 crop <- "common_bean" # crop
 level_1 <- c("andean", "mesoamerican") # level 1: genepool
 level_2 <- c("nueva_granada", "peru", "chile", "durango-Jalisco", "mesoamerica","guatemala") # level 2: race
 level_3 <- NULL # level 3
-#x <- config_crop_dirs(baseDir, crop, level_1, level_2, level_3); rm(x)
+# x <- config_crop_dirs(baseDir, crop, level_1, level_2, level_3); rm(x)
+##########
+
+# Preparing inputs for each unit of analysis
 level <- "lvl_1"
-occName <- "mesoamerican" # andean
+occName <- "andean" # "andean", "mesoamerican"
 source(paste(srcDir, "/preprocessing/config.R", sep = ""))
 
-# Validation process
-# maxent calibration?, maxent run, cost distance, kernel density
-# 5, 10, 20, 50, 100, 150
+cat(">>> Applying validation process for gap metrics <<<\n")
 
 gap_valDir <- "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/results/common_bean/lvl_1/mesoamerican/americas/gap_validation/buffer_100km"
 validation_process <- function(occName = occName,
