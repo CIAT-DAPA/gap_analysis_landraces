@@ -14,7 +14,6 @@ cat("Loading R scripts","\n")
 source(paste(srcDir,"/preprocessing/cost_distance_function.R",sep=""))
 source(paste(srcDir,"/sdm/sample_files.R",sep=""))
 source(paste(srcDir,"/sdm/null_model.R",sep=""))
-# source(paste(srcDir,"/sdm/delaunay.R",sep=""))
 source(paste(srcDir,"/sdm/calibration_function.R",sep=""))
 source(paste(srcDir,"/sdm/evaluation_function.R",sep=""))
 source(paste(srcDir,"/sdm/model_driver.R",sep=""))
@@ -24,6 +23,10 @@ source(paste(srcDir,"/sdm/do_projections.R",sep=""))
 source(paste(srcDir,"/sdm/projecting_function.R",sep=""))
 source(paste(srcDir,"/miscellanous/kernel_function.R",sep=""))
 source(paste(srcDir,"/miscellanous/kernel_indicator.R",sep=""))
+source(paste(srcDir,"/gap_methods/ecogeo_cluster.R",sep=""))
+source(paste(srcDir,"/gap_methods/env_distance.R",sep=""))
+source(paste(srcDir,"/gap_methods/combine_score.R",sep=""))
+# We need to put here, delanuay function
 
 # Working directories
 cat("Loading working directories","\n")
