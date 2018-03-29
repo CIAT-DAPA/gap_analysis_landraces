@@ -17,87 +17,94 @@
 #env_score <- calc_env_score(lv_name="mesoamerican",clus_method="hclust_mahalanobis",sdm_dir,gap_dir,occ_dir,env_dir,out_dir)
 
 calc_env_score <- function(lv_name,clus_method="hclust_mahalanobis",sdm_dir,gap_dir,occ_dir,env_dir,out_dir) {
-  #load packages
-  require(raster); require(sdm); require(distances); require(matrixStats)
   
-  #load sdm object
-  sdm_obj <- read.sdm(paste(sdm_dir,"/./../sdm.sdm",sep=""))
-  
-  #load sdm projection
-  sdm_prj <- raster(paste(sdm_dir,"/",lv_name,"_prj_median.tif",sep=""))
-  sdm_prj <- readAll(sdm_prj)
-  
-  #load accessions
-  occ_data <- read.csv(paste(occ_dir,"/occ_",lv_name,".csv",sep=""),header=T)
-  
-  #load environmental layers
-  env_names <- names(sdm_obj@data@features)[2:ncol(sdm_obj@data@features)]
-  if ("monthCountByTemp10" %in% env_names) env_names <- env_names[-which(env_names=="monthCountByTemp10")]
-  env_data <- stack(paste(env_dir,"/",env_names,".tif",sep=""))
-  env_data <- readAll(env_data)
-  
-  #load cluster dataset
-  if(!file.exists(paste(gap_dir,"/ecogeo_",clus_method,".tif",sep=""))){
-    clus_rs <- ecogeo_clustering(n.sample = 10000, k.clust = 11)
-  } else {
-    clus_rs <- raster(paste(gap_dir,"/ecogeo_",clus_method,".tif",sep=""))
-  }
-  
-  #list of clusters
-  lclus <- unique(na.omit(clus_rs[]))
-  
-  #calculate minimum Euclidean distance for each cluster using the accessions within that cluster
-  rs_euc <- raster(clus_rs)
-  occ_exist <- c()
-  for (i in lclus) {
-    cat("i=",i,"\n")
-    #get accessions from that cluster
-    euc_occ <- occ_data
-    euc_occ$cluster <- raster::extract(clus_rs, euc_occ[,c("lon","lat")])
-    euc_occ <- euc_occ[complete.cases(euc_occ),]
-    euc_occ <- euc_occ[which(euc_occ$cluster == i),env_names]
+  if(!file.exists(paste(out_dir,"/env_score_",clus_method,".tif",sep=""))){
     
-    #extract cluster data
-    xy_clus <- data.frame(cellid=which(clus_rs[] == i))
-    xy_clus <- cbind(xy_clus, xyFromCell(clus_rs, xy_clus$cellid))
-    xy_clus <- cbind(xy_clus, raster::extract(env_data, xy_clus[,c("x","y")]))
-    xy_clus <- xy_clus[,env_names]
+    #load packages
+    require(raster); require(sdm); require(distances); require(matrixStats)
     
-    #matrix of cluster data
-    if (nrow(euc_occ) > 0) {
-      #control list
-      occ_exist <- c(occ_exist,T)
-      
-      #normalise variables
-      td_all <- rbind(xy_clus,euc_occ)
-      td_all <- as.data.frame(scale(td_all))
-      
-      #calculate Euclidean distance
-      td_dist <- distances(td_all, normalize="none")
-      td_matrix <- distance_columns(td_dist, c((nrow(xy_clus)+1):nrow(td_all)),
-                                    c(1:nrow(xy_clus)))
-      colnames(td_matrix) <- 1:nrow(euc_occ)
-      dist_vals <- rowMins(td_matrix)
+    #load sdm object
+    sdm_obj <- read.sdm(paste(sdm_dir,"/./../sdm.sdm",sep=""))
+    
+    #load sdm projection
+    sdm_prj <- raster(paste(sdm_dir,"/",lv_name,"_prj_median.tif",sep=""))
+    sdm_prj <- readAll(sdm_prj)
+    
+    #load accessions
+    occ_data <- read.csv(paste(occ_dir,"/occ_",lv_name,".csv",sep=""),header=T)
+    
+    #load environmental layers
+    env_names <- names(sdm_obj@data@features)[2:ncol(sdm_obj@data@features)]
+    if ("monthCountByTemp10" %in% env_names) env_names <- env_names[-which(env_names=="monthCountByTemp10")]
+    env_data <- stack(paste(env_dir,"/",env_names,".tif",sep=""))
+    env_data <- readAll(env_data)
+    
+    #load cluster dataset
+    if(!file.exists(paste(gap_dir,"/ecogeo_",clus_method,".tif",sep=""))){
+      clus_rs <- ecogeo_clustering(n.sample = 10000, k.clust = 11)
     } else {
-      #control list
-      occ_exist <- c(occ_exist,F)
-      dist_vals <- rep(NA, times=nrow(xy_clus))
+      clus_rs <- raster(paste(gap_dir,"/ecogeo_",clus_method,".tif",sep=""))
     }
-    rs_euc[which(clus_rs[] == i)] <- dist_vals
+    
+    #list of clusters
+    lclus <- unique(na.omit(clus_rs[]))
+    
+    #calculate minimum Euclidean distance for each cluster using the accessions within that cluster
+    rs_euc <- raster(clus_rs)
+    occ_exist <- c()
+    for (i in lclus) {
+      cat("i=",i,"\n")
+      #get accessions from that cluster
+      euc_occ <- occ_data
+      euc_occ$cluster <- raster::extract(clus_rs, euc_occ[,c("lon","lat")])
+      euc_occ <- euc_occ[complete.cases(euc_occ),]
+      euc_occ <- euc_occ[which(euc_occ$cluster == i),env_names]
+      
+      #extract cluster data
+      xy_clus <- data.frame(cellid=which(clus_rs[] == i))
+      xy_clus <- cbind(xy_clus, xyFromCell(clus_rs, xy_clus$cellid))
+      xy_clus <- cbind(xy_clus, raster::extract(env_data, xy_clus[,c("x","y")]))
+      xy_clus <- xy_clus[,env_names]
+      
+      #matrix of cluster data
+      if (nrow(euc_occ) > 0) {
+        #control list
+        occ_exist <- c(occ_exist,T)
+        
+        #normalise variables
+        td_all <- rbind(xy_clus,euc_occ)
+        td_all <- as.data.frame(scale(td_all))
+        
+        #calculate Euclidean distance
+        td_dist <- distances(td_all, normalize="none")
+        td_matrix <- distance_columns(td_dist, c((nrow(xy_clus)+1):nrow(td_all)),
+                                      c(1:nrow(xy_clus)))
+        colnames(td_matrix) <- 1:nrow(euc_occ)
+        dist_vals <- rowMins(td_matrix)
+      } else {
+        #control list
+        occ_exist <- c(occ_exist,F)
+        dist_vals <- rep(NA, times=nrow(xy_clus))
+      }
+      rs_euc[which(clus_rs[] == i)] <- dist_vals
+    }
+    
+    #now if any of the clusters did not have accessions need to assign maximum
+    #distance value so that the env. score comes to 1 in those areas
+    for (i in 1:length(lclus)) {if (!occ_exist[i]) {rs_euc[which(clus_rs[] == lclus[i])] <- max(rs_euc[],na.rm=T)}}
+    
+    #normalise entire raster to be on 0-1 scale (environmental score)
+    #1 is more likely there is a gap, 0 is less likely there is a gap
+    rs_euc_norm <- rs_euc / max(rs_euc[],na.rm=T)
+    
+    #write output
+    writeRaster(rs_euc, paste(out_dir,"/euclidean_dist_",clus_method,".tif",sep=""),format="GTiff")
+    writeRaster(rs_euc_norm, paste(out_dir,"/env_score_",clus_method,".tif",sep=""),format="GTiff")
+    #return rasters
+    return(rs_euc_norm)
+    
+  } else {
+    cat("Environmental rasters have been calculated!\n")
   }
   
-  #now if any of the clusters did not have accessions need to assign maximum
-  #distance value so that the env. score comes to 1 in those areas
-  for (i in 1:length(lclus)) {if (!occ_exist[i]) {rs_euc[which(clus_rs[] == lclus[i])] <- max(rs_euc[],na.rm=T)}}
-  
-  #normalise entire raster to be on 0-1 scale (environmental score)
-  #1 is more likely there is a gap, 0 is less likely there is a gap
-  rs_euc_norm <- rs_euc / max(rs_euc[],na.rm=T)
-  
-  #write output
-  writeRaster(rs_euc, paste(out_dir,"/euclidean_dist_",clus_method,".tif",sep=""),format="GTiff")
-  writeRaster(rs_euc_norm, paste(out_dir,"/env_score_",clus_method,".tif",sep=""),format="GTiff")
-  
-  #return rasters
-  return(rs_euc_norm)
 }

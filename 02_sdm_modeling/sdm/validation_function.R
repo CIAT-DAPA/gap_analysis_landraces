@@ -71,7 +71,10 @@ validation_process <- function(occName = occName,
   cat(">>> Selecting 5 points randomly using kernel density level as weights ... \n")
   set.seed(1234)
   seedList <- round(runif(n = 5, min = 1, max = 10000))
-  for(i in 1:length(seedList)){
+  
+  # ----------------------------------------------------------------------------------- #
+  
+  run_function <- function(i){
     
     cat(">>> Processing point", i, "... \n")
     set.seed(seedList[i])
@@ -158,25 +161,38 @@ validation_process <- function(occName = occName,
                             kernel_method = 3,
                             scale = T)
     
+    cat(">>> Creating a new environmental distance ...\n")
+    calc_env_score(lv_name = occName,
+                   clus_method = "hclust_mahalanobis",
+                   sdm_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models"),
+                   gap_dir = gap_outDir,
+                   occ_dir = occDir,
+                   env_dir = climDir,
+                   out_dir = gap_outDir)
+    
+    cat(">>> Calculating gap indicator ...\n")
+    calc_gap_score(lv_name = occName,
+                   clus_method = "hclust_mahalanobis",
+                   gap_method = "cost_dist", # Can be: "cost_dist", "kernel", "delaunay"
+                   sdm_dir = model_outDir,
+                   gap_dir = gap_outDir,
+                   out_dir = gap_outDir)
+    
+    
+    
+    return(cat("Done!\n"))
+    
   }
   
-  cat(">>> Creating a new environmental distance ...\n")
-  calc_env_score(lv_name = occName,
-                 clus_method = "hclust_mahalanobis",
-                 sdm_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models"),
-                 gap_dir = gap_outDir,
-                 occ_dir = occDir,
-                 env_dir = climDir,
-                 out_dir = gap_outDir)
+  # ----------------------------------------------------------------------------------- #
   
-  cat(">>> Calculating gap indicator ...\n")
-  calc_gap_score(lv_name = occName,
-                 clus_method = "hclust_mahalanobis",
-                 gap_method = "cost_dist", # Can be: "cost_dist", "kernel", "delaunay"
-                 sdm_dir = model_outDir,
-                 gap_dir = gap_outDir,
-                 out_dir = gap_outDir)
+  suppressMessages(library(foreach))
+  suppressMessages(library(doMC))
   
-  cat(">>> Evaluate with exclude points ...\n")
+  registerDoMC(length(seedList))
+  
+  Run <- foreach(i = 1:length(seedList)) %dopar% {
+    run_function(i = i)
+  }
   
 }

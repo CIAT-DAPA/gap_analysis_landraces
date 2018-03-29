@@ -16,7 +16,7 @@ rm(OSys)
 # Software directory
 srcDir <- paste(baseDir, "/scripts", sep = "")
 # Analysis region: "americas", "world"
-region <- "world"
+region <- "americas"
 # NOT TO RUN (crops directories and subdirectories)
 # source(paste0(srcDir,"/preprocessing/pre_config.R"))
 
@@ -38,7 +38,7 @@ level_3 <- NULL # level 3
 
 # Preparing inputs for each unit of analysis
 level <- "lvl_1"
-occName <- "andean" # "andean", "mesoamerican"
+occName <- "mesoamerican" # "andean", "mesoamerican"
 source(paste(srcDir, "/preprocessing/config.R", sep = ""))
 
 # Pre-process classified data
