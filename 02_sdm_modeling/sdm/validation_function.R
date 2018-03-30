@@ -183,6 +183,15 @@ validation_process <- function(occName = occName,
                    gap_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"),
                    out_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"))
     
+    cat(">>> Calculating percentage of correctly classified occurrences ...\n")
+    library(tidyverse)
+    gap_values <- raster::extract(x = gap_score, y = pnt_excl[,c("lon", "lat")])
+    percentile = seq(from = 0, to = 1, by = 0.001)
+    metrics <- data.frame(cc = unlist(purrr::map(percentile, .fun = function(x){sum(gap_values > x)})),
+                          pr_cc = unlist(purrr::map(percentile, .fun = function(x){sum(gap_values > x)/length(gap_values)})),
+                          percentile = percentile)
+    write.csv(metrics, paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/03_gap_models/validation_metrics.csv"))
+
     return(cat("Done!\n"))
     
   }
