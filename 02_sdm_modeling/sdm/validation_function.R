@@ -87,31 +87,38 @@ validation_process <- function(occName = occName,
     probList[is.na(probList)] <- 0
     pnt <- base::sample(x = 1:nrow(occ), size = 1, replace = F, prob = probList)
     
-    cat(">>> Create a buffer around the point", i, "... \n")
-    radius <- create_buffers(xy = occ[pnt, c("lon", "lat")],
-                             msk = mask,
-                             buff_dist = buffer_radius,
-                             format = "GTiff",
-                             filename = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/01_selected_points/buffer_radius_to_omit.tif"))
-    
-    cat(">>> Identify and exclude of the analysis points within the buffer radius ... \n")
-    id_pnts <- raster::extract(x = radius, y = occ[,c("lon", "lat")])
-    pnt_excl <- occ[which(id_pnts == 1),]
-    write.csv(x = pnt_excl,
-              file = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/01_selected_points/coordinates_to_exclude.csv"),
-              row.names = F)
-    spData_upt <- occ[base::setdiff(1:nrow(occ), which(id_pnts == 1)),]; rm(id_pnts)
-    write.csv(x = spData_upt,
-              file = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/01_selected_points/occ_", occName, ".csv"),
-              row.names = F)
-    
-    spData_upt2 <- spData_upt[,c("lon", "lat")]
-    names(spData_upt2) <- c("Longitude", "Latitude")
-    spData_upt2$ensemble <- occName
-    write.csv(x = spData_upt2,
-              file = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/01_selected_points/genepool_predicted.csv"),
-              row.names = F)
-    rm(spData_upt2)
+    if(!file.exists(paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/01_selected_points/genepool_predicted.csv"))){
+      cat("Point has not been created, processing ... \n")
+      cat(">>> Create a buffer around the point", i, "... \n")
+      radius <- create_buffers(xy = occ[pnt, c("lon", "lat")],
+                               msk = mask,
+                               buff_dist = buffer_radius,
+                               format = "GTiff",
+                               filename = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/01_selected_points/buffer_radius_to_omit.tif"))
+      
+      cat(">>> Identify and exclude of the analysis points within the buffer radius ... \n")
+      id_pnts <- raster::extract(x = radius, y = occ[,c("lon", "lat")])
+      pnt_excl <- occ[which(id_pnts == 1),]
+      write.csv(x = pnt_excl,
+                file = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/01_selected_points/coordinates_to_exclude.csv"),
+                row.names = F)
+      spData_upt <- occ[base::setdiff(1:nrow(occ), which(id_pnts == 1)),]; rm(id_pnts)
+      write.csv(x = spData_upt,
+                file = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/01_selected_points/occ_", occName, ".csv"),
+                row.names = F)
+      
+      spData_upt2 <- spData_upt[,c("lon", "lat")]
+      names(spData_upt2) <- c("Longitude", "Latitude")
+      spData_upt2$ensemble <- occName
+      write.csv(x = spData_upt2,
+                file = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/01_selected_points/genepool_predicted.csv"),
+                row.names = F)
+      rm(spData_upt2)
+    } else {
+      cat("Point has been created, loading data ... \n")
+      pnt_excl <- read.csv(paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/01_selected_points/coordinates_to_exclude.csv"))
+      spData_upt <- read.csv(paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/01_selected_points/occ_", occName, ".csv"))
+    }
     
     cat(">>> Creating cost distance raster ... \n")
     cost_dist_function(code = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/01_selected_points/cost_dist.py"),
@@ -147,51 +154,70 @@ validation_process <- function(occName = occName,
                                    eval_sp_Dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/evaluation"),
                                    spData = rbind(spData_upt, spData[which(spData[,1] == 0),]))
     model_outDir_rep <- paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models/replicates")
-    clim_layer <- lapply(paste0(climDir, "/", vars, ".tif"), raster)
-    clim_layer <- raster::stack(clim_layer)
-    clim_table <- raster::as.data.frame(clim_layer, xy = T)
-    clim_table <- clim_table[complete.cases(clim_table),]
-    model <- projecting_function(m2,
-                                 m2_eval,
-                                 clim_table,
-                                 mask,
-                                 model_outDir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models"),
-                                 nCores = 5,
-                                 obj.size = 3)
     
-    cat(">>> Creating a new kernel density ...\n")
-    kernel <- raster_kernel(mask = mask,
-                            occurrences = spData_upt[spData_upt[,1] == 1,],
-                            out_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"),
-                            kernel_method = 3,
-                            scale = T)
+    if(!file.exists(paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models/", occName, "_prj_median.tif"))){
+      clim_layer <- lapply(paste0(climDir, "/", vars, ".tif"), raster)
+      clim_layer <- raster::stack(clim_layer)
+      clim_table <- raster::as.data.frame(clim_layer, xy = T)
+      clim_table <- clim_table[complete.cases(clim_table),]
+      model <- projecting_function(m2,
+                                   m2_eval,
+                                   clim_table,
+                                   mask,
+                                   model_outDir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models"),
+                                   nCores = 5,
+                                   obj.size = 3)
+    } else {
+      cat("SDM model has already been created ... \n")
+    }
     
-    cat(">>> Creating a new environmental distance ...\n")
-    calc_env_score(lv_name = occName,
-                   clus_method = "hclust_mahalanobis",
-                   sdm_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models"),
-                   gap_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"),
-                   occ_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/01_selected_points"),
-                   env_dir = climDir,
-                   out_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"))
+    if(!file.exists(paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/03_gap_models/kernel.tif"))){
+      cat(">>> Creating a new kernel density ...\n")
+      kernel <- raster_kernel(mask = mask,
+                              occurrences = spData_upt[spData_upt[,1] == 1,],
+                              out_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"),
+                              kernel_method = 3,
+                              scale = T)
+    } else {
+      cat("Kernel raster has already been created ... \n")
+    }
     
-    cat(">>> Calculating gap indicator ...\n")
-    calc_gap_score(lv_name = occName,
-                   clus_method = "hclust_mahalanobis",
-                   gap_method = geo_score, # Can be: "cost_dist", "kernel", "delaunay"
-                   sdm_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models"),
-                   gap_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"),
-                   out_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"))
+    if(!file.exists(paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/03_gap_models/env_score_hclust_mahalanobis.tif"))){
+      cat(">>> Creating a new environmental distance ...\n")
+      calc_env_score(lv_name = occName,
+                     clus_method = "hclust_mahalanobis",
+                     sdm_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models"),
+                     gap_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"),
+                     occ_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/01_selected_points"),
+                     env_dir = climDir,
+                     out_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"))
+    } else {
+      cat("Environmental score has already been created ... \n")
+    }
     
+    if(!file.exists(paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/03_gap_models/gap_score_", geo_score, ".tif"))){
+      cat(">>> Calculating gap indicator ...\n")
+      calc_gap_score(lv_name = occName,
+                     clus_method = "hclust_mahalanobis",
+                     gap_method = geo_score, # Can be: "cost_dist", "kernel", "delaunay"
+                     sdm_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models"),
+                     gap_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"),
+                     out_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"))
+    } else {
+      gap_score <- raster(paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/03_gap_models/gap_score_", geo_score, ".tif"))
+    }
+      
     cat(">>> Calculating percentage of correctly classified occurrences ...\n")
     library(tidyverse)
     gap_values <- raster::extract(x = gap_score, y = pnt_excl[,c("lon", "lat")])
     percentile <- seq(from = 0, to = 1, by = 0.001)
-    metrics <- data.frame(cc = unlist(purrr::map(percentile, .fun = function(x){sum(gap_values > x)})),
-                          pr_cc = unlist(purrr::map(percentile, .fun = function(x){sum(gap_values > x)/length(gap_values)})),
-                          percentile = percentile)
-    write.csv(metrics, paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/03_gap_models/validation_metrics.csv"))
-
+    metrics <- tibble(Coordinates = list(pnt_excl[,c("lon","lat")]),
+                      Gap_score = list(gap_values),
+                      CC_points = unlist(purrr::map(.x = percentile, .f = function(z){sum(gap_values[complete.cases(gap_values)] > z)})),
+                      PCC_points = unlist(purrr::map(.x = percentile, .f = function(z){sum(gap_values[complete.cases(gap_values)] > z)/length(gap_values[complete.cases(gap_values)])})),
+                      Percentile = percentile)
+    saveRDS(metrics, paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/03_gap_models/validation_metrics.RDS"))
+    
     return(cat("Done!\n"))
     
   }
@@ -203,10 +229,10 @@ validation_process <- function(occName = occName,
   
   registerDoMC(length(seedList))
   
-  Run <- foreach(i = 1:length(seedList)) %dopar% {
+  Run <- foreach(i = c(1, 3:5)) %dopar% {
     run_function(i = i)
   }
   
   return(cat("Process finished!\n"))
-
+  
 }
