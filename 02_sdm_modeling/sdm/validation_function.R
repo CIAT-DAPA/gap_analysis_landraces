@@ -44,6 +44,11 @@ source(paste(srcDir, "/preprocessing/config.R", sep = ""))
 cat(">>> Applying validation process for gap metrics <<<\n")
 
 gap_valDir <- "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/results/common_bean/lvl_1/mesoamerican/americas/gap_validation/buffer_100km"
+validation_process(occName = occName,
+                   gap_valDir = gap_valDir,
+                   buffer_radius = 1, # Radius of 100 km for excluding occurrences
+                   density_pattern = 3, # Density pattern (1: low density, 2: medium density, 3: high density)
+                   geo_score = "cost_dist")
 validation_process <- function(occName = occName,
                                gap_valDir = gap_valDir,
                                buffer_radius = 1, # Radius of 100 km for excluding occurrences
@@ -165,7 +170,7 @@ validation_process <- function(occName = occName,
     calc_env_score(lv_name = occName,
                    clus_method = "hclust_mahalanobis",
                    sdm_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models"),
-                   gap_dir = gap_outDir,
+                   gap_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"),
                    occ_dir = occDir,
                    env_dir = climDir,
                    out_dir = gap_outDir)
@@ -195,4 +200,6 @@ validation_process <- function(occName = occName,
     run_function(i = i)
   }
   
+  return(cat("Process finished!\n"))
+
 }

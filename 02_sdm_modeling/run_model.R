@@ -47,6 +47,8 @@ if(!file.exists(paste0(classResults, "/genepool_predicted_original.csv"))){
   accessions_predicted$Genepool.interpreted.ACID <- as.character(accessions_predicted$Genepool.interpreted.ACID)
   accessions_predicted$ensemble[!is.na(accessions_predicted$Genepool.interpreted.ACID)] <- accessions_predicted$Genepool.interpreted.ACID[!is.na(accessions_predicted$Genepool.interpreted.ACID)]
   accessions_predicted$X <- accessions_predicted$Row.names <- NULL
+  accessions_predicted$ensemble <- as.character(accessions_predicted$ensemble)
+  accessions_predicted$ensemble[which(accessions_predicted$Country == "Chile")] <- "Andean"
   file.rename(from = paste0(classResults, "/genepool_predicted.csv"), to = paste0(classResults, "/genepool_predicted_original.csv"))
   write.csv(accessions_predicted, paste0(classResults, "/genepool_predicted.csv"), row.names = F)
   rm(accessions_predicted)
