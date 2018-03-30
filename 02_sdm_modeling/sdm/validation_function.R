@@ -178,7 +178,7 @@ validation_process <- function(occName = occName,
     cat(">>> Calculating gap indicator ...\n")
     calc_gap_score(lv_name = occName,
                    clus_method = "hclust_mahalanobis",
-                   gap_method = "cost_dist", # Can be: "cost_dist", "kernel", "delaunay"
+                   gap_method = geo_score, # Can be: "cost_dist", "kernel", "delaunay"
                    sdm_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models"),
                    gap_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"),
                    out_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"))
@@ -186,7 +186,7 @@ validation_process <- function(occName = occName,
     cat(">>> Calculating percentage of correctly classified occurrences ...\n")
     library(tidyverse)
     gap_values <- raster::extract(x = gap_score, y = pnt_excl[,c("lon", "lat")])
-    percentile = seq(from = 0, to = 1, by = 0.001)
+    percentile <- seq(from = 0, to = 1, by = 0.001)
     metrics <- data.frame(cc = unlist(purrr::map(percentile, .fun = function(x){sum(gap_values > x)})),
                           pr_cc = unlist(purrr::map(percentile, .fun = function(x){sum(gap_values > x)/length(gap_values)})),
                           percentile = percentile)

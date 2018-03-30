@@ -161,7 +161,7 @@ calc_env_score(lv_name = occName,
 # Calculating gap metrics
 calc_gap_score(lv_name = occName,
                clus_method = "hclust_mahalanobis",
-               gap_method = "cost_dist", # Can be: "cost_dist", "kernel", "delaunay"
+               gap_method = "kernel", # Can be: "cost_dist", "kernel", "delaunay"
                sdm_dir = model_outDir,
                gap_dir = gap_outDir,
                out_dir = gap_outDir)
