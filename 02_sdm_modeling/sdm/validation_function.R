@@ -102,7 +102,7 @@ validation_process <- function(occName = occName,
               row.names = F)
     spData_upt <- occ[base::setdiff(1:nrow(occ), which(id_pnts == 1)),]; rm(id_pnts)
     write.csv(x = spData_upt,
-              file = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/01_selected_points/occ_", occName, "_updated.csv"),
+              file = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/01_selected_points/occ_", occName, ".csv"),
               row.names = F)
     
     spData_upt2 <- spData_upt[,c("lon", "lat")]
@@ -171,19 +171,17 @@ validation_process <- function(occName = occName,
                    clus_method = "hclust_mahalanobis",
                    sdm_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models"),
                    gap_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"),
-                   occ_dir = occDir,
+                   occ_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/01_selected_points"),
                    env_dir = climDir,
-                   out_dir = gap_outDir)
+                   out_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"))
     
     cat(">>> Calculating gap indicator ...\n")
     calc_gap_score(lv_name = occName,
                    clus_method = "hclust_mahalanobis",
                    gap_method = "cost_dist", # Can be: "cost_dist", "kernel", "delaunay"
-                   sdm_dir = model_outDir,
-                   gap_dir = gap_outDir,
-                   out_dir = gap_outDir)
-    
-    
+                   sdm_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models"),
+                   gap_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"),
+                   out_dir = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"))
     
     return(cat("Done!\n"))
     
