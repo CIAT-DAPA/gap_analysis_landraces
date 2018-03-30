@@ -221,80 +221,7 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
   # }  
   
   
-  i <- 0
-  if(i == 1){  
-    #*********************************************************************#########
-    ######-------------- BEGIN VALIDATING OVERFITTING IN ALL MODELS ------------#########
-    #********************************************************************#########
-    nrow(genepool_data)
-    
-    #plot(genepool_data$Longitude,genepool_data$Latitude)
-    
-    wshp<- readOGR(dsn = "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/Input_data/_maps/world_shape",layer="all_countries")  
-    unique(wshp@data$NAME)
-    
-    
-    
-    df<-SpatialPointsDataFrame(cbind(genepool_data$Longitude,genepool_data$Latitude),proj4string=CRS( "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0" ),data=genepool_data[,2:ncol(genepool_data)])
-    df@coords 
-    #sp::over(df,wshp,returnList = FALSE)
-    country<-extract(wshp,df,df=TRUE)
-    
-    genepool_data_t<- data.frame( genepool_data, name.country=factor(country$NAME))
-    nrow(genepool_data_t)
-    table(genepool_data_t$Genepool.interpreted.ACID,genepool_data_t$name.country)
-    
-    pais<-"Colombia"
-    genepool_data <-  genepool_data_t %>% filter(., name.country != pais  ) %>% dplyr::select(., -name.country) 
-    genepool_data_c<- genepool_data_t %>% filter(., name.country == pais  ) %>% dplyr::select(., -name.country) 
-    
-    
-    (table(genepool_data_c$Genepool.interpreted.ACID))
-    
-    
-    
-    set.seed(825); ctrol2 <-  trainControl(method = "repeatedcv", number = 7, repeats = 2, savePredictions = T)
-    (table(genepool_data$Genepool.interpreted.ACID)/(216+352))*100
-    cat("Running Random Forest ...\n")
-    
-    grid <- expand.grid(mtry = round((ncol(genepool_data)-4)/3))
-    eval(parse(text = paste0("Rforest <- train(", y[1], " ~ ., data = genepool_data, method = 'rf', tuneGrid = grid, importance = TRUE, ntree = 2000, metric = 'Accuracy', trControl = ctrol2)"))) # RF training
-    cat("finishing Rforest ...\n")
-    
-    Rforest
-    probe3<-data.frame(pred=predict(Rforest ,newdata= genepool_data_c[,2:ncol(genepool_data_c)]), obs=genepool_data_c[,1] )
-    caret::confusionMatrix(table(probe3))
-    table(genepool_data_c[,1])
-    
-    set.seed(200)
-    su<- c()
-    for(i in 1:500){ 
-      
-      data_balanced_over <- ovun.sample(Genepool.interpreted.ACID ~ ., data = genepool_data_c, method = "both", p =0.5, N=44)$data
-      
-      
-      #SMOTE(Genepool.interpreted.ACID ~ ., data = genepool_data_c, perc.over = 100 , perc.under=200)
-      
-      
-      dim(data_balanced_over)
-      table(data_balanced_over$Genepool.interpreted.ACID)
-      probe3<-data.frame(pred=predict(Rforest ,newdata= data_balanced_over[,2:ncol(data_balanced_over)]), obs=data_balanced_over[,1] )
-      xu<-caret::confusionMatrix(table(probe3));xu
-      su [i] <-xu$overall[1]
-      cat(paste("procesing..", i,"\n"))
-    }
-    mean(su)
-    sd(su)
-    hist(su)
-    
-    
-    #*********************************************************************#########
-    ######-------------- END VALIDATING OVERFITTING IN ALL MODELS ------------#########
-    #********************************************************************#########
-  } #end validating overfitting    
-  rm(i)  
-  # Define parameters to train models
-  
+ 
   
   set.seed(825); ctrol2 <-  trainControl(method = "LGOCV", p = 0.8, number = 10, savePredictions = T, verboseIter = TRUE )
   
@@ -404,13 +331,7 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
   
   genepool_na <- genepool_na[!complete.cases(eval(parse(text = paste0("genepool_na$", y[1])))),]
   
-  # genepool_na <- genepool_na[, names(genepool_data)]
-  # if(assertthat::has_name( genepool_na, "Genepool.protein")){genepool_na$Genepool.protein <- as.character(genepool_na$Genepool.protein)
-  # genepool_na$Genepool.protein[which(genepool_na$Genepool.protein == "N/A")] <- NA
-  # genepool_na$Genepool.protein <- factor(genepool_na$Genepool.protein) }
-  # 
-  # if(assertthat::has_name( genepool_na, "Growth.habit")){genepool_na$Growth.habit[which(genepool_na$Growth.habit == "Climbing-Determinate")] <- NA
-  # genepool_na$Growth.habit <- factor(genepool_na$Growth.habit)  }
+ 
   
   genepool_na <- genepool_na[complete.cases(genepool_na[,-which( names(genepool_na) == y[1]  )]),]
   
