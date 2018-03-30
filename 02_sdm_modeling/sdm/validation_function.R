@@ -221,13 +221,16 @@ validation_process <- function(occName = occName,
   # ----------------------------------------------------------------------------------- #
   
   suppressMessages(library(foreach))
-  suppressMessages(library(doMC))
+  suppressMessages(library(doParallel))
   
-  registerDoMC(length(seedList))
+  cl <- makeCluster(length(seedList), type='PSOCK')
+  registerDoParallel(cl)
   
   Run <- foreach(i = c(1, 3:5)) %dopar% {
     run_function(i = i)
   }
+  
+  registerDoSEQ()
   
   return(cat("Process finished!\n"))
   
