@@ -64,7 +64,7 @@ calc_gap_score <- function(lv_name,clus_method="hclust_mahalanobis",gap_method="
   
   #produce a single gap map by multiplying the three scores: p(x), geo_score, env_score
   #gap_score <- sdm_prj * geo_score * env_score
-  gap_score <- sdm_prj * max(geo_score, env_score)
+  gap_score <- sqrt(sdm_prj * max(geo_score, env_score)) # Calculating geometric mean
   
   #get gap threshold
   #gap_thr <- read.csv(paste(res_dir,"/gap_validation/validation_results.csv"), header=T)
