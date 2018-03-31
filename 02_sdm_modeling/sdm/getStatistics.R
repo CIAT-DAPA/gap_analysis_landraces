@@ -42,12 +42,25 @@ get_statistics <- function(occName = "mesoamerican", geo_score = "cost_dist", pa
                                           z <- rbind(all_complete %>% dplyr::filter(Observed == 1), y)
                                           return(z)
                                         }))
-  folds <- folds %>% dplyr::mutate(AUC = purrr::map(.x = data4Val,
-                                                    .f = function(x){
-                                                      roc <- pROC::roc(response = all_complete$Observed %>% as.character, predictor = all_complete$Gap_score, auc = T)
-                                                      auc <- roc$auc %>% as.numeric
-                                                      return(auc)
-                                                    }))
+  folds <- folds %>%
+    dplyr::mutate(AUC = purrr::map(.x = data4Val,
+                                   .f = function(x){
+                                     roc <- pROC::roc(response = x$Observed %>% as.character, predictor = x$Gap_score, auc = T)
+                                     auc <- roc$auc %>% as.numeric
+                                     return(auc)
+                                   }) %>% unlist)
+  
+  options(scipen = 999)
+  evaluationObj <- sdm::evaluates(x = gap_comparison2$category, p =gap_comparison2$gap_values)
+  evaluationObj@threshold_based
+  
+  folds <- folds %>%
+    dplyr::mutate(Threshold_metrics = purrr::map(.x = data4Val,
+                                                 .f = function(x){
+                                                   eval <- sdm::evaluates(x = x$Observed, p = x$Gap_score)
+                                                   eval <- eval@threshold_based
+                                                   return(eval)
+                                                 }))
   
   df <- tibble::tibble(Genepool = occName,
                        Geo_score = geo_score,
@@ -59,9 +72,9 @@ get_statistics <- function(occName = "mesoamerican", geo_score = "cost_dist", pa
                        Occ_included_data = sum(all_complete$Observed == 0),
                        Occ_excluded_data = sum(all_complete$Observed == 1),
                        AUC_all = auc_all %>% as.numeric,
-                       AUC_avg = algo,
-                       AUC_sd = algo,
-                       Threshold_metrics = list(...))
+                       AUC_avg = folds$AUC %>% mean,
+                       AUC_sd = folds$AUC %>% sd,
+                       Threshold_metrics = folds)
   
   return(df)
   
