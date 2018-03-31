@@ -35,7 +35,19 @@ get_statistics <- function(occName = "mesoamerican", geo_score = "cost_dist", pa
   set.seed(1)
   nTimes <- round(sum(all_complete$Observed == 0)/sum(all_complete$Observed == 1))
   folds <- modelr::crossv_kfold(all_complete %>% dplyr::filter(Observed == 0), k = nTimes)
-  folds <- folds %>% dplyr::mutate() # Agregar las datos de gaps y calcular el AUC para cada uno, luego sacar el sd
+  folds <- folds %>%
+    dplyr::mutate(data4Val = purrr::map(.x = test,
+                                        .f = function(x){
+                                          y <- x$data[x$idx,]
+                                          z <- rbind(all_complete %>% dplyr::filter(Observed == 1), y)
+                                          return(z)
+                                        }))
+  folds <- folds %>% dplyr::mutate(AUC = purrr::map(.x = data4Val,
+                                                    .f = function(x){
+                                                      roc <- pROC::roc(response = all_complete$Observed %>% as.character, predictor = all_complete$Gap_score, auc = T)
+                                                      auc <- roc$auc %>% as.numeric
+                                                      return(auc)
+                                                    }))
   
   df <- tibble::tibble(Genepool = occName,
                        Geo_score = geo_score,
