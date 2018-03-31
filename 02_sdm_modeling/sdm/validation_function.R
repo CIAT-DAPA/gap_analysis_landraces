@@ -38,12 +38,12 @@ level_3 <- NULL # level 3
 
 # Preparing inputs for each unit of analysis
 level <- "lvl_1"
-occName <- "mesoamerican" # "andean", "mesoamerican"
+occName <- "andean" # "andean", "mesoamerican"
 source(paste(srcDir, "/preprocessing/config.R", sep = ""))
 
 cat(">>> Applying validation process for gap metrics <<<\n")
 
-gap_valDir <- "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/results/common_bean/lvl_1/mesoamerican/americas/gap_validation/buffer_100km"
+gap_valDir <- "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/results/common_bean/lvl_1/andean/americas/gap_validation/buffer_100km"
 
 allglobal <- function() {
   lss <- ls(envir = parent.frame())
@@ -52,6 +52,12 @@ allglobal <- function() {
   }
 }
 allglobal()
+
+occName = occName
+gap_valDir = gap_valDir
+buffer_radius = 1
+density_pattern = 2
+geo_score = "cost_dist"
 
 validation_process <- function(occName = occName,
                                gap_valDir = gap_valDir,
