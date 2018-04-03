@@ -26,7 +26,7 @@ source(paste(srcDir,"/miscellanous/kernel_indicator.R",sep=""))
 source(paste(srcDir,"/gap_methods/ecogeo_cluster.R",sep=""))
 source(paste(srcDir,"/gap_methods/env_distance.R",sep=""))
 source(paste(srcDir,"/gap_methods/combine_score.R",sep=""))
-source(paste(srcDir,"/gap_methods/delanuay.R",sep=""))
+source(paste(srcDir,"/gap_methods/delaunay.R",sep=""))
 
 # Working directories
 cat("Loading working directories","\n")
