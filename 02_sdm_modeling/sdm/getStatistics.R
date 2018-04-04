@@ -6,6 +6,22 @@ library(plyr)
 
 occName = "mesoamerican"; geo_score = "cost_dist"; pattern = 3; point = 1
 
+earth.dist <- function (long1, lat1, long2, lat2)
+{
+  rad <- pi/180
+  a1 <- lat1 * rad
+  a2 <- long1 * rad
+  b1 <- lat2 * rad
+  b2 <- long2 * rad
+  dlon <- b2 - a2
+  dlat <- b1 - a1
+  a <- (sin(dlat/2))^2 + cos(a1) * cos(b1) * (sin(dlon/2))^2
+  c <- 2 * atan2(sqrt(a), sqrt(1 - a))
+  R <- 6378.145
+  d <- R * c
+  return(d)
+}
+
 get_statistics <- function(occName = "mesoamerican", geo_score = "cost_dist", pattern = 3, point = 1){
   
   valDir <- paste0("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/results/common_bean/lvl_1/", occName, "/americas/gap_validation/buffer_100km")
@@ -14,6 +30,8 @@ get_statistics <- function(occName = "mesoamerican", geo_score = "cost_dist", pa
   cat("Loading occurrences points ...\n")
   ePnts <- read.csv(paste0(valDir, "/", densList[pattern], "/pnt", point, "/01_selected_points/coordinates_to_exclude.csv"))
   iPnts <- read.csv(paste0(valDir, "/", densList[pattern], "/pnt", point, "/01_selected_points/occ_", occName, ".csv"))
+  
+  createBuffers
   
   cat("Loading gap score ...\n")
   gap_score <- raster::raster(paste0(valDir, "/", densList[pattern], "/pnt", point, "/03_gap_models/gap_score_", geo_score, ".tif"))
