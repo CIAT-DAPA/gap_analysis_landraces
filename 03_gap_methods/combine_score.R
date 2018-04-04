@@ -16,9 +16,11 @@
 
 calc_gap_score <- function(lv_name,clus_method="hclust_mahalanobis",gap_method="cost_dist",sdm_dir,gap_dir,out_dir) {
   #load libraries
+  
   require(raster)
   
-  #load sdm projection
+  if(!file.exists(paste(out_dir,"/gap_score_",gap_method,".tif",sep=""))){
+    #load sdm projection
   sdm_prj <- raster(paste(sdm_dir,"/",lv_name,"_prj_median.tif",sep=""))
   sdm_prj <- readAll(sdm_prj)
   
@@ -84,4 +86,10 @@ calc_gap_score <- function(lv_name,clus_method="hclust_mahalanobis",gap_method="
   #return stack with rasters
   rstk <- stack(c(gap_score,gap_class))
   return(rstk)
+
+  } else {
+    gap_score <- raster::raster(paste(out_dir,"/gap_score_",gap_method,".tif",sep=""))
+    return(gap_score)
+  }
+
 }

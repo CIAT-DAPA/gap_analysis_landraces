@@ -104,7 +104,10 @@ calc_env_score <- function(lv_name,clus_method="hclust_mahalanobis",sdm_dir,gap_
     return(rs_euc_norm)
     
   } else {
-    cat("Environmental rasters have been calculated!\n")
+
+    rs_euc_norm <- raster::raster(paste(out_dir,"/env_score_",clus_method,".tif",sep=""))
+    return(rs_euc_norm)
+    
   }
   
 }
