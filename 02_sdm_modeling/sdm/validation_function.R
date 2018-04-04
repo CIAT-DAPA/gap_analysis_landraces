@@ -38,7 +38,7 @@ level_3 <- NULL # level 3
 
 # Preparing inputs for each unit of analysis
 level <- "lvl_1"
-occName <- "andean" # "andean", "mesoamerican"
+occName <- "mesoamerican" # "andean", "mesoamerican"
 source(paste(srcDir, "/preprocessing/config.R", sep = ""))
 
 cat(">>> Applying validation process for gap metrics <<<\n")
@@ -56,7 +56,7 @@ allglobal()
 occName = occName
 gap_valDir = gap_valDir
 buffer_radius = 1
-density_pattern = 2
+density_pattern = 1
 geo_score = "cost_dist"
 
 validation_process <- function(occName = occName,

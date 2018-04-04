@@ -2,6 +2,7 @@
 library(tidyverse)
 library(pROC)
 library(sdm)
+library(plyr)
 
 occName = "mesoamerican"; geo_score = "cost_dist"; pattern = 3; point = 1
 
@@ -51,9 +52,6 @@ get_statistics <- function(occName = "mesoamerican", geo_score = "cost_dist", pa
                                    }) %>% unlist)
   
   options(scipen = 999)
-  evaluationObj <- sdm::evaluates(x = gap_comparison2$category, p =gap_comparison2$gap_values)
-  evaluationObj@threshold_based
-  
   folds <- folds %>%
     dplyr::mutate(Threshold_metrics = purrr::map(.x = data4Val,
                                                  .f = function(x){
@@ -74,8 +72,34 @@ get_statistics <- function(occName = "mesoamerican", geo_score = "cost_dist", pa
                        AUC_all = auc_all %>% as.numeric,
                        AUC_avg = folds$AUC %>% mean,
                        AUC_sd = folds$AUC %>% sd,
-                       Threshold_metrics = folds)
+                       Threshold_metrics = list(folds))
   
   return(df)
   
 }
+
+all_results <- lapply(X = 2:3, FUN = function(j){
+  cat("Processing density pattern",j,"\n")
+  pattern <- lapply(X = 1:5, FUN = function(i){
+    cat("Processing point",i,"\n")
+    results <- get_statistics(occName = "mesoamerican", geo_score = "cost_dist", pattern = j, point = i)
+    return(results)
+  })
+  pattern <- do.call(rbind, pattern)
+  return(pattern)
+})
+all_results <- do.call(rbind, all_results)
+
+j = 3
+pattern <- lapply(X = 1:5, FUN = function(i){
+  cat("Processing point",i,"\n")
+  results <- get_statistics(occName = "mesoamerican", geo_score = "cost_dist", pattern = j, point = i)
+  return(results)
+})
+pattern <- do.call(rbind, pattern)
+
+df <- plyr::ldply(pattern$Threshold_metrics, data.frame)
+df2 <- plyr::ldply(df$Threshold_metrics, data.frame)
+hist(df2$threshold)
+median(df2$threshold)
+mean(df2$threshold)
