@@ -46,12 +46,14 @@ suppressMessages(if(!require(httpuv)){devtools::install_github("rstudio/httpuv")
 
 
 #genotypic_climate2 <- readRDS(paste0(root,"/Input_data/_datosAndres/acp/data4modeling.RDS") )
-genotypic_climate <- read.csv(paste0(root,  "/ciat_db_processed_rasterVars.csv"))
+genotypic_climate <- read.csv(paste0(root,  "/ciat_usda_db_processed_rasterVars.csv"))
 
 
 
 bios <- grep("bio_", names(genotypic_climate))
 names(genotypic_climate) <- c(gsub("_", ".", names(genotypic_climate)[ 1:( bios[1] - 1)  ] ), names(genotypic_climate)[bios],gsub("_", ".", names(genotypic_climate)[ (bios[length(bios)]+1):length(names(genotypic_climate))  ] ) )
+genotypic_climate$ID2 <- genotypic_climate$ID
+genotypic_climate$ID <- 1:nrow(genotypic_climate)
 rownames(genotypic_climate) <- genotypic_climate$ID
 
 ### If is necessary to set to some accessions like genepool "Andeans" inside the peru region
@@ -325,7 +327,7 @@ genepool_predicted <- function(data_gen = genotypic_climate, y = c("Genepool.int
   cat( red$bgCyan$bold$underline(  ">>>> Starting predicting process\n\n"))
   
   
-  genepool_na <- data_gen %>%  .[-which(.$To.use.ACID == 0 ),]  %>% `rownames<-`(.$ID) %>%
+  genepool_na <- data_gen %>%  `rownames<-`(.$ID) %>%
     dplyr::select(., -ID, -To.use.ACID , -eval(parse(text =y[2]  )) )
   
   

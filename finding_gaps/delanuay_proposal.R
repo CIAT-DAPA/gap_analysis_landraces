@@ -2,7 +2,7 @@
 suppressMessages(if(!require(pacman)){install.packages('pacman'); library(pacman)} else {library(pacman)})
 pacman::p_load(dplyr, psych, tm, raster, rgdal, rasterVis, rgeos, 
                deldir, sp, tidyverse, FactoMineR, factoextra, ggdendro, 
-               rlang, fastcluster, sf, doParallel, rmapshaper ) 
+               rlang, fastcluster, sf, doParallel, rmapshaper, GISTools ) 
 
 
 g <- gc(reset = T); rm(list = ls()); options(warn = -1); options(scipen = 999)
@@ -43,8 +43,14 @@ level <- "lvl_1"
 occName <- "mesoamerican" # "andean", "mesoamerican"
 source(paste(srcDir, "/preprocessing/config.R", sep = ""))
 
+##### run from here
 
-SDM <- raster(paste0(model_outDir,"/mesoamerican_prj_median.tif"))
+
+area <- c("americas", "world")
+group <- c("mesoamerican", "andean")
+crop <- "common_bean"
+
+SDM <- raster(paste0(level_result_dir,"/", group[1], "/", area[1], "/prj_models", "/",occName ,"_prj_median.tif"))
 
 SDM[!is.na(SDM[])] <- 1
 
@@ -56,8 +62,21 @@ sdm_pol_sf <- rmapshaper::ms_simplify(sdm_pol)
 rm(sdm_pol)
 
 
-delanuay <- shapefile("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/Input_data/_datosAndres/delanuay/delanuay_andres.shp")#change path after
+delanuay <- shapefile(paste0(level_result_dir,"/", group[1], "/", area[1], "/gap_models/delaunay/raw_delaunay.shp"))
+#change path after
 delanuay@bbox <- as.matrix(extent(SDM))
+
+if(length(grep("area", names(delanuay@data))) == 0 ){
+  delanuay$area <- raster::area(delanuay)/1000000
+}
+
+if( length(grep("centroid", names(delanuay@data))) == 0 ){
+  
+  centroids <- getSpPPolygonsLabptSlots(delanuay)
+  delanuay$centroid.x <- centroids[,1]
+  delanuay$centroid.y <- centroids[,2]
+  
+}
 
 cat("Converting  SDM  Polygon to sf \n \n ")
 
@@ -92,12 +111,13 @@ rm(i, bad)
 
 cat("Calculating Max area \n \n ")
 i_shp <- shapefile(paste0(tempdir(), "/intersection.shp"))
-max.area <- max(area(i_shp)/1000000) # al dividir por 1000000 la unidad es megametro^2 
- rm(i_shp)
+
+max.area <- max(raster::area(i_shp)/1000000) # al dividir por 1000000 la unidad es megametro^2 
+
+rm(i_shp)
 
 gc(); g <- gc(); rm(g); removeTmpFiles(h=0)
 
-#delanuay  <- delanuay[delanuay$area <= 873906.95,]
 #delanuay  <- delanuay[delanuay$area >= 0.02,]
 
 r <- raster()
@@ -107,19 +127,24 @@ res(r) <- res(SDM)
 r[is.na(r[])]<- 0
 
 
+cat("Calculating distances inside each triangulation \n \n")
 
 
 system.time(
  delaDist_list <- lapply(1:(length(delanuay)), function(x){
    
    
-   vertex <- delanuay@polygons[[x]]@Polygons[[1]]@coords[1:3,]
-   centroid <- delanuay@data[x, 2:3]
-   
-   
-   near_ver <- vertex[which.min(spDistsN1(vertex, as.matrix(centroid), longlat = TRUE) ), ]
-   near_ver <- SpatialPoints(data.frame(x = near_ver[1], y = near_ver[2]), proj4string = crs(SDM))
-   
+   vertex_1 <- delanuay@polygons[[x]]@Polygons[[1]]@coords[1,] 
+   vertex_1 <-  SpatialPoints(data.frame( x = vertex_1[1], y = vertex_1[2]), proj4string = crs(SDM))
+               
+   vertex_2 <- delanuay@polygons[[x]]@Polygons[[1]]@coords[2,]
+   vertex_2 <-  SpatialPoints(data.frame( x = vertex_2[1], y = vertex_2[2]), proj4string = crs(SDM))
+
+   vertex_3 <- delanuay@polygons[[x]]@Polygons[[1]]@coords[3,]
+   vertex_3 <-  SpatialPoints(data.frame( x = vertex_3[1], y = vertex_3[2]), proj4string = crs(SDM))
+
+
+   centroid <- delanuay@data[x, c("centroid.x", "centroid.y")]
    
    cat(paste("Processing feature: " , x, "\n"))
    cr <- raster::crop( x = r , y = extent(delanuay[x, ]) )
@@ -130,15 +155,26 @@ system.time(
    xy <- SpatialPoints(centroid, proj4string = crs(SDM))
    
    dRas <- raster::distanceFromPoints(rr, xy )
-   dVer <- raster::distanceFromPoints(rr, near_ver)# dist to nearest vertex
    
+   dVer1 <- raster::distanceFromPoints(rr, vertex_1)  + rr# dist to nearest vertex
+   dVer2 <- raster::distanceFromPoints(rr, vertex_2) + rr# dist to nearest vertex
+   dVer3 <- raster::distanceFromPoints(rr, vertex_3)+ rr# dist to nearest vertex
+
+   dVer <- min(raster::stack(dVer1, dVer2, dVer3))
+   dVer <- dVer/max(dVer[], na.rm = T)
+  
    cat( paste("max value distances: ",  max(values(dRas),na.rm = T)," \n \n" ))
    
    dRas <-  dRas + rr
-   dVer <- dVer + rr
-  
-  
-   return(list(dist_to_centroid = dRas, dist_near_vertex = dVer))
+   dRas <- dRas/max(dRas[], na.rm = T)
+   
+   s <- delanuay$area[x]/max.area
+   cat(paste("El area relativa para este feature es: ", s , "\n \n "))
+   if( s > 1 ){ s <- 1 }
+   sRas <- rr + s
+   if( round(res(sRas)[1],8) !=  0.04166667 ){stop("me cago el la putisisma")} 
+   cat(paste("resolution: ", res(sRas)[1], "****** \n \n \n " ))
+   return(list(dist_to_centroid = dRas, dist_near_vertex = dVer, area_score = sRas))
    
  } )
 
@@ -147,25 +183,93 @@ system.time(
 
 ### merge everything
 
+cat("Merging raster (This process will take several minutes. Be patient) \n \n")
+
  out_dist_centroid <- delaDist_list[[1]]$dist_to_centroid
  out_dist_vertex <- delaDist_list[[1]]$dist_near_vertex
- 
+ out_area_relativa <- delaDist_list[[1]]$area_score
  
 mergeFun <- function(mRast){
   
   out_dist_centroid <<- merge(out_dist_centroid, mRast$dist_to_centroid)
   out_dist_vertex <<- merge(out_dist_vertex, mRast$dist_near_vertex)
+  out_area_relativa <<- merge(out_area_relativa, mRast$area_score)             
+
 }
 
 system.time(
-lapply(delaDist_list[2:length(delaDist_list)],mergeFun)
+lapply(delaDist_list[2:length(delaDist_list)],function(mRast){ 
+  
+  cat(paste("resolution: ", round(res(mRast$dist_to_centroid)[1],8), "\n \n "))
+  out_dist_centroid <<- merge(out_dist_centroid, mRast$dist_to_centroid)
+  cat(paste("resolution out rast: ", round(res(out_dist_centroid),8), "\n \n \n"))
+  if( round(res(out_dist_centroid)[1],8) !=  0.04166667 ){stop("me cago el la putisisma")} 
+  
+  out_dist_vertex <<- merge(out_dist_vertex, mRast$dist_near_vertex)
+  out_area_relativa <<- merge(out_area_relativa, mRast$area_score)             
+  
+  
+  })
        )
 
-writeRaster(outRast, "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/Input_data/_datosAndres/delanuay/delanuay_andres.tif", format = "GTiff", overwrite= T)
 
- outRast2 <- 1 - outRast/max(outRast[], na.rm = T)
- writeRaster(outRast2, "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/Input_data/_datosAndres/delanuay/delanuay_norm_andres.tif", format = "GTiff", overwrite= T)
- 
+cat("Calculating gap score \n \n ")
+
+# writeRaster(out_dist_centroid, "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/Input_data/_datosAndres/delanuay/dist_to_centroids.tif", format = "GTiff", overwrite= T)
+# writeRaster(out_dist_vertex, "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/Input_data/_datosAndres/delanuay/dist_to_vertex.tif", format = "GTiff", overwrite= T)
+# writeRaster(out_area_relativa, "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/Input_data/_datosAndres/delanuay/area_relativa.tif", format = "GTiff", overwrite= T)
+
+outDir <- paste0(level_result_dir,"/", group[1], "/", area[1], "/gap_models" )
+
+x <- out_dist_centroid
+a <- out_dist_vertex
+p <- out_area_relativa *(1 - x)*a  
+
+#p2 <- out_area_relativa * mean((1-x),a)
+#p3 <- out_area_relativa * sqrt((1-x),a)
+
+rm(x, a);g <- gc(); rm(g);removeTmpFiles(h = 24)
+
+writeRaster(p, paste0(outDir,"/delanuay_probs.tif"), format = "GTiff", overwrite= T)
+#writeRaster(p2, paste0(outDir,"/delanuay_probs_mean.tif"), format = "GTiff", overwrite= T)
+#writeRaster(p3, paste0(outDir,"/delanuay_probs_sqrt.tif"), format = "GTiff", overwrite= T)
+
+
+SDM <- raster(paste0(level_result_dir,"/", group[1], "/", area[1], "/prj_models", "/",occName ,"_prj_median.tif"))
+
+sdm_crop <- raster::crop(x = SDM, y = extent(p))
+p_masked <- raster::mask(x = p, mask = sdm_crop)
+
+gap_score <- sdm_crop * p_masked
+#extent(gap_score) <- extent(SDM)
+
+writeRaster(gap_score, paste0(outDir,"/delanuay_gap_score.tif"), format = "GTiff", overwrite= T)
+
+
+#### scoring points out side of the delaunay triangulation
+
+dela_bound <-  gUnaryUnion(delanuay, id = NULL)
+
+vertex <- dela_bound@polygons[[1]]@Polygons[[1]]@coords[]
+vertex <- SpatialPoints(data.frame(x = vertex[,1], y = vertex[,2]), proj4string = crs(SDM))
+
+out[!is.na(out[])] <- 1
+
+r2 <- 
+dist_out <- raster::distanceFromPoints( , vertex )
+
+
+lapply(list(p, p2, p3), function(x){
+  
+ r <- raster::crop(x = x, y = extent(SDM))
+ r <-  raster::mask(x = x, mask = SDM)
+ return() 
+  
+})
+
+out <- mask(x = SDM, mask = delanuay, inverse = TRUE)
+
+##### paralelizando ######
 
 
 ncores <- detectCores(all.tests = FALSE, logical = TRUE)
