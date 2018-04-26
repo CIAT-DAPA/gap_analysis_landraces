@@ -4,7 +4,7 @@
 suppressMessages(if(!require(pacman)){install.packages('pacman'); library(pacman)} else {library(pacman)})
 pacman::p_load(dplyr, psych, tm, raster, rgdal, rasterVis, rgeos, 
                deldir, sp, tidyverse, FactoMineR, factoextra, ggdendro, 
-               rlang, fastcluster, sf, doParallel, rmapshaper ) 
+               rlang, fastcluster, sf, doParallel, rmapshaper, doSNOW, tcltk ) 
 
 
 g <- gc(reset = T); rm(list = ls()); options(warn = -1); options(scipen = 999)
@@ -52,6 +52,7 @@ group <- c("mesoamerican", "andean")
 crop <- "common_bean"
 
 
+#### Create all delaunay triangulation for each crop at each level
 for(i in 1:2){
   
   for(j in  1:2){ 
@@ -64,18 +65,26 @@ for(i in 1:2){
     
   }
 }
+### END create delaunays triangulations
 
 
+# gap score
 gp_m <- raster("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/results/common_bean/lvl_1/mesoamerican/americas/gap_validation/buffer_100km/high_density/pnt1/03_gap_models/gap_score_cost_dist.tif")
+
+#Load raterized buffer and find the centroid of him
 buff <- raster("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/results/common_bean/lvl_1/mesoamerican/americas/gap_validation/buffer_100km/high_density/pnt1/01_selected_points/buffer_radius_to_omit.tif")
 
 buff
 buff_pol <- rasterToPolygons(buff, dissolve = TRUE)
 cent <- getSpPPolygonsLabptSlots(buff_pol)
+# End find buffer centroid
 
-cent<- c(-97.100000  18.866700)
+cent<- c(-97.100000 , 18.866700)
 
+
+#create a buffer whit shp  format
 buffer_prime <- buffer(SpatialPoints(cent, proj4string =  crs(SDM)), width=100000)
+
 
 occDir <- paste0(input_data_dir,"/by_crop/",crop, "/",level , "/", group[1], "/",area[1], "/occurrences/Occ")
 
@@ -105,10 +114,17 @@ n_cords <- base::sample(nrow(cords_dummy), n.sample, replace = F  )
 
 
 ncores <- detectCores(all.tests = FALSE, logical = TRUE)
-cl <- makeCluster(15)
-registerDoParallel(cl)
+cl <- makeCluster(ncores - 10)
+registerDoSNOW(cl)
 
-paralel <- foreach( i = 1:1000, .combine = "rbind", .packages = c("raster", "pROC", "dplyr", "sdm"))  %dopar% {
+n.boos <- 1000
+
+pb <- tkProgressBar(max=n.boos)
+progress <- function(n) setTkProgressBar(pb, n)
+opts <- list(progress=progress)
+
+
+paralel <- foreach( i = 1:n.boos, .combine = "rbind", .packages = c("raster", "pROC", "dplyr", "sdm"), .options.snow=opts)  %dopar% {
   cord <- cords_dummy[n_cords[i], ]
   buf_cord <- buffer(SpatialPoints(cord, proj4string =  crs(SDM)), width=bf_rad)
   #dummy_buff <- buffer(buf_cord, width = bf_rad)
