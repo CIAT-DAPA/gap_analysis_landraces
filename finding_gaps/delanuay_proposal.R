@@ -53,15 +53,40 @@ source(paste(srcDir, "/preprocessing/config.R", sep = ""))
 
 
 
-delaunay_scoring <- function(results_dir ,  area , group , crop, lvl , ncores = NULL, validation = FALSE , pnt = NULL  ) {
+delaunay_scoring <- function(baseDir ,  area, group, crop, lvl , ncores = NULL, validation = FALSE , pnt = NULL  ) {
 
+  cat(
+    "        oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo       
+       N`                                                                                  `N       
+    N`                                                                                  `N       
+    N`                                                                                  `N       
+    N`                 `..`               `.....`        `..`         `...              `N       
+    N`                 omMh-            -sdddmddd/      `oMNd/       .sNNd.             `N       
+    N`                /mooms.         `omh:`   .-.      `sNyhd:     `omsdm-             `N       
+    N`               -dy.`sN+`        /mh-              `sNo:dh-   `+mo-dm-             `N       
+    N`              `yd-  `hm:        +ms`              `sN+ /mh. `/ms`-dm-             `N       
+    N`              sNmddddmMh-       /my-              `sN+ `+Ns`:dy` -dm-             `N       
+    N`             /my:-----sNs.      `sNy:`   `-.      `sN+  .sNhdh.  -dm-             `N       
+    N`            -dd-      `yN+`      `/yddddddh/      `om+   .yMd-   .dd.             `N       
+    N`            `.`        `..          `.....`        `.`    `..     ..              `N       
+    N`                                                                                  `N       
+    N`                                                                                  `N       
+    N++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++N       
+         \n \n" )
+  
+  cat(">>> Generating Delaunays triangulation \n \n")
+  
+  
+  
 if(validation == FALSE){cat(">>> Initializing process to calculte a gap score using Delaunays Triangulation \n \n ")}else{
-       cat(">>> Initializing process to calculte a gap score using Delaunays Triangulation for +++ LOGCV +++ \n \n ") }
+       cat(">>> Initializing process to Validate a gap score using Delaunays Triangulation through +++ LOGCV +++ \n \n ") }
 
 if(validation == TRUE && is.null(pnt)){stop("If validation = TRUE then you should set a value for pnt. E.j ('pnt1' or 'pnt2'... )")}
   
 coreDir <-  paste0("/", crop, "/", lvl, "/", group, "/", area)
 validationDir <-  paste0(coreDir, "/gap_validation/buffer_100km/high_density/",pnt)
+results_dir <- paste0(baseDir, "/results")
+
 
 sdmDir <- switch (as.character(validation),
   "FALSE" = paste0(results_dir, coreDir, "/prj_models", "/",group ,"_prj_median.tif"),
@@ -74,14 +99,24 @@ outDir <- switch (as.character(validation),
 )
 
 delaDir <- switch (as.character(validation),
-  "FALSE" = paste0(results_dir,coreDir , "/gap_models/delaunay/raw_delaunay.shp"),
-  "TRUE"  =  paste0(results_dir, validationDir,"/03_gap_models/delaunay/raw_delaunay.shp")
+  "FALSE" = paste0(results_dir,coreDir , "/gap_models"),
+  "TRUE"  =  paste0(results_dir, validationDir,"/03_gap_models")
+)
+occDir <- switch (as.character(validation),
+  "FALSE" = paste0(baseDir,"/input_data/by_crop", coreDir, "/occurrences/Occ"),
+  "TRUE"  = paste0(results_dir, validationDir,"/01_selected_points/Occ")
 )
 
+cat(">>> Importing Delaunays triangulation \n \n")
 
-
-
+if(file.exists(paste0(delaDir, "/delaunay/raw_delaunay.shp")) == FALSE ){
+  delaunaypolygons(x = shapefile(occDir) , outdir = delaDir)
+  cat("Delaunay was successfully created \n \n")
   
+  }else{ cat("Delaunay is already created \n \n") }
+    
+    
+cat("Importing SDM raster \n")  
 SDM <- raster(sdmDir)
 
 SDM[!is.na(SDM[])] <- 1
@@ -95,7 +130,7 @@ sdm_pol_sf <- rmapshaper::ms_simplify(sdm_pol)
 rm(sdm_pol)
 
 
-delanuay <- shapefile(delaDir)
+delanuay <- shapefile(paste0(delaDir, "/delaunay/raw_delaunay.shp"))
 #change path after
 delanuay@bbox <- as.matrix(extent(SDM))
 
@@ -382,12 +417,12 @@ a <- c("americas", "world")
 g <- c("mesoamerican", "andean")
 c <- "common_bean"
 lvl <- "lvl_1"
-# results_dir <- "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/results" 
+# results_dir <- "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs" 
 
-delaunay_scoring(results_dir = results_dir, area = a[1], group = g[1], crop = c, lvl = "lvl_1", ncores = 10, validation = FALSE , pnt = NULL )
+delaunay_scoring(baseDir = baseDir, area = a[1], group = g[1], crop = c, lvl = "lvl_1", ncores = 10, validation = FALSE , pnt = NULL )
 
 
-
+plot(shapefile("file://dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/results/common_bean/lvl_1/mesoamerican/americas/gap_validation/buffer_100km/high_density/pnt1/01_selected_points/Occ"))
 
 
  
