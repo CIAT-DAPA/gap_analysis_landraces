@@ -105,7 +105,7 @@ validation_process <- function(occName = occName,
                                           msk = mask,
                                           buff_dist = buffer_radius,
                                           format = "GTiff",
-                                          filename = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/01_selected_points/buffer_radius_to_omit.tif"))
+                                          filename = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/01_selected_points"))
       
       cat(">>> Identify and exclude of the analysis points within the buffer radius ... \n")
       id_pnts <- raster::extract(x = radius, y = occ[,c("lon", "lat")])
