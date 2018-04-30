@@ -40,7 +40,8 @@ create_buffers <- function(xy, msk, buff_dist = 0.5, format = "GTiff", filename)
     buffer_rs[which(is.na(msk[]))] <- NA
     
     ##writing raster
-    writeRaster(buffer_rs, filename, format=format, overwrite=T)
+    writeRaster(buffer_rs, paste0(filename, "/buffer_radius_to_omit.tif"), format=format, overwrite=T)
+    writeOGR(obj = buffer_rs, dsn = filename, layer = "buffer_radius_to_omit_shp", driver = "ESRI Shapefile", overwrite_layer=TRUE  )
   } else{
     ##load raster in case it exists
     buffer_rs <- raster(filename)
