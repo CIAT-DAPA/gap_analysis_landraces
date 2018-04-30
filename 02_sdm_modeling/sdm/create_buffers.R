@@ -18,7 +18,7 @@ create_buffers <- function(xy, msk, buff_dist = 0.5, format = "GTiff", filename)
   
   msk <- raster(msk)
   
-  if (!file.exists(filename)) {
+  if (!file.exists(paste0(filename, "/buffer_radius_to_omit.tif"))) {
     ##ensure msk has a CRS assigned to
     proj4string(msk) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
     
