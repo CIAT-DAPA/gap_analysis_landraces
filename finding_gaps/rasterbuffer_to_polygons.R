@@ -82,7 +82,7 @@ rasterbuffer_To_polygons <- function( baseDir,area, group, crop, lvl, pnt = NULL
   results_dir <- paste0(baseDir, "/results")
   sdmDir <- paste0(results_dir, validationDir, "/02_sdm_results/prj_models/",group ,"_prj_median.tif")
   
-  if(file.exists(paste0(results_dir, validationDir,"/01_selected_points/buffer_radius_to_omit.shp") )){stop("The buffer shapefile already exists")}
+  if(!file.exists(paste0(results_dir, validationDir,"/01_selected_points/buffer_radius_to_omit.shp") )){
   
   #Setting directories path 
   
@@ -108,8 +108,12 @@ rasterbuffer_To_polygons <- function( baseDir,area, group, crop, lvl, pnt = NULL
   buff_pol <- rasterToPolygons(buff, dissolve = TRUE)
   cent <- getSpPPolygonsLabptSlots(buff_pol)[2,]
   buffer_prime <- buffer(SpatialPoints(t(as.data.frame(cent)), proj4string =  crs(SDM)), width=bf_rad*1000)
-  writeOGR(obj = buffer_prime, dsn = paste0(results_dir, validationDir,"/01_selected_points"), layer = "buffer_radius_to_omit", driver = "ESRI Shapefile")
-  
+  buffer_prime <- SpatialPolygonsDataFrame(buffer_prime, data = data.frame(1))
+    writeOGR(obj = buffer_prime, dsn = paste0(results_dir, validationDir,"/01_selected_points"), layer = "buffer_radius_to_omit", driver = "ESRI Shapefile",overwrite_layer=TRUE)
+  }else{
+    cat("File already Exists \n")
+    
+  }#end if
 }#end function
 
 a <- c("americas", "world")

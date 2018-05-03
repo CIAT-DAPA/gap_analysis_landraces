@@ -98,16 +98,13 @@ validation_metrics <- function(n.sample = 100, bf_rad = 50, knl.dens = 30, baseD
 cat(">>> Initializing validation process  \n \n")
 # gap score
 gp_m <- raster(paste0(outDir, "/", filename)) 
-  
-
-#Load raterized buffer and find the centroid of him
-if(file.exists(file.exists(paste0(results_dir, validationDir,"/01_selected_points/buffer_radius_to_omit.shp") )) == FALSE){
 SDM <- raster(sdmDir)
-
-buff <- raster(paste0(results_dir, validationDir,"/01_selected_points/buffer_radius_to_omit.tif"))
-
 occ <- shapefile(paste0(results_dir, validationDir, "/01_selected_points/Occ.shp"))
 
+
+if(!file.exists(file.exists(paste0(results_dir, validationDir,"/01_selected_points/buffer_radius_to_omit.shp") )) ){
+
+buff <- raster(paste0(results_dir, validationDir,"/01_selected_points/buffer_radius_to_omit.tif"))
 buff <- raster::crop(buff, extent(occ))
 
 cat("Initializing process of find buffers centroid \n ")
@@ -119,16 +116,11 @@ cent <- getSpPPolygonsLabptSlots(buff_pol)[2,]
 cat("Creating buffer with .shp format \n")
 
 
-
-
-
-
-
 }else{
-  
+  cat("Loading buffer ... \n")
   buff_prime <- shapefile(paste0(results_dir, validationDir,"/01_selected_points/buffer_radius_to_omit.shp"))
   cent <- getSpPPolygonsLabptSlots(buff_prime)
-  
+  cat("Buffer loaded")
 }
 # End find buffer centroid
 
@@ -206,12 +198,7 @@ results <- foreach( i = 1:n.sample, .combine = "rbind", .packages = c("raster", 
 }
 stopCluster(cl)
 
-
-
 scl <- sort(unique(bd$score), decreasing = T)
-
-
-
 
 results <- as.data.frame(results)
 names(results) <- c("score", "auc", "se", "es", "tss")
