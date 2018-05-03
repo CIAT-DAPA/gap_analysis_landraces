@@ -101,7 +101,7 @@ gp_m <- raster(paste0(outDir, "/", filename))
   
 
 #Load raterized buffer and find the centroid of him
-
+if(file.exists(file.exists(paste0(results_dir, validationDir,"/01_selected_points/buffer_radius_to_omit.shp") )) == FALSE){
 SDM <- raster(sdmDir)
 
 buff <- raster(paste0(results_dir, validationDir,"/01_selected_points/buffer_radius_to_omit.tif"))
@@ -116,21 +116,26 @@ cat("Converting raster to polygons, this procces will take several minutes ... \
 buff_pol <- rasterToPolygons(buff, dissolve = TRUE)
 
 cent <- getSpPPolygonsLabptSlots(buff_pol)[2,]
-# End find buffer centroid
-
-
-
-
-#create a buffer whit shp  format
 cat("Creating buffer with .shp format \n")
 
-buffer_prime <- buffer(SpatialPoints(t(as.data.frame(cent)), proj4string =  crs(SDM)), width=100000)
 
-occur <- shapefile(occDir)
 
+
+
+
+
+}else{
+  
+  buff_prime <- shapefile(paste0(results_dir, validationDir,"/01_selected_points/buffer_radius_to_omit.shp"))
+  cent <- getSpPPolygonsLabptSlots(buff_prime)
+  
+}
+# End find buffer centroid
+
+#buffer_prime <- buffer(SpatialPoints(t(as.data.frame(cent)), proj4string =  crs(SDM)), width=100000)
+#occur <- shapefile(occDir)
 
 buff_50 <- buffer(SpatialPoints(t(as.data.frame(cent)), proj4string =  crs(SDM)), width = bf_rad*1000 )
-
 scr <- raster::extract(gp_m, buff_50)
 scr <- unlist(scr)
 scr <- scr[complete.cases(scr)]

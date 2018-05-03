@@ -52,11 +52,11 @@ source(paste(srcDir, "/preprocessing/config.R", sep = ""))
 
 
 
-rasterbuffer_To_polygons <- function( baseDir,area, group, crop, lvl, pnt = NULL, dens.level = "high_density" ){
+rasterbuffer_To_polygons <- function( baseDir,area, group, crop, lvl, pnt = NULL, dens.level = "high_density", bf_rad = 100  ){
   
   
   cat(
-    "        oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo       
+    "        ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++       
     N`                                                                                  `N       
     N`                                                                                  `N       
     N`                                                                                  `N       
@@ -80,6 +80,7 @@ rasterbuffer_To_polygons <- function( baseDir,area, group, crop, lvl, pnt = NULL
   coreDir <-  paste0("/", crop, "/", lvl, "/", group, "/", area)
   validationDir <-  paste0(coreDir, "/gap_validation/buffer_100km/",dens.level ,"/",pnt)
   results_dir <- paste0(baseDir, "/results")
+  sdmDir <- paste0(results_dir, validationDir, "/02_sdm_results/prj_models/",group ,"_prj_median.tif")
   
   if(file.exists(paste0(results_dir, validationDir,"/01_selected_points/buffer_radius_to_omit.shp") )){stop("The buffer shapefile already exists")}
   
@@ -92,7 +93,8 @@ rasterbuffer_To_polygons <- function( baseDir,area, group, crop, lvl, pnt = NULL
   
   #Load raterized buffer and find the centroid of him
   
- 
+  SDM <- raster(sdmDir)
+  
   
   buff <- raster(paste0(results_dir, validationDir,"/01_selected_points/buffer_radius_to_omit.tif"))
   
@@ -105,7 +107,7 @@ rasterbuffer_To_polygons <- function( baseDir,area, group, crop, lvl, pnt = NULL
   
   buff_pol <- rasterToPolygons(buff, dissolve = TRUE)
   cent <- getSpPPolygonsLabptSlots(buff_pol)[2,]
-  buffer_prime <- buffer(SpatialPoints(t(as.data.frame(cent)), proj4string =  crs(SDM)), width=100000)
+  buffer_prime <- buffer(SpatialPoints(t(as.data.frame(cent)), proj4string =  crs(SDM)), width=bf_rad*1000)
   writeOGR(obj = buffer_prime, dsn = paste0(results_dir, validationDir,"/01_selected_points"), layer = "buffer_radius_to_omit", driver = "ESRI Shapefile")
   
 }#end function
@@ -124,9 +126,12 @@ progress <- function(n) setTkProgressBar(pb, n)
 opts <- list(progress=progress)
 
 
-results <- foreach( i = 1:length(pnt), .combine = "rbind", .packages = c("raster", "pROC", "dplyr", "sdm"), .options.snow=opts)  %dopar% {
-
-  rasterbuffer_To_polygons( baseDir = baseDir, area = a[1], group = g[1], crop = c, lvl = lvl, pnt = pnt[i], dens.level = "high_density"  )
+foreach( i = 1:length(pnt), .combine = "rbind", .packages = c("raster", "rgdal", "dplyr", "sdm"), .options.snow=opts)  %dopar% {
+  suppressMessages(if(!require(pacman)){install.packages('pacman'); library(pacman)} else {library(pacman)})
+  pacman::p_load(dplyr, psych, tm, raster, rgdal, rasterVis, rgeos, 
+                 deldir, sp, tidyverse, FactoMineR, factoextra, ggdendro, 
+                 rlang, fastcluster, sf, doParallel, rmapshaper, doSNOW, tcltk ) 
+  rasterbuffer_To_polygons( baseDir = baseDir, area = a[1], group = g[1], crop = c, lvl = lvl, pnt = pnt[i], dens.level = "high_density" , bf_rad = 100 )
   
 }
 stopCluster(cl)
