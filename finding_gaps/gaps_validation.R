@@ -47,86 +47,124 @@ source(paste(srcDir, "/preprocessing/config.R", sep = ""))
 
 #############=++++=+++++++=+===+====+++++++
 
-area <- c("americas", "world")
-group <- c("mesoamerican", "andean")
-crop <- "common_bean"
 
 
-#### Create all delaunay triangulation for each crop at each level
-for(i in 1:2){
+
+
+
+validation_metrics <- function(n.sample = 100, bf_rad = 50, knl.dens = 30, baseDir,area, group, crop, lvl, pnt = NULL, ncores = 1, dens.level = "high_density" ,filename = "gap_score_cost_dist.tif" ){
+
   
-  for(j in  1:2){ 
-    
-    outDir <- paste0(level_result_dir,"/", group[i], "/", area[j], "/gap_models" )
-    occDir <- paste0(input_data_dir,"/by_crop/",crop, "/",level , "/", group[i], "/",area[j], "/occurrences/Occ")
-    x <- shapefile(occDir)
-   delaunaypolygons(x = x , outdir = outDir)
-   
-    
-  }
-}
-### END create delaunays triangulations
-
-
+  cat(
+    "        oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo       
+    N`                                                                                  `N       
+    N`                                                                                  `N       
+    N`                                                                                  `N       
+    N`                 `..`               `.....`        `..`         `...              `N       
+    N`                 omMh-            -sdddmddd/      `oMNd/       .sNNd.             `N       
+    N`                /mooms.         `omh:`   .-.      `sNyhd:     `omsdm-             `N       
+    N`               -dy.`sN+`        /mh-              `sNo:dh-   `+mo-dm-             `N       
+    N`              `yd-  `hm:        +ms`              `sN+ /mh. `/ms`-dm-             `N       
+    N`              sNmddddmMh-       /my-              `sN+ `+Ns`:dy` -dm-             `N       
+    N`             /my:-----sNs.      `sNy:`   `-.      `sN+  .sNhdh.  -dm-             `N       
+    N`            -dd-      `yN+`      `/yddddddh/      `om+   .yMd-   .dd.             `N       
+    N`            `.`        `..          `.....`        `.`    `..     ..              `N       
+    N`                                                                                  `N       
+    N`                                                                                  `N       
+    N++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++N       
+    \n \n" )
+  
+  
+  if(is.null(pnt)){stop("You should set a value for pnt. E.j ('pnt1' or 'pnt2'... )")}
+  if(bf_rad >= 100){stop("Buffer radius must be less than 100 km")}
+  
+  
+  coreDir <-  paste0("/", crop, "/", lvl, "/", group, "/", area)
+  validationDir <-  paste0(coreDir, "/gap_validation/buffer_100km/",dens.level,"/",pnt)
+  results_dir <- paste0(baseDir, "/results")
+  
+#Setting directories path 
+  
+  sdmDir <- paste0(results_dir, validationDir, "/02_sdm_results/prj_models/",group ,"_prj_median.tif")
+  
+  outDir <- paste0(results_dir, validationDir,"/03_gap_models")
+  
+  delaDir <- paste0(results_dir, validationDir,"/03_gap_models")
+  
+  occDir <- paste0(baseDir,"/input_data/by_crop", coreDir, "/occurrences/Occ")
+  
+  
+  
+cat(">>> Initializing validation process  \n \n")
 # gap score
-gp_m <- raster("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/results/common_bean/lvl_1/mesoamerican/americas/gap_validation/buffer_100km/high_density/pnt1/03_gap_models/gap_score_cost_dist.tif")
+gp_m <- raster(paste0(outDir, "/", filename)) 
+  
 
 #Load raterized buffer and find the centroid of him
-buff <- raster("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/results/common_bean/lvl_1/mesoamerican/americas/gap_validation/buffer_100km/high_density/pnt1/01_selected_points/buffer_radius_to_omit.tif")
 
-buff
+SDM <- raster(sdmDir)
+
+buff <- raster(paste0(results_dir, validationDir,"/01_selected_points/buffer_radius_to_omit.tif"))
+
+occ <- shapefile(paste0(results_dir, validationDir, "/01_selected_points/Occ.shp"))
+
+buff <- raster::crop(buff, extent(occ))
+
+cat("Initializing process of find buffers centroid \n ")
+cat("Converting raster to polygons, this procces will take several minutes ... \n \n")
+
 buff_pol <- rasterToPolygons(buff, dissolve = TRUE)
-cent <- getSpPPolygonsLabptSlots(buff_pol)
+
+cent <- getSpPPolygonsLabptSlots(buff_pol)[2,]
 # End find buffer centroid
 
-cent<- c(-97.100000 , 18.866700)
+
 
 
 #create a buffer whit shp  format
-buffer_prime <- buffer(SpatialPoints(cent, proj4string =  crs(SDM)), width=100000)
+cat("Creating buffer with .shp format \n")
 
-
-occDir <- paste0(input_data_dir,"/by_crop/",crop, "/",level , "/", group[1], "/",area[1], "/occurrences/Occ")
+buffer_prime <- buffer(SpatialPoints(t(as.data.frame(cent)), proj4string =  crs(SDM)), width=100000)
 
 occur <- shapefile(occDir)
 
 
-bf_rad <- 50000
-buff_50 <- buffer(SpatialPoints(cent, proj4string =  crs(SDM)), width =bf_rad)
+buff_50 <- buffer(SpatialPoints(t(as.data.frame(cent)), proj4string =  crs(SDM)), width = bf_rad*1000 )
 
 scr <- raster::extract(gp_m, buff_50)
 scr <- unlist(scr)
 scr <- scr[complete.cases(scr)]
 
-knl <- raster::raster("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/results/common_bean/lvl_1/mesoamerican/americas/gap_validation/buffer_100km/high_density/pnt1/03_gap_models/kernel.tif")
-knl[knl[] < 30] <- NA
-knl[knl[]>= 30] <- 1
+# importing kernel density raster to extrac the point in the higgest densities areas
+cat("Importing kernel density raster to extract points in the higgest densities areas \n")
+
+knl <- raster(paste0(outDir, "/kernel.tif")) 
+knl[knl[] <  knl.dens] <- NA
+knl[knl[]>=  knl.dens] <- 1
 b_occr <- raster::as.data.frame(knl, xy=T)
 b_occr <- b_occr[complete.cases(b_occr),]
 
-#b_occr <- read.csv("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/results/common_bean/lvl_1/mesoamerican/americas/gap_validation/buffer_100km/high_density/pnt1/01_selected_points/occ_mesoamerican.csv")
-
 
 cords_dummy <- b_occr[,1:2] 
-ifelse(nrow(cords_dummy) >= 1000, n.sample <- 1000, n.sample <- nrow(cords_dummy))
+
+if(n.sample > nrow(cords_dummy)){stop("The number of n.sample is greater than the total coords in the selected density area")}
 n_cords <- base::sample(nrow(cords_dummy), n.sample, replace = F  )
 
 
-
-ncores <- detectCores(all.tests = FALSE, logical = TRUE)
-cl <- makeCluster(ncores - 10)
+cl <- makeSOCKcluster(ncores)
 registerDoSNOW(cl)
 
-n.boos <- 1000
 
-pb <- tkProgressBar(max=n.boos)
+
+pb <- tkProgressBar(max=n.sample)
 progress <- function(n) setTkProgressBar(pb, n)
 opts <- list(progress=progress)
 
-
-paralel <- foreach( i = 1:n.boos, .combine = "rbind", .packages = c("raster", "pROC", "dplyr", "sdm"), .options.snow=opts)  %dopar% {
-  cord <- cords_dummy[n_cords[i], ]
-  buf_cord <- buffer(SpatialPoints(cord, proj4string =  crs(SDM)), width=bf_rad)
+cat(paste(">>> Initializing process to calculate the performance parameters for the score in:", pnt, "\n \n "))
+results <- foreach( i = 1:n.sample, .combine = "rbind", .packages = c("raster", "pROC", "dplyr", "sdm"), .options.snow=opts)  %dopar% {
+ 
+   cord <- cords_dummy[n_cords[i], ]
+   buf_cord <- buffer(SpatialPoints(cord, proj4string =  crs(SDM)), width=bf_rad*1000)
   #dummy_buff <- buffer(buf_cord, width = bf_rad)
   
   #cat(paste("Extrayendo datos del buffer(it can take a long time): " ,i, "\n \n"))
@@ -163,12 +201,25 @@ paralel <- foreach( i = 1:n.boos, .combine = "rbind", .packages = c("raster", "p
   
   
 }
-paralel <- as.data.frame(paralel)
-names(paralel) <- c("score", "auc", "se", "es", "tss")
-
 stopCluster(cl)
 
- fitdistr(cost_dist[!is.na(cost_dist[])], densfun =  "beta", start = list(shape1 = 1, shape2 = 1),lower = 0.001) 
+results <- as.data.frame(results)
+names(results) <- c("score", "auc", "se", "es", "tss")
+
+cat(paste(">>> Saving results in:",paste0(outDir, "/validation_metrics.RDS"), "\n" ))
+
+saveRDS(results, file = paste0(outDir, "/validation_metrics_", substr(filename, 11, 14),".rds"))
+
+}# end function
+
+a <- c("americas", "world")
+g <- c("mesoamerican", "andean")
+c <- "common_bean"
+lvl <- "lvl_1"
+
+validation_metrics(n.sample = 1000, bf_rad = 50, knl.dens = 30, baseDir = baseDir,area = a[1], group = g[1] , crop = c, lvl = "lvl_1", pnt = "pnt1", ncores = 15, dens.level = "high_density" ,filename = "gap_score_delanuay.tif" )
+
+# fitdistr(cost_dist[!is.na(cost_dist[])], densfun =  "beta", start = list(shape1 = 1, shape2 = 1),lower = 0.001) 
 
 
 

@@ -53,7 +53,7 @@ source(paste(srcDir, "/preprocessing/config.R", sep = ""))
 
 
 
-delaunay_scoring <- function(baseDir ,  area, group, crop, lvl , ncores = NULL, validation = FALSE , pnt = NULL  ) {
+delaunay_scoring <- function(baseDir ,  area, group, crop, lvl , ncores = NULL, validation = FALSE , pnt = NULL, dens.level= "high_density" ) {
 
   cat(
     "        oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo       
@@ -84,7 +84,7 @@ if(validation == FALSE){cat(">>> Initializing process to calculte a gap score us
 if(validation == TRUE && is.null(pnt)){stop("If validation = TRUE then you should set a value for pnt. E.j ('pnt1' or 'pnt2'... )")}
   
 coreDir <-  paste0("/", crop, "/", lvl, "/", group, "/", area)
-validationDir <-  paste0(coreDir, "/gap_validation/buffer_100km/high_density/",pnt)
+validationDir <-  paste0(coreDir, "/gap_validation/buffer_100km/", dens.level,"/",pnt)
 results_dir <- paste0(baseDir, "/results")
 
 
@@ -256,9 +256,10 @@ if( is.null(ncores)){
  # on.exit(stopCluster(cl))
   
   ntasks <- length(delanuay)
-  #pb <- tkProgressBar(max=ntasks)
-  progress <-  function(n) cat(sprintf(" Number of task done: %d of %.0f  \n", n, ntasks ))
-  #function(n) setTkProgressBar(pb, n)
+  pb <- tkProgressBar(max=ntasks)
+  progress <-  function(n) setTkProgressBar(pb, n)
+  #function(n) cat(sprintf(" Number of task done: %d of %.0f  \n", n, ntasks ))
+  
   opts <- list(progress=progress)
  
   delaDist_list <- foreach(x = 1:length(delanuay), .options.snow=opts, .packages = c("raster", "sp", "rgdal") )%dopar% {
@@ -406,7 +407,7 @@ gap_score <- merge(dist_out_score, gap_score)
 
 cat(paste("Writing raster in route: ", paste0(outDir,"/delanuay_gap_score.tif"), "\n \n"))
 
-writeRaster(gap_score, paste0(outDir,"/delanuay_gap_score.tif"), format = "GTiff", overwrite= T)
+writeRaster(gap_score, paste0(outDir,"/gap_score_delanuay.tif"), format = "GTiff", overwrite= T)
 
 
 
