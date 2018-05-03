@@ -74,7 +74,6 @@ rasterbuffer_To_polygons <- function( baseDir,area, group, crop, lvl, pnt = NULL
     N++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++N       
     \n \n" )
   
-  if(file.exists(paste0(results_dir, validationDir,"/01_selected_points/buffer_radius_to_omit.shp") )){stop("The buffer shapefile already exists")}
   if(is.null(pnt)){stop("You should set a value for pnt. E.j ('pnt1' or 'pnt2'... )")}
 
   
@@ -82,26 +81,18 @@ rasterbuffer_To_polygons <- function( baseDir,area, group, crop, lvl, pnt = NULL
   validationDir <-  paste0(coreDir, "/gap_validation/buffer_100km/",dens.level ,"/",pnt)
   results_dir <- paste0(baseDir, "/results")
   
+  if(file.exists(paste0(results_dir, validationDir,"/01_selected_points/buffer_radius_to_omit.shp") )){stop("The buffer shapefile already exists")}
+  
   #Setting directories path 
   
-  sdmDir <- paste0(results_dir, validationDir, "/02_sdm_results/prj_models/",group ,"_prj_median.tif")
   
-  outDir <- paste0(results_dir, validationDir,"/03_gap_models")
+  cat(">>> Initializing convertion process  \n \n")
   
-  delaDir <- paste0(results_dir, validationDir,"/03_gap_models")
-  
-  occDir <- paste0(baseDir,"/input_data/by_crop", coreDir, "/occurrences/Occ")
-  
-  
-  
-  cat(">>> Initializing validation process  \n \n")
-  # gap score
-  gp_m <- raster(paste0(outDir, "/", filename)) 
   
   
   #Load raterized buffer and find the centroid of him
   
-  SDM <- raster(sdmDir)
+ 
   
   buff <- raster(paste0(results_dir, validationDir,"/01_selected_points/buffer_radius_to_omit.tif"))
   
@@ -125,6 +116,31 @@ c <- "common_bean"
 lvl <- "lvl_1"
 pnt <- paste0("pnt", 1:5)
 
+cl <- makeSOCKcluster(length(pnt))
+registerDoSNOW(cl)
 
-rasterbuffer_To_polygons( baseDir,area, group, crop, lvl, pnt = NULL, dens.level = "high_density"  )
+pb <- tkProgressBar(max=length(pnt))
+progress <- function(n) setTkProgressBar(pb, n)
+opts <- list(progress=progress)
+
+
+results <- foreach( i = 1:length(pnt), .combine = "rbind", .packages = c("raster", "pROC", "dplyr", "sdm"), .options.snow=opts)  %dopar% {
+
+  rasterbuffer_To_polygons( baseDir = baseDir, area = a[1], group = g[1], crop = c, lvl = lvl, pnt = pnt[i], dens.level = "high_density"  )
+  
+}
+stopCluster(cl)
+
+
+
+
+
+
+
+
+
+
+
+
+
 

@@ -154,8 +154,6 @@ n_cords <- base::sample(nrow(cords_dummy), n.sample, replace = F  )
 cl <- makeSOCKcluster(ncores)
 registerDoSNOW(cl)
 
-
-
 pb <- tkProgressBar(max=n.sample)
 progress <- function(n) setTkProgressBar(pb, n)
 opts <- list(progress=progress)
