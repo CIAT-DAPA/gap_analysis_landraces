@@ -169,10 +169,10 @@ results <- foreach( i = 1:n.sample, .combine = "rbind", .packages = c("raster", 
   
   #cat(paste("Extrayendo datos del buffer(it can take a long time): " ,i, "\n \n"))
   
-  
   no_gap <- raster::extract(gp_m, buf_cord)
   no_gap <- unlist(no_gap)
   no_gap <- no_gap[complete.cases(no_gap)]
+  
   if(length(no_gap)!=0){
     ng <- data.frame( score = no_gap, observe = rep(0, length(no_gap) ))
     gap <- data.frame(score = scr, observe = rep(1, length(scr)))
@@ -203,10 +203,17 @@ results <- foreach( i = 1:n.sample, .combine = "rbind", .packages = c("raster", 
 }
 stopCluster(cl)
 
+
+
+scl <- sort(unique(bd$score), decreasing = T)
+
+
+
+
 results <- as.data.frame(results)
 names(results) <- c("score", "auc", "se", "es", "tss")
 
-cat(paste(">>> Saving results in:",paste0(outDir, "/validation_metrics.RDS"), "\n" ))
+cat(paste(">>> Saving results in:",paste0(outDir, "/validation_metrics_", substr(filename, 11, 14),".rds"), "\n" ))
 
 saveRDS(results, file = paste0(outDir, "/validation_metrics_", substr(filename, 11, 14),".rds"))
 
@@ -217,7 +224,7 @@ g <- c("mesoamerican", "andean")
 c <- "common_bean"
 lvl <- "lvl_1"
 
-validation_metrics(n.sample = 1000, bf_rad = 50, knl.dens = 30, baseDir = baseDir,area = a[1], group = g[1] , crop = c, lvl = "lvl_1", pnt = "pnt1", ncores = 15, dens.level = "high_density" ,filename = "gap_score_delanuay.tif" )
+validation_metrics(n.sample = 1000, bf_rad = 50, knl.dens = 20, baseDir = baseDir,area = a[1], group = g[1] , crop = c, lvl = "lvl_1", pnt = "pnt1", ncores = 15, dens.level = "high_density" ,filename = "gap_score_delanuay.tif" )
 
 # fitdistr(cost_dist[!is.na(cost_dist[])], densfun =  "beta", start = list(shape1 = 1, shape2 = 1),lower = 0.001) 
 
