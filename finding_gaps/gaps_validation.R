@@ -102,7 +102,7 @@ SDM <- raster(sdmDir)
 occ <- shapefile(paste0(results_dir, validationDir, "/01_selected_points/Occ.shp"))
 
 
-if(!file.exists(file.exists(paste0(results_dir, validationDir,"/01_selected_points/buffer_radius_to_omit.shp") )) ){
+if(!file.exists(paste0(results_dir, validationDir,"/01_selected_points/buffer_radius_to_omit.shp") ) ){
 
 buff <- raster(paste0(results_dir, validationDir,"/01_selected_points/buffer_radius_to_omit.tif"))
 buff <- raster::crop(buff, extent(occ))
@@ -120,7 +120,8 @@ cat("Creating buffer with .shp format \n")
   cat("Loading buffer ... \n")
   buff_prime <- shapefile(paste0(results_dir, validationDir,"/01_selected_points/buffer_radius_to_omit.shp"))
   cent <- getSpPPolygonsLabptSlots(buff_prime)
-  cat("Buffer loaded")
+  cent <- t(cent)
+  cat("Buffer loaded :)")
 }
 # End find buffer centroid
 
