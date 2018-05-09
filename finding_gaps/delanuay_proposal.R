@@ -405,9 +405,9 @@ dist_out_score <-  dist_out_norm * out
 
 gap_score <- merge(dist_out_score, gap_score)
 
-cat(paste("Writing raster in route: ", paste0(outDir,"/delanuay_gap_score.tif"), "\n \n"))
+cat(paste("Writing raster in route: ", paste0(outDir,"/gap_score_delaunay.tif"), "\n \n"))
 
-writeRaster(gap_score, paste0(outDir,"/gap_score_delanuay.tif"), format = "GTiff", overwrite= T)
+writeRaster(gap_score, paste0(outDir,"/gap_score_delaunay.tif"), format = "GTiff", overwrite= T)
 
 
 
@@ -423,7 +423,6 @@ lvl <- "lvl_1"
 delaunay_scoring(baseDir = baseDir, area = a[1], group = g[1], crop = c, lvl = "lvl_1", ncores = 10, validation = FALSE , pnt = NULL )
 
 
-plot(shapefile("file://dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/results/common_bean/lvl_1/mesoamerican/americas/gap_validation/buffer_100km/high_density/pnt1/01_selected_points/Occ"))
 
 
  
