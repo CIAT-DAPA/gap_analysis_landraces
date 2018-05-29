@@ -2,11 +2,8 @@
 # H. Achicanoy
 # CIAT, 2018
 
-suppressMessages(library(raster))
-suppressMessages(library(ff))
-suppressMessages(library(data.table))
-suppressMessages(library(gtools))
-suppressMessages(library(velox))
+suppressMessages(if(!require(pacman)){install.packages("pacman");library(pacman)}else{library(pacman)})
+pacman::p_load(raster, ff, data.table, gtools, velox)
 
 do.projections <- function(k = m_i, pnts = clim_table, tmpl_raster = mask)
 {

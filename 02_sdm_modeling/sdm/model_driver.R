@@ -1,16 +1,15 @@
-#Run SDMs
-#Chrystiam Sosa, Julian Ramirez-Villegas
-#CIAT, Nov 2017
+# Run SDMs
+# Chrystiam Sosa, Julian Ramirez-Villegas
+# CIAT, Nov 2017
 
-#base directory
-#baseDir <- "~/nfs/workspace_cluster_9/gap_analysis_landraces"
-#baseDir <- "//dapadfs/Workspace_cluster_9/gap_analysis_landraces"
+# Base directory
+# baseDir <- "~/nfs/workspace_cluster_9/gap_analysis_landraces"
+# baseDir <- "//dapadfs/Workspace_cluster_9/gap_analysis_landraces"
 
-#software directory
-#srcDir <- paste(baseDir,"/Scripts",sep="")
+# Software directory
+# srcDir <- paste(baseDir,"/Scripts",sep="")
 
-#source functions
-
+# Source functions
 model_driver <- function(sp_Dir, mask, occName, extension_r, all, overwrite, clsModel, correlation){
   
   if(!file.exists(paste0(sp_Dir, "/sdm_variables_selected.csv"))){
@@ -21,13 +20,12 @@ model_driver <- function(sp_Dir, mask, occName, extension_r, all, overwrite, cls
     mask <- mask
     
     # selected genepool occurrences
-    occFile <- paste(classResults, "/genepool_predicted.csv", sep = "")
+    occFile <- paste0(classResults, "/genepool_predicted_all.csv")
     
-    #SWD using all variables provided
+    # SWD using all variables provided
     
-    var_names_generic <- list.files(climDir, pattern = paste0(extension_r, "$"), full.names = F); var_names_generic <-gsub(extension_r, "", var_names_generic)
-    var_names_sp <- list.files(paste0(baseDir, "/input_data/by_crop/", crop, "/raster/", region), pattern = paste0(extension_r, "$"), full.names = F); var_names_sp <- gsub(extension_r, "", var_names_sp)
-    # var_names_sp <- var_names_sp[!grepl("cost_dist",var_names_sp)]
+    var_names_generic <- list.files(climDir, pattern = paste0(extension_r, "$"), full.names = F); var_names_generic <- gsub(extension_r, "", var_names_generic)
+    var_names_sp      <- list.files(paste0(baseDir, "/input_data/by_crop/", crop, "/raster/", region), pattern = paste0(extension_r, "$"), full.names = F); var_names_sp <- gsub(extension_r, "", var_names_sp)
     
     # create occurrences, background, and swd (occ+bg)
     if(overwrite == T){
@@ -36,7 +34,7 @@ model_driver <- function(sp_Dir, mask, occName, extension_r, all, overwrite, cls
       swd <- samples_create(occFile, occName, backDir, occDir, swdDir, mask, climDir, clim_spDir, extension_r, var_names_generic, var_names_sp, overwrite = F, correlation = correlation); gc()
     }
     
-    #Getting variables to use in the SDM
+    # Getting variables to use in the SDM
     var_names <- colnames(swd)[!colnames(swd) %in% c("id", "species", "status", "lon", "lat")]
     write.csv(x = var_names, file = paste0(sp_Dir, "/sdm_variables_selected.csv"), row.names = F)
     

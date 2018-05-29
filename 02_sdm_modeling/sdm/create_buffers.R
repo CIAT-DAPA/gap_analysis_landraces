@@ -8,21 +8,20 @@
 # @param (string) format: output file format
 # @param (string) filename: output file name
 # @return (raster): rasterized buffer
+
 create_buffers <- function(xy, msk, buff_dist = 0.5, format = "GTiff", filename) {
   
-  suppressMessages(if(!require(SDMTools)){install.packages("SDMTools");library(SDMTools)}else{library(SDMTools)})
-  suppressMessages(if(!require(rgdal)){install.packages("rgdal");library(dplyr)}else{library(rgdal)})
-  suppressMessages(if(!require(maptools)){install.packages("maptools");library(dplyr)}else{library(maptools)})
-  suppressMessages(if(!require(raster)){install.packages("raster");library(raster)}else{library(raster)})
-  suppressMessages(if(!require(rgeos)){install.packages("rgeos");library(rgeos)}else{library(rgeos)})
+  suppressMessages(if(!require(pacman)){install.packages("pacman");library(pacman)}else{library(pacman)})
+  pacman::p_load(SDMTools, rgdal, maptools, raster, rgeos)
   
   msk <- raster(msk)
   
-  if (!file.exists(paste0(filename, "/buffer_radius_to_omit.tif"))) {
-    ##ensure msk has a CRS assigned to
+  if(!file.exists(paste0(filename, "/buffer_radius_to_omit.tif"))){
+    
+    # Ensure msk has a CRS assigned to
     proj4string(msk) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
     
-    ##making points spatial object with coordinates
+    # Making points spatial object with coordinates
     xy_coords <- as.data.frame(cbind(xy$lon, xy$lat))
     xy_coords <- xy_coords[complete.cases(xy_coords),]
     xy_coords <- unique(xy_coords)
@@ -30,25 +29,26 @@ create_buffers <- function(xy, msk, buff_dist = 0.5, format = "GTiff", filename)
     coordinates(xy_coords) <- ~x+y
     proj4string(xy_coords) <- CRS("+proj=longlat +datum=WGS84")
     
-    ##buffering
-    buffer <- gBuffer(xy_coords, width=buff_dist)
+    # Buffering
+    buffer <- gBuffer(xy_coords, width = buff_dist)
     
-    ##rasterizing and making it into a mask
+    # Rasterizing and making it into a mask
     buffer_rs <- rasterize(buffer, msk)
     buffer_rs[which(!is.na(buffer_rs[]))] <- 1
     buffer_rs[which(is.na(buffer_rs[]) & msk[] == 1)] <- 0
     buffer_rs[which(is.na(msk[]))] <- NA
     
-    ##writing raster
-    writeRaster(buffer_rs, paste0(filename, "/buffer_radius_to_omit.tif"), format=format, overwrite=T)
-    writeOGR(obj = buffer_rs, dsn = filename, layer = "buffer_radius_to_omit_shp", driver = "ESRI Shapefile", overwrite_layer=TRUE  )
-  } else{
-    ##load raster in case it exists
+    # Writing raster
+    writeRaster(buffer_rs, paste0(filename, "/buffer_radius_to_omit.tif"), format = format, overwrite = T)
+    writeOGR(obj = buffer_rs, dsn = filename, layer = "buffer_radius_to_omit_shp", driver = "ESRI Shapefile", overwrite_layer = T)
+    
+  } else {
+    # Load raster in case it exists
     buffer_rs <- raster(filename)
   }
   
-  ##return object
   return(buffer_rs)
+  
 }
 
 # testing the function
@@ -60,4 +60,3 @@ create_buffers <- function(xy, msk, buff_dist = 0.5, format = "GTiff", filename)
 # msk <- biolayers_cropc[[1]]; rm(biolayers_cropc)
 # msk[which(!is.na(msk[]))] <- 1
 # x <- create_buffers(xy, msk, buff_dist=0.5, format="GTiff", filename=paste(gap_dir,"/2686262/",run_version,"/modeling/alternatives/ca50_total_narea.tif",sep=""))
-

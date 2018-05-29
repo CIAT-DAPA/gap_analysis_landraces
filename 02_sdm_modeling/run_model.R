@@ -17,14 +17,10 @@ rm(OSys)
 srcDir <- paste(baseDir, "/scripts", sep = "")
 # Analysis region: "americas", "world"
 region <- "americas"
-# NOT TO RUN (crops directories and subdirectories)
-# source(paste0(srcDir,"/preprocessing/pre_config.R"))
 
 # Choose a directory for temporal raster files
 raster::rasterOptions(tmpdir = choose.dir(default = "", caption = "Please select the temporary folder")) # "D:/TEMP/CSOSSA"
-# for testing: raster::tmpDir()
 
-# Calling species to run
 # Configuring crop directories to run
 source(paste0(srcDir, "/preprocessing/config_crop.R"))
 
@@ -34,11 +30,10 @@ level_1 <- c("andean", "mesoamerican") # level 1: genepool
 level_2 <- c("nueva_granada", "peru", "chile", "durango-Jalisco", "mesoamerica","guatemala") # level 2: race
 level_3 <- NULL # level 3
 # x <- config_crop_dirs(baseDir, crop, level_1, level_2, level_3); rm(x)
-##########
 
 # Preparing inputs for each unit of analysis
 level <- "lvl_1"
-occName <- "mesoamerican" # "andean", "mesoamerican"
+occName <- "andean" # "andean", "mesoamerican"
 source(paste(srcDir, "/preprocessing/config.R", sep = ""))
 
 # Pre-process classified data
@@ -52,6 +47,21 @@ if(!file.exists(paste0(classResults, "/genepool_predicted_original.csv"))){
   file.rename(from = paste0(classResults, "/genepool_predicted.csv"), to = paste0(classResults, "/genepool_predicted_original.csv"))
   write.csv(accessions_predicted, paste0(classResults, "/genepool_predicted.csv"), row.names = F)
   rm(accessions_predicted)
+}
+if(file.exists(paste0(classResults, "/genepool_predicted_original.csv")) &
+   file.exists(paste0(classResults, "/genepool_predicted.csv"))){
+  
+  if(!file.exists(paste0(classResults, "/genepool_predicted_all.csv"))){
+    
+    accessions_predicted <- read.csv(paste0(classResults, "/genepool_predicted.csv"))
+    file.rename(from = paste0(classResults, "/genepool_predicted.csv"), to = paste0(classResults, "/genepool_predicted_all.csv"))
+    accessions_predicted <- accessions_predicted[accessions_predicted$status == "G",]
+    rownames(accessions_predicted) <- 1:nrow(accessions_predicted)
+    write.csv(accessions_predicted, paste0(classResults, "/genepool_predicted.csv"), row.names = F)
+    rm(accessions_predicted)
+    
+  }
+  
 }
 
 # Creating the cost distance function according with the level of analysis
@@ -70,11 +80,10 @@ clsModel <- "ensemble"
 correlation <- 3 #1 Correlation, 2 VIF, 3 PCA +VIF
 var_names <- model_driver(sp_Dir, mask, occName, extension_r, all = F, overwrite = T, clsModel, correlation = correlation)
 
-
 # Loading SWD file and occurrence data
 swdFile <- paste0(swdDir, "/swd_", occName, ".csv")
-spData <- read.csv(swdFile)
-spData <- spData[,c(3:ncol(spData))]
+spData  <- read.csv(swdFile)
+spData  <- spData[,c(3:ncol(spData))]
 names(spData)[1] <- occName
 
 # Loading raster files
@@ -96,7 +105,7 @@ if(file.exists(paste0(sp_Dir, "/calibration.csv"))){
 }
 
 # Running SDMs
-cat("Running modeling approach","\n")
+cat("Running modeling approach\n")
 m2 <- sdm_approach_function(occName = occName,
                             spData = spData,
                             model_outDir = sp_Dir,
