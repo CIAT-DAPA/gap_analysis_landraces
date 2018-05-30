@@ -6,7 +6,7 @@ sdm_approach_function <- function(occName, spData, model_outDir, var_names, nCor
   # Specify dataset for model
   frm <- as.formula(paste(occName, "~", paste(var_names, sep = "+", collapse = "+"), "+coords(lon+lat)", sep = ""))
   d <- sdm::sdmData(frm, train = spData)
-
+  
   # Running SDMs
   cat("running sdm platform using MaxEnt 3.4.1\n")
   
@@ -20,7 +20,6 @@ sdm_approach_function <- function(occName, spData, model_outDir, var_names, nCor
                    n = 1, # Replicates
                    modelSettings = list(maxent = list(feat = feat, beta = beta)),
                    var.selection = F,
-                   parallelSettings = list(ncore = nCores, method = "parallel"),
                    overwrite = F)
     
     #write model
@@ -30,5 +29,5 @@ sdm_approach_function <- function(occName, spData, model_outDir, var_names, nCor
   }
   
   return(m2)
- 
+  
 }

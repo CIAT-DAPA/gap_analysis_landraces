@@ -5,7 +5,8 @@
 #####################################
 #https://cran.r-project.org/web/packages/adehabitatHR/adehabitatHR.pdf
 
-require(spatstat);require(raster);require(sp);require(adehabitatHR);require(SDMTools);require(KernSmooth)
+suppressMessages(if(!require(pacman)){install.packages("pacman");library(pacman)}else{library(pacman)})
+pacman::p_load(spatstat, raster, sp, adehabitatHR, SDMTools, KernSmooth)
 
 ###############
 

@@ -16,12 +16,13 @@
 #out_dir <- gap_dir
 #env_score <- calc_env_score(lv_name="mesoamerican",clus_method="hclust_mahalanobis",sdm_dir,gap_dir,occ_dir,env_dir,out_dir)
 
-calc_env_score <- function(lv_name,clus_method="hclust_mahalanobis",sdm_dir,gap_dir,occ_dir,env_dir,out_dir) {
+calc_env_score <- function(lv_name, clus_method = "hclust_mahalanobis", sdm_dir, gap_dir, occ_dir, env_dir, out_dir){
   
-  if(!file.exists(paste(out_dir,"/env_score_",clus_method,".tif",sep=""))){
+  if(!file.exists(paste(out_dir, "/env_score_", clus_method, ".tif", sep = ""))){
     
     #load packages
-    require(raster); require(sdm); require(distances); require(matrixStats)
+    suppressMessages(if(!require(pacman)){install.packages("pacman");library(pacman)}else{library(pacman)})
+    pacman::p_load(raster, sdm, distances, matrixStats)
     
     #load sdm object
     sdm_obj <- read.sdm(paste(sdm_dir,"/./../sdm.sdm",sep=""))
@@ -31,13 +32,17 @@ calc_env_score <- function(lv_name,clus_method="hclust_mahalanobis",sdm_dir,gap_
     sdm_prj <- readAll(sdm_prj)
     
     #load accessions
-    occ_data <- read.csv(paste(occ_dir,"/occ_",lv_name,".csv",sep=""),header=T)
+    # occ_data <- read.csv(paste(occ_dir,"/occ_",lv_name,".csv",sep=""), header = T)
+    occ_data <- rgdal::readOGR(dsn = occ_dir, layer = "Occ")
+    occ_data <- unique(as.data.frame(occ_data)); rownames(occ_data) <- 1:nrow(occ_data)
+    names(occ_data)[2:3] <- c("lon", "lat")
     
     #load environmental layers
     env_names <- names(sdm_obj@data@features)[2:ncol(sdm_obj@data@features)]
     if ("monthCountByTemp10" %in% env_names) env_names <- env_names[-which(env_names=="monthCountByTemp10")]
     env_data <- stack(paste(env_dir,"/",env_names,".tif",sep=""))
     env_data <- readAll(env_data)
+    occ_data <- cbind(occ_data, raster::extract(x = env_data, y = occ_data[,c("lon", "lat")]))
     
     #load cluster dataset
     if(!file.exists(paste(gap_dir,"/ecogeo_",clus_method,".tif",sep=""))){
@@ -47,7 +52,7 @@ calc_env_score <- function(lv_name,clus_method="hclust_mahalanobis",sdm_dir,gap_
     }
     
     #list of clusters
-    lclus <- unique(na.omit(clus_rs[]))
+    lclus <- unique(clus_rs)
     
     #calculate minimum Euclidean distance for each cluster using the accessions within that cluster
     rs_euc <- raster(clus_rs)

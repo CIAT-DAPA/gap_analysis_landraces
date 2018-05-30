@@ -137,7 +137,10 @@ if(!file.exists(paste0(eval_sp_Dir, "/Final_evaluation.csv"))){
 
 # Kernel function #1 spatstat, #2 Adehabitat, #3 Kernsmooth
 if(!file.exists(paste0(gap_outDir, "/kernel.tif"))){
-  occurrences <- spData[spData[,1] == 1,]
+  spData <- readOGR(dsn = occDir, layer = "Occ")
+  spData <- unique(as.data.frame(spData)); rownames(spData) <- 1:nrow(spData)
+  names(spData)[2:3] <- c("lon", "lat")
+  spData[,1] <- 1
   kernel <- raster_kernel(mask = mask,
                           occurrences = spData[spData[,1] == 1,],
                           out_dir = gap_outDir,
@@ -166,6 +169,9 @@ calc_env_score(lv_name = occName,
                occ_dir = occDir,
                env_dir = climDir,
                out_dir = gap_outDir)
+
+# Calculating Delaunay triangulation
+
 
 # Calculating gap metrics
 calc_gap_score(lv_name = occName,

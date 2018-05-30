@@ -61,7 +61,7 @@ projecting_function <-function(m2, m2_eval, clim_table, mask, model_outDir, nCor
   
   # Median
   if (!file.exists(paste(model_outDir,"/",occName,"_prj_median.tif",sep=""))) {
-    prj_mdn <- calc(prj_stk, fun=function(x) {median(x,na.rm=T)})
+    prj_mdn <- calc(prj_stk, fun = function(x) {median(x, na.rm = T)})
     writeRaster(prj_mdn, paste(model_outDir,"/",occName,"_prj_median.tif",sep=""),format="GTiff")
   } else {
     prj_mdn <- raster(paste(model_outDir,"/",occName,"_prj_median.tif",sep=""))
@@ -69,7 +69,7 @@ projecting_function <-function(m2, m2_eval, clim_table, mask, model_outDir, nCor
   
   # Standard deviation
   if (!file.exists(paste(model_outDir,"/",occName,"_prj_std.tif",sep=""))) {
-    prj_std <- calc(prj_stk, fun=function(x) {sd(x,na.rm=T)})
+    prj_std <- calc(prj_stk, fun = function(x) {sd(x, na.rm = T)})
     writeRaster(prj_std, paste(model_outDir,"/",occName,"_prj_std.tif",sep=""),format="GTiff")
   } else {
     prj_std <- raster(paste(model_outDir,"/",occName,"_prj_std.tif",sep=""))
