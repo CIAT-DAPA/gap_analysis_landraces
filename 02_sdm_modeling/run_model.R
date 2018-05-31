@@ -19,7 +19,7 @@ srcDir <- paste(baseDir, "/scripts", sep = "")
 region <- "americas"
 
 # Choose a directory for temporal raster files
-raster::rasterOptions(tmpdir = choose.dir(default = "", caption = "Please select the temporary folder")) # "D:/TEMP/CSOSSA"
+raster::rasterOptions(tmpdir = choose.dir(default = "", caption = "Please select the temporary folder"))
 
 # Configuring crop directories to run
 source(paste0(srcDir, "/preprocessing/config_crop.R"))
@@ -187,17 +187,3 @@ calc_gap_score(lv_name     = occName,
                sdm_dir     = model_outDir,
                gap_dir     = gap_outDir,
                out_dir     = gap_outDir)
-
-# Calculating optimal threshold for gap score
-validation_metrics(n.sample   = 100,
-                   bf_rad     = 50,
-                   knl.dens   = 30,
-                   baseDir    = baseDir,
-                   area       = region,
-                   group      = occName,
-                   crop       = crop,
-                   lvl        = level,
-                   pnt        = NULL,
-                   ncores     = NULL,
-                   dens.level = "high_density",
-                   filename   = "gap_score_cost_dist.tif")

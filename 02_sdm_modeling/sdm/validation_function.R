@@ -17,14 +17,10 @@ rm(OSys)
 srcDir <- paste(baseDir, "/scripts", sep = "")
 # Analysis region: "americas", "world"
 region <- "americas"
-# NOT TO RUN (crops directories and subdirectories)
-# source(paste0(srcDir,"/preprocessing/pre_config.R"))
 
 # Choose a directory for temporal raster files
 raster::rasterOptions(tmpdir = choose.dir(default = "", caption = "Please select the temporary folder")) # "D:/TEMP/CSOSSA"
-# for testing: raster::tmpDir()
 
-# Calling species to run
 # Configuring crop directories to run
 source(paste0(srcDir, "/preprocessing/config_crop.R"))
 
@@ -34,15 +30,19 @@ level_1 <- c("andean", "mesoamerican") # level 1: genepool
 level_2 <- c("nueva_granada", "peru", "chile", "durango-Jalisco", "mesoamerica","guatemala") # level 2: race
 level_3 <- NULL # level 3
 # x <- config_crop_dirs(baseDir, crop, level_1, level_2, level_3); rm(x)
-##########
 
 # Preparing inputs for each unit of analysis
 level <- "lvl_1"
-occName <- "mesoamerican" # "andean", "mesoamerican"
+occName <- "andean" # "andean", "mesoamerican"
 source(paste(srcDir, "/preprocessing/config.R", sep = ""))
 
-cat(">>> Applying validation process for gap metrics <<<\n")
 
+
+
+
+
+
+cat(">>> Applying validation process for gap metrics <<<\n")
 gap_valDir <- "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/results/common_bean/lvl_1/andean/americas/gap_validation/buffer_100km"
 
 allglobal <- function() {
@@ -56,7 +56,7 @@ allglobal()
 occName = occName
 gap_valDir = gap_valDir
 buffer_radius = 1
-density_pattern = 1
+density_pattern = 3
 geo_score = "cost_dist"
 
 validation_process <- function(occName = occName,
@@ -67,10 +67,9 @@ validation_process <- function(occName = occName,
 {
   
   cat(">>> Loading occurrence data ... \n")
-  swdFile <- paste0(swdDir, "/swd_", occName, ".csv")
-  spData <- read.csv(swdFile)
-  spData <- spData[,c(3:ncol(spData))]
-  names(spData)[1] <- occName
+  spData <- rgdal::readOGR(dsn = occDir, layer = "Occ")
+  spData <- unique(as.data.frame(spData)); rownames(spData) <- 1:nrow(spData)
+  names(occ_data)[2:3] <- c("lon", "lat")
   
   cat(">>> Loading kernel density map for all points ... \n")
   kernel <- raster(paste0(sp_Dir, "/gap_models/kernel.tif"))
