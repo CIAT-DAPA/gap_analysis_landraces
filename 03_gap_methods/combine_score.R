@@ -49,12 +49,9 @@ calc_gap_score <- function(lv_name, clus_method = "hclust_mahalanobis", gap_meth
       geo_score <- geo_score / max(geo_score[], na.rm=T)
       geo_score <- 1-geo_score #kernel is density so low values would be gaps
     } else if (gap_method == "delaunay") {
-      #method kernel, load kernel
       del_triang <- raster(paste(gap_dir,"/delaunay.tif",sep=""))
       del_triang <- readAll(del_triang)
       del_triang <- crop(del_triang, sdm_prj)
-      
-      #mask geo_score to sdm, and then normalise (so that geo score is relative to the sdm)
       geo_score <- del_triang
       geo_score <- mask(geo_score, sdm_prj)
       geo_score[which(is.na(geo_score[]) & !is.na(sdm_prj[]))] <- max(geo_score[],na.rm=T)
@@ -65,8 +62,9 @@ calc_gap_score <- function(lv_name, clus_method = "hclust_mahalanobis", gap_meth
     env_score <- readAll(env_score)
     
     #produce a single gap map by multiplying the three scores: p(x), geo_score, env_score
-    #gap_score <- sdm_prj * geo_score * env_score
-    gap_score <- sqrt(sdm_prj * max(geo_score, env_score)) # Calculating geometric mean
+    # gap_score <- sdm_prj * geo_score * env_score
+    # gap_score <- sqrt(sdm_prj * max(geo_score, env_score)) # Calculating geometric mean
+    gap_score <- sdm_prj * mean(geo_score, env_score, na.rm = T) # Calculating geometric mean
     
     #get gap threshold
     #gap_thr <- read.csv(paste(res_dir,"/gap_validation/validation_results.csv"), header=T)

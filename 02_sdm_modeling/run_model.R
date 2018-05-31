@@ -33,7 +33,7 @@ level_3 <- NULL # level 3
 
 # Preparing inputs for each unit of analysis
 level <- "lvl_1"
-occName <- "andean" # "andean", "mesoamerican"
+occName <- "mesoamerican" # "andean", "mesoamerican"
 source(paste(srcDir, "/preprocessing/config.R", sep = ""))
 
 # Pre-process classified data
@@ -162,21 +162,42 @@ if(!file.exists(paste0(gap_outDir, "/kernel_classes.tif"))){
 }
 
 # Calculating environmental distance
-calc_env_score(lv_name = occName,
+calc_env_score(lv_name     = occName,
                clus_method = "hclust_mahalanobis",
-               sdm_dir = model_outDir,
-               gap_dir = gap_outDir,
-               occ_dir = occDir,
-               env_dir = climDir,
-               out_dir = gap_outDir)
+               sdm_dir     = model_outDir,
+               gap_dir     = gap_outDir,
+               occ_dir     = occDir,
+               env_dir     = climDir,
+               out_dir     = gap_outDir)
 
 # Calculating Delaunay triangulation
-
+calc_delaunay_score(baseDir    = baseDir,
+                    area       = region,
+                    group      = occName,
+                    crop       = crop,
+                    lvl        = level,
+                    ncores     = 10,
+                    validation = FALSE ,
+                    pnt        = NULL)
 
 # Calculating gap metrics
-calc_gap_score(lv_name = occName,
+calc_gap_score(lv_name     = occName,
                clus_method = "hclust_mahalanobis",
-               gap_method = "kernel", # Can be: "cost_dist", "kernel", "delaunay"
-               sdm_dir = model_outDir,
-               gap_dir = gap_outDir,
-               out_dir = gap_outDir)
+               gap_method  = "delaunay", # Can be: "cost_dist", "kernel", "delaunay"
+               sdm_dir     = model_outDir,
+               gap_dir     = gap_outDir,
+               out_dir     = gap_outDir)
+
+# Calculating optimal threshold for gap score
+validation_metrics(n.sample   = 100,
+                   bf_rad     = 50,
+                   knl.dens   = 30,
+                   baseDir    = baseDir,
+                   area       = region,
+                   group      = occName,
+                   crop       = crop,
+                   lvl        = level,
+                   pnt        = NULL,
+                   ncores     = NULL,
+                   dens.level = "high_density",
+                   filename   = "gap_score_cost_dist.tif")
