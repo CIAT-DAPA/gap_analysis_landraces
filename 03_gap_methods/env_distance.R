@@ -32,10 +32,13 @@ calc_env_score <- function(lv_name, clus_method = "hclust_mahalanobis", sdm_dir,
     sdm_prj <- readAll(sdm_prj)
     
     #load accessions
-    # occ_data <- read.csv(paste(occ_dir,"/occ_",lv_name,".csv",sep=""), header = T)
-    occ_data <- rgdal::readOGR(dsn = occ_dir, layer = "Occ")
-    occ_data <- unique(as.data.frame(occ_data)); rownames(occ_data) <- 1:nrow(occ_data)
-    names(occ_data)[2:3] <- c("lon", "lat")
+    if(length(grep(pattern = "gap_validation", x = occ_dir)) > 0){
+      occ_data <- read.csv(paste(occ_dir,"/occ_",lv_name,".csv",sep=""), header = T)
+    } else {
+      occ_data <- rgdal::readOGR(dsn = occ_dir, layer = "Occ")
+      occ_data <- unique(as.data.frame(occ_data)); rownames(occ_data) <- 1:nrow(occ_data)
+      names(occ_data)[2:3] <- c("lon", "lat")
+    }
     
     #load environmental layers
     env_names <- names(sdm_obj@data@features)[2:ncol(sdm_obj@data@features)]

@@ -175,7 +175,7 @@ calc_delaunay_score(baseDir    = baseDir,
                     crop       = crop,
                     lvl        = level,
                     ncores     = 10,
-                    validation = FALSE ,
+                    validation = FALSE,
                     pnt        = NULL)
 
 # Calculating gap metrics
