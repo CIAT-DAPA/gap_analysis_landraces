@@ -40,11 +40,11 @@ create_buffers <- function(xy, msk, buff_dist = 0.5, format = "GTiff", filename)
     
     # Writing raster
     writeRaster(buffer_rs, paste0(filename, "/buffer_radius_to_omit.tif"), format = format, overwrite = T)
-    writeOGR(obj = buffer_rs, dsn = filename, layer = "buffer_radius_to_omit_shp", driver = "ESRI Shapefile", overwrite_layer = T)
+    writeOGR(obj = as(buffer, "SpatialPolygonsDataFrame"), dsn = filename, layer = "buffer_radius_to_omit_shp", driver = "ESRI Shapefile", overwrite_layer = T)
     
   } else {
     # Load raster in case it exists
-    buffer_rs <- raster(filename)
+    buffer_rs <- raster(paste0(filename, "/buffer_radius_to_omit.tif"))
   }
   
   return(buffer_rs)

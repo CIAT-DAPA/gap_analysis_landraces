@@ -8,33 +8,27 @@ g <- gc(reset = T); rm(list = ls()); options(warn = -1); options(scipen = 999)
 # Base directory
 OSys <- Sys.info()[1]
 baseDir   <- switch(OSys,
-                    "Linux" = "/mnt/workspace_cluster_9/gap_analysis_landraces/runs",
+                    "Linux"   = "/mnt/workspace_cluster_9/gap_analysis_landraces/runs",
                     "Windows" = "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs",
-                    "Darwin" = "~nfs/workspace_cluster_9/gap_analysis_landraces/runs")
+                    "Darwin"  = "~nfs/workspace_cluster_9/gap_analysis_landraces/runs")
 rm(OSys)
 
-# Software directory
-srcDir <- paste(baseDir, "/scripts", sep = "")
-# Analysis region: "americas", "world"
-region <- "americas"
+srcDir <- paste(baseDir, "/scripts", sep = "") # Software directory
+region <- "americas"                           # Region: "americas", "world"
+raster::rasterOptions(tmpdir = choose.dir(default = "",
+                                          caption = "Please select the temporary folder")) # Temporary files directory
 
-# Choose a directory for temporal raster files
-raster::rasterOptions(tmpdir = choose.dir(default = "", caption = "Please select the temporary folder")) # "D:/TEMP/CSOSSA"
-
-# Configuring crop directories to run
-source(paste0(srcDir, "/preprocessing/config_crop.R"))
+source(paste0(srcDir, "/02_sdm_modeling/preprocessing/config_crop.R")) # Configuring crop directories
 
 # Define crop, analysis level and creating needed directories
-crop <- "common_bean" # crop
+crop <- "common_bean"
 level_1 <- c("andean", "mesoamerican") # level 1: genepool
 level_2 <- c("nueva_granada", "peru", "chile", "durango-Jalisco", "mesoamerica","guatemala") # level 2: race
 level_3 <- NULL # level 3
-# x <- config_crop_dirs(baseDir, crop, level_1, level_2, level_3); rm(x)
-
-# Preparing inputs for each unit of analysis
-level <- "lvl_1"
-occName <- "andean" # "andean", "mesoamerican"
-source(paste(srcDir, "/preprocessing/config.R", sep = ""))
+level   <- "lvl_1"
+occName <- "andean" # Level 1: "andean", "mesoamerican"
+source(paste(srcDir, "/02_sdm_modeling/preprocessing/config.R", sep = ""))
+# config_crop_dirs(baseDir, crop, level_1, level_2, level_3)
 
 
 
@@ -69,7 +63,7 @@ validation_process <- function(occName = occName,
   cat(">>> Loading occurrence data ... \n")
   spData <- rgdal::readOGR(dsn = occDir, layer = "Occ")
   spData <- unique(as.data.frame(spData)); rownames(spData) <- 1:nrow(spData)
-  names(occ_data)[2:3] <- c("lon", "lat")
+  names(spData)[2:3] <- c("lon", "lat")
   
   cat(">>> Loading kernel density map for all points ... \n")
   kernel <- raster(paste0(sp_Dir, "/gap_models/kernel.tif"))
@@ -80,7 +74,7 @@ validation_process <- function(occName = occName,
   kernel_class[kernel_class[] != density_pattern] <- NA
   kernel_upt <- raster::mask(x = kernel, mask = kernel_class)
   
-  occ <- spData[which(spData[,1] == 1),]
+  occ <- spData
   
   cat(">>> Selecting 5 points randomly using kernel density level as weights ... \n")
   set.seed(1234)
@@ -97,14 +91,14 @@ validation_process <- function(occName = occName,
     probList[is.na(probList)] <- 0
     pnt <- base::sample(x = 1:nrow(occ), size = 1, replace = F, prob = probList)
     
-    if(!file.exists(paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/01_selected_points/genepool_predicted.csv"))){
+    if(!file.exists(paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/01_selected_points/genepool_predicted.csv"))){
       cat("Point has not been created, processing ... \n")
       cat(">>> Create a buffer around the point", i, "... \n")
-      radius <- .GlobalEnv$create_buffers(xy = occ[pnt, c("lon", "lat")],
-                                          msk = mask,
+      radius <- .GlobalEnv$create_buffers(xy        = occ[pnt, c("lon", "lat")],
+                                          msk       = mask,
                                           buff_dist = buffer_radius,
-                                          format = "GTiff",
-                                          filename = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/01_selected_points"))
+                                          format    = "GTiff",
+                                          filename  = paste0(gap_valDir, "/", densities[density_pattern], "_density/pnt", i, "/01_selected_points"))
       
       cat(">>> Identify and exclude of the analysis points within the buffer radius ... \n")
       id_pnts <- raster::extract(x = radius, y = occ[,c("lon", "lat")])

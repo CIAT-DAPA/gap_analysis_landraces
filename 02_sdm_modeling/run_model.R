@@ -8,33 +8,27 @@ g <- gc(reset = T); rm(list = ls()); options(warn = -1); options(scipen = 999)
 # Base directory
 OSys <- Sys.info()[1]
 baseDir   <- switch(OSys,
-                   "Linux" = "/mnt/workspace_cluster_9/gap_analysis_landraces/runs",
+                   "Linux"   = "/mnt/workspace_cluster_9/gap_analysis_landraces/runs",
                    "Windows" = "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs",
-                   "Darwin" = "~nfs/workspace_cluster_9/gap_analysis_landraces/runs")
+                   "Darwin"  = "~nfs/workspace_cluster_9/gap_analysis_landraces/runs")
 rm(OSys)
 
-# Software directory
-srcDir <- paste(baseDir, "/scripts", sep = "")
-# Analysis region: "americas", "world"
-region <- "americas"
+srcDir <- paste(baseDir, "/scripts", sep = "") # Software directory
+region <- "americas"                           # Region: "americas", "world"
+raster::rasterOptions(tmpdir = choose.dir(default = "",
+                                          caption = "Please select the temporary folder")) # Temporary files directory
 
-# Choose a directory for temporal raster files
-raster::rasterOptions(tmpdir = choose.dir(default = "", caption = "Please select the temporary folder"))
-
-# Configuring crop directories to run
-source(paste0(srcDir, "/preprocessing/config_crop.R"))
+source(paste0(srcDir, "/02_sdm_modeling/preprocessing/config_crop.R")) # Configuring crop directories
 
 # Define crop, analysis level and creating needed directories
-crop <- "common_bean" # crop
+crop <- "common_bean"
 level_1 <- c("andean", "mesoamerican") # level 1: genepool
 level_2 <- c("nueva_granada", "peru", "chile", "durango-Jalisco", "mesoamerica","guatemala") # level 2: race
 level_3 <- NULL # level 3
-# x <- config_crop_dirs(baseDir, crop, level_1, level_2, level_3); rm(x)
-
-# Preparing inputs for each unit of analysis
-level <- "lvl_1"
-occName <- "mesoamerican" # "andean", "mesoamerican"
-source(paste(srcDir, "/preprocessing/config.R", sep = ""))
+level   <- "lvl_1"
+occName <- "mesoamerican" # Level 1: "andean", "mesoamerican"
+source(paste(srcDir, "/02_sdm_modeling/preprocessing/config.R", sep = ""))
+# config_crop_dirs(baseDir, crop, level_1, level_2, level_3)
 
 # Pre-process classified data
 if(!file.exists(paste0(classResults, "/genepool_predicted_original.csv"))){
@@ -64,26 +58,32 @@ if(file.exists(paste0(classResults, "/genepool_predicted_original.csv")) &
   
 }
 
-# Creating the cost distance function according with the level of analysis
-cost_dist_function(code = paste0(sp_Dir_input, "/cost_dist.py"),
-                   outDir = gap_outDir,
-                   friction = friction,
+# Cost distance process according with the level of analysis
+cost_dist_function(code         = paste0(sp_Dir_input, "/cost_dist.py"),
+                   outDir       = gap_outDir,
+                   friction     = friction,
                    classResults = classResults,
-                   occName = occName,
-                   mask = mask,
-                   occDir = occDir
-)
+                   occName      = occName,
+                   mask         = mask,
+                   occDir       = occDir)
 
 # Model driver function for preparing which variables will be selected to run SDMs and creation of SWD files
 extension_r <- ".tif"
-clsModel <- "ensemble"
-correlation <- 3 #1 Correlation, 2 VIF, 3 PCA +VIF
-var_names <- model_driver(sp_Dir, mask, occName, extension_r, all = F, overwrite = T, clsModel, correlation = correlation)
+clsModel    <- "ensemble"
+correlation <- 3 # 1. Correlation, 2. VIF, 3. PCA + VIF
+var_names   <- model_driver(sp_Dir      = sp_Dir,
+                            mask        = mask,
+                            occName     = occName,
+                            extension_r = extension_r,
+                            all         = F,
+                            overwrite   = T,
+                            clsModel    = clsModel,
+                            correlation = correlation)
 
 # Loading SWD file and occurrence data
-swdFile <- paste0(swdDir, "/swd_", occName, ".csv")
-spData  <- read.csv(swdFile)
-spData  <- spData[,c(3:ncol(spData))]
+swdFile          <- paste0(swdDir, "/swd_", occName, ".csv")
+spData           <- read.csv(swdFile)
+spData           <- spData[,c(3:ncol(spData))]
 names(spData)[1] <- occName
 
 # Loading raster files
@@ -106,14 +106,14 @@ if(file.exists(paste0(sp_Dir, "/calibration.csv"))){
 
 # Running SDMs
 cat("Running modeling approach\n")
-m2 <- sdm_approach_function(occName = occName,
-                            spData = spData,
+m2 <- sdm_approach_function(occName      = occName,
+                            spData       = spData,
                             model_outDir = sp_Dir,
-                            var_names = var_names,
-                            nCores = 5,
-                            nFolds = 5,
-                            beta = beta,
-                            feat = feat)
+                            var_names    = var_names,
+                            nCores       = 5,
+                            nFolds       = 5,
+                            beta         = beta,
+                            feat         = feat)
 
 # Model evaluation per replicates (nReplicates x 5)
 cat("Evaluating models performance\n")
@@ -121,18 +121,16 @@ m2_eval <- evaluation_function(m2, eval_sp_Dir, spData)
 
 # Model projecting
 cat("Projecting models\n")
-# Detaching caret to avoid packages conflict
-# detach("package:caret", unload = TRUE) # MANDATORY!
 clim_table <- raster::as.data.frame(clim_layer, xy = T)
 clim_table <- clim_table[complete.cases(clim_table),]
-model <- projecting_function(m2, m2_eval, clim_table, mask, model_outDir, nCores = 5, obj.size = 3)
+model      <- projecting_function(m2, m2_eval, clim_table, mask, model_outDir, nCores = 5, obj.size = 3)
 
 # Final evaluation table
-cat("Validating model","\n")
+cat("Validating model\n")
 if(!file.exists(paste0(eval_sp_Dir, "/Final_evaluation.csv"))){
   m2_eval_final <- final_evaluation(m2_eval, occName)
 } else {
-  m2_eval_final <-  read.csv(paste0(eval_sp_Dir, "/Final_evaluation.csv"), header = T)
+  m2_eval_final <- read.csv(paste0(eval_sp_Dir, "/Final_evaluation.csv"), header = T)
 }
 
 # Kernel function #1 spatstat, #2 Adehabitat, #3 Kernsmooth
@@ -141,11 +139,11 @@ if(!file.exists(paste0(gap_outDir, "/kernel.tif"))){
   spData <- unique(as.data.frame(spData)); rownames(spData) <- 1:nrow(spData)
   names(spData)[2:3] <- c("lon", "lat")
   spData[,1] <- 1
-  kernel <- raster_kernel(mask = mask,
-                          occurrences = spData[spData[,1] == 1,],
-                          out_dir = gap_outDir,
+  kernel <- raster_kernel(mask          = mask,
+                          occurrences   = spData[spData[,1] == 1,],
+                          out_dir       = gap_outDir,
                           kernel_method = 3,
-                          scale = T)
+                          scale         = T)
 } else {
   kernel <- raster(paste0(gap_outDir, "/kernel.tif")) 
 }
