@@ -22,7 +22,8 @@ calc_env_score <- function(lv_name, clus_method = "hclust_mahalanobis", sdm_dir,
     
     #load packages
     suppressMessages(if(!require(pacman)){install.packages("pacman");library(pacman)}else{library(pacman)})
-    pacman::p_load(raster, sdm, distances, matrixStats)
+    library(raster); library(sdm); library(distances); library(matrixStats)
+    # pacman::p_load(raster, sdm, distances, matrixStats)
     
     #load sdm object
     sdm_obj <- read.sdm(paste(sdm_dir,"/./../sdm.sdm",sep=""))

@@ -117,7 +117,7 @@ calc_delaunay_score <- function(baseDir, area, group, crop, lvl, ncores = NULL, 
       return(NA)
     }
   }))
-  bad <-  bad[!is.na(bad)] 
+  bad <-  bad[!is.na(bad)]
   if(length(bad) != 0){i$geometry[bad] <- NULL}
   
   cat("writing intercepted polygons to TempDir() \n \n ")
