@@ -45,7 +45,7 @@ level_3 <- NULL # level 3
 
 # Preparing inputs for each unit of analysis
 level <- "lvl_1"
-occName <- "mesoamerican" # "andean", "mesoamerican"
+occName <- "andean" #"mesoamerican" 
 source(paste(srcDir, "/preprocessing/config.R", sep = ""))
 
 ##### run from here
@@ -109,7 +109,8 @@ occDir <- switch (as.character(validation),
 
 cat(">>> Importing Delaunays triangulation \n \n")
 
-if(file.exists(paste0(delaDir, "/delaunay/raw_delaunay.shp")) == FALSE ){
+if(!file.exists(paste0(delaDir, "/delaunay/raw_delaunay.shp")) ){
+  cat("Creating delaunays triangulation \n \n ")
   delaunaypolygons(x = shapefile(occDir) , outdir = delaDir)
   cat("Delaunay was successfully created \n \n")
   
@@ -322,29 +323,31 @@ cat("+++ Merging raster (This process will take several minutes. Be patient) \n 
  out_dist_centroid <- delaDist_list[[1]]$dist_to_centroid
  out_dist_vertex <- delaDist_list[[1]]$dist_near_vertex
  out_area_relativa <- delaDist_list[[1]]$area_score
- 
+
 mergeFun <- function(mRast){
-  
+
   out_dist_centroid <<- merge(out_dist_centroid, mRast$dist_to_centroid)
   out_dist_vertex <<- merge(out_dist_vertex, mRast$dist_near_vertex)
-  out_area_relativa <<- merge(out_area_relativa, mRast$area_score)             
+  out_area_relativa <<- merge(out_area_relativa, mRast$area_score)
 
 }
 
 
+
 system.time(
-lapply(delaDist_list[2:length(delaDist_list)],function(mRast){ 
-  
+lapply(delaDist_list[2:length(delaDist_list)],function(mRast){
+
   out_dist_centroid <<- merge(out_dist_centroid, mRast$dist_to_centroid)
 
-  if( round(res(out_dist_centroid)[1],8) !=  0.04166667 ){stop("Error: Diferentes extents")} 
-  
+  if( round(res(out_dist_centroid)[1],8) !=  0.04166667 ){stop("Error: Diferentes extents")}
+
   out_dist_vertex <<- merge(out_dist_vertex, mRast$dist_near_vertex)
-  out_area_relativa <<- merge(out_area_relativa, mRast$area_score)             
-  
-  
+  out_area_relativa <<- merge(out_area_relativa, mRast$area_score)
+
+
   })
        )
+
 
 
 cat("Calculating gap score \n \n ")
@@ -364,7 +367,7 @@ p <- out_area_relativa *(1 - x)*a
 
 rm(x, a);g <- gc(); rm(g);removeTmpFiles(h = 24)
 
-writeRaster(p, paste0(outDir, "/delanuay_probs.tif"), format = "GTiff", overwrite= T)
+writeRaster(p, paste0(outDir, "/delaunay_probs.tif"), format = "GTiff", overwrite= T)
 #writeRaster(p2, paste0(outDir,"/delanuay_probs_mean.tif"), format = "GTiff", overwrite= T)
 #writeRaster(p3, paste0(outDir,"/delanuay_probs_sqrt.tif"), format = "GTiff", overwrite= T)
 
@@ -375,13 +378,14 @@ sdm_crop <- raster::crop(x = SDM, y = extent(p))
 p_masked <- raster::mask(x = p, mask = sdm_crop)
 
 
+ecogeo <- raster(paste0(outDir, "/env_score_hclust_mahalanobis.tif"))
+ecogeo <- raster::crop(x = ecogeo, y = extent(p))
 ###### calculating the gap score
-gap_score <- sdm_crop * p_masked
+gap_score <- sdm_crop * mean( p_masked, ecogeo, na.rm  = T)
 #extent(gap_score) <- extent(SDM)
 
 cat("Calculating scores for delaunay's outside points \n \n")
 #### scoring points out side of the delaunay triangulation
-
 dela_bound <-  gUnaryUnion(delanuay, id = NULL)
 
 vertex <- dela_bound@polygons[[1]]@Polygons[[1]]@coords[]
@@ -414,13 +418,8 @@ writeRaster(gap_score, paste0(outDir,"/gap_score_delaunay.tif"), format = "GTiff
 
 } #END FUNCTION 
 
-a <- c("americas", "world")
-g <- c("mesoamerican", "andean")
-c <- "common_bean"
-lvl <- "lvl_1"
-# results_dir <- "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs" 
 
-delaunay_scoring(baseDir = baseDir, area = a[1], group = g[1], crop = c, lvl = "lvl_1", ncores = 10, validation = FALSE , pnt = NULL )
+delaunay_scoring(baseDir = baseDir, area = a[1], group = g[2], crop = c, lvl = "lvl_1", ncores = 10, validation = FALSE , pnt = NULL, dens.level= "high_density" )
 
 
 

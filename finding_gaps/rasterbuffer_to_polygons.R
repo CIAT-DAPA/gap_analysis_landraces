@@ -85,11 +85,8 @@ rasterbuffer_To_polygons <- function( baseDir,area, group, crop, lvl, pnt = NULL
   if(!file.exists(paste0(results_dir, validationDir,"/01_selected_points/buffer_radius_to_omit.shp") )){
   
   #Setting directories path 
-  
-  
+
   cat(">>> Initializing convertion process  \n \n")
-  
-  
   
   #Load raterized buffer and find the centroid of him
   
@@ -116,6 +113,9 @@ rasterbuffer_To_polygons <- function( baseDir,area, group, crop, lvl, pnt = NULL
   }#end if
 }#end function
 
+
+
+
 a <- c("americas", "world")
 g <- c("mesoamerican", "andean")
 c <- "common_bean"
@@ -130,15 +130,17 @@ progress <- function(n) setTkProgressBar(pb, n)
 opts <- list(progress=progress)
 
 
-foreach( i = 1:length(pnt), .combine = "rbind", .packages = c("raster", "rgdal", "dplyr", "sdm"), .options.snow=opts)  %dopar% {
+foreach( i = 1:length(pnt) ,.combine = "rbind", .packages = c("raster", "rgdal", "dplyr", "sdm"), .options.snow=opts)  %dopar% {
   suppressMessages(if(!require(pacman)){install.packages('pacman'); library(pacman)} else {library(pacman)})
   pacman::p_load(dplyr, psych, tm, raster, rgdal, rasterVis, rgeos, 
                  deldir, sp, tidyverse, FactoMineR, factoextra, ggdendro, 
                  rlang, fastcluster, sf, doParallel, rmapshaper, doSNOW, tcltk ) 
-  rasterbuffer_To_polygons( baseDir = baseDir, area = a[1], group = g[1], crop = c, lvl = lvl, pnt = pnt[i], dens.level = "high_density" , bf_rad = 100 )
+  
+  rasterbuffer_To_polygons( baseDir = baseDir, area = a[1], group = g[2], crop = c, lvl = lvl, pnt = pnt[i], dens.level = "high_density" , bf_rad = 100 )
   
 }
 stopCluster(cl)
+
 
 
 

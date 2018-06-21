@@ -105,14 +105,14 @@ buff_omit <- raster(paste0(results_dir, validationDir,"/01_selected_points/buffe
 gp_m2 <- raster::mask(gp_m, buff_omit, maskvalue = 1)
 
 
-if(!file.exists(paste0(results_dir, validationDir,"/01_selected_points/buffer_radius_to_omit.shp") ) ){
+if(!file.exists(paste0(results_dir, validationDir,"/01_selected_points/buffer_radius_to_omit_shp.shp") ) ){
 
-buff <- raster::crop(buff, extent(occ))
+buff <- raster::crop(buff_omit, extent(occ))
 
 cat("Initializing process of find buffers centroid \n ")
 cat("Converting raster to polygons, this procces will take several minutes ... \n \n")
 
-buff_pol <- rasterToPolygons(buff, dissolve = TRUE)
+buff_pol <- rasterToPolygons(buff_omit, dissolve = TRUE)
 
 cent <- getSpPPolygonsLabptSlots(buff_pol)[2,]
 cat("Creating buffer with .shp format \n")
@@ -120,7 +120,7 @@ cat("Creating buffer with .shp format \n")
 
 }else{
   cat("Loading buffer ... \n")
-  buff_prime <- shapefile(paste0(results_dir, validationDir,"/01_selected_points/buffer_radius_to_omit.shp"))
+  buff_prime <- shapefile(paste0(results_dir, validationDir,"/01_selected_points/buffer_radius_to_omit_shp.shp"))
   cent <- getSpPPolygonsLabptSlots(buff_prime)
   cent <- t(cent)
   cat("Buffer loaded :) \n \n")
@@ -261,47 +261,6 @@ cat(">>>Process finished :) \n")
 #saveRDS(results, file = paste0(outDir, "/validation_metrics_", substr(filename, 11, 14),".rds"))
 return(results)
 }# end function
-
-
-######### *=*=*=*=*=**=*=*=*=*=*=*=*=*=*=*=*=*=**==*=*=**=*=*=*=*=*=*=*=*=*=*=*=*=*= ######################
-
-a <- c("americas", "world")
-g <- c("mesoamerican", "andean")
-c <- "common_bean"
-lvl <- "lvl_1"
-filename <- "gap_score_cost_dist.tif"   #"gap_score_delaunay.tif"
-radius <- seq(6,100, 1)
-
-cl <- makeSOCKcluster(detectCores()-5)
-registerDoSNOW(cl)
-
-pb <- tkProgressBar(max=length(radius))
-progress <- function(n) setTkProgressBar(pb, n)
-opts <- list(progress=progress)
-
-validation_results <- foreach( i = 1:length(radius), .packages = c("raster", "pROC", "dplyr", "sdm"), .options.snow=opts) %dopar% {
-  
-validation_metrics(n.sample = 1000, bf_rad = radius[i], knl.dens = 20, baseDir = baseDir,area = a[1], group = g[1] , crop = c, lvl = "lvl_1", pnt = "pnt1", ncores = NULL, dens.level = "high_density" ,filename = filename )
-
-}
-stopCluster(cl)
-
-
-names(validation_results) <- radius
-
-saveRDS(validation_results, paste0(gap_valDir, "/buffer_100km/high_density/pnt1/03_gap_models/validation_metrics_",substr(filename, 11, 14),"_all_radius.rds") )
-
-
-
-proms <- do.call(rbind,lapply(validation_results, function(x){ colMeans(x, na.rm = T) })) %>% as_tibble()
-medians <- do.call(rbind,lapply(validation_results, function(x){ apply(x, 2, function(x){ median(x, na.rm = TRUE)})})) %>%  as_tibble()
-all <-  validation_results %>% mapply(function(x,y){ add_column(x, radius = rep(factor(as.numeric(y)), nrow(x)) ) }, x = ., y = names(.), SIMPLIFY = FALSE)  %>% do.call(rbind, .) %>%  as_tibble() 
-
-proms2 <- all %>% dplyr::group_by(., radius) %>% summarise(.,auc.mean = mean(auc, na.rm = T), score.mean = mean(score, na.rm = T), skewness = skew(score), score.median = median(score, na.rm = T))
-
-plot(all$auc ~ all$radius, ylab = "AUC", xlab = " Buffer Radius (Km)")
-points(proms2$auc.mean, col = "red", lwd = 2)
-
 
 
 
