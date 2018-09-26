@@ -1,5 +1,4 @@
-suppressMessages(if(!require(pacman)){install.packages("pacman");library(pacman)}else{library(pacman)})
-pacman::p_load(sdm)
+
 
 sdm_approach_function <- function(occName, spData, model_outDir, var_names, nCores, nFolds, beta, feat){
   

@@ -1,15 +1,11 @@
 ##### ANDRES CAMILO MENDEZ
 ##### FUNCTION TO CREATE ALL DELANUAY  TRIANGULATIONS FOR ALL OCCURRENCES
 
-suppressMessages(if(!require(pacman)){install.packages('pacman'); library(pacman)} else {library(pacman)})
-pacman::p_load(dplyr, psych, tm, raster, rgdal, rasterVis, rgeos, 
-               deldir, sp, tidyverse, FactoMineR, factoextra, ggdendro, 
-               rlang, fastcluster, sf, doParallel, rmapshaper, doSNOW, tcltk, tidyverse ) 
 
-validation_metrics <- function(n.sample = 100, bf_rad = 50, knl.dens = 30, baseDir, area, group, crop, lvl, pnt = NULL, ncores = NULL, dens.level = "high_density" ,filename = "gap_score_cost_dist.tif"){
+validation_metrics <- function(n.sample = 100, bf_rad = 50, baseDir, area, group, crop, lvl, pnt = NULL, ncores = NULL, dens.level = "high_density" ,filename ){
   
   cat(
-    "        oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo       
+    "    oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo       
     N`                                                                                  `N       
     N`                                                                                  `N       
     N`                                                                                  `N       
@@ -51,15 +47,19 @@ validation_metrics <- function(n.sample = 100, bf_rad = 50, knl.dens = 30, baseD
   # gap score
   gp_m <- raster(paste0(outDir, "/", filename)) 
   SDM <- raster(sdmDir)
+  coord_sys <- crs(SDM)
+  rm(SDM); removeTmpFiles()
+  
   occ <- shapefile(paste0(results_dir, validationDir, "/01_selected_points/Occ.shp"))
   buff_omit <- raster(paste0(results_dir, validationDir,"/01_selected_points/buffer_radius_to_omit.tif"))
   
   gp_m2 <- raster::mask(gp_m, buff_omit, maskvalue = 1)
   
   
-  if(!file.exists(paste0(results_dir, validationDir,"/01_selected_points/buffer_radius_to_omit.shp") ) ){
+  if(!file.exists(paste0(results_dir, validationDir, "/01_selected_points/buffer_radius_to_omit_shp.shp") ) ){
     
-    buff <- raster::crop(buff, extent(occ))
+   
+    buff <- raster::crop(buff_omit, extent(occ))
     
     cat("Initializing process of find buffers centroid \n ")
     cat("Converting raster to polygons, this procces will take several minutes ... \n \n")
@@ -72,7 +72,7 @@ validation_metrics <- function(n.sample = 100, bf_rad = 50, knl.dens = 30, baseD
     
   }else{
     cat("Loading buffer ... \n")
-    buff_prime <- shapefile(paste0(results_dir, validationDir,"/01_selected_points/buffer_radius_to_omit.shp"))
+    buff_prime <- shapefile(paste0(results_dir, validationDir,"/01_selected_points/buffer_radius_to_omit_shp.shp"))
     cent <- getSpPPolygonsLabptSlots(buff_prime)
     cent <- t(cent)
     cat("Buffer loaded :) \n \n")
@@ -81,8 +81,8 @@ validation_metrics <- function(n.sample = 100, bf_rad = 50, knl.dens = 30, baseD
   
   #buffer_prime <- buffer(SpatialPoints(t(as.data.frame(cent)), proj4string =  crs(SDM)), width=100000)
   #occur <- shapefile(occDir)
-  
-  buff_50 <- buffer(SpatialPoints(t(as.data.frame(cent)), proj4string =  crs(SDM)), width = bf_rad*1000 )
+  width =  bf_rad*1000
+  buff_50 <- raster::buffer(SpatialPoints(t(as.data.frame(cent)), proj4string =  coord_sys), width = width)
   
   scr <- raster::extract(gp_m, buff_50)
   scr <- unlist(scr)
@@ -93,15 +93,19 @@ validation_metrics <- function(n.sample = 100, bf_rad = 50, knl.dens = 30, baseD
   
   knl <- raster(paste0(outDir, "/kernel.tif")) 
   knl <- raster::mask(knl, buff_omit, maskvalue = 1)
-  knl[knl[] <  knl.dens] <- NA
-  knl[knl[]>=  knl.dens] <- 1
+  knl.dens <-  raster::quantile(x = knl[], probs = c(.60, .90), na.rm = T)
+  knl[knl[] <   knl.dens[2] ] <- NA
+  knl[knl[] >=  knl.dens[2] ] <- 1
   b_occr <- raster::as.data.frame(knl, xy=T)
+  
+  rm(knl, knl.dens); g <-gc(); rm(g)
+  
   b_occr <- b_occr[complete.cases(b_occr),]
-  
-  
   cords_dummy <- b_occr[,1:2] 
   
-  if(n.sample > nrow(cords_dummy)){stop("The number of n.sample is greater than the total coords in the selected density area")}
+  if(n.sample > nrow(cords_dummy)){cat("The number of n.sample is greater than the total coords in the selected density area \n")
+    n.sample <- nrow(cords_dummy) - 10
+    }
   
   n_cords <- base::sample(nrow(cords_dummy), n.sample, replace = F  )
   
@@ -117,9 +121,10 @@ validation_metrics <- function(n.sample = 100, bf_rad = 50, knl.dens = 30, baseD
     cat(paste(">>> Initializing process to calculate the performance parameters for the score in:", pnt, "whit a buffer of", bf_rad, "Km \n \n "))
     results <- foreach( i = 1:n.sample, .combine = "rbind", .packages = c("raster", "pROC", "dplyr", "sdm"), .options.snow=opts)  %dopar% {
       
-      library(dplyr)
+      #library(dplyr)
       cord <- cords_dummy[n_cords[i], ]
-      buf_cord <- buffer(SpatialPoints(cord, proj4string =  crs(SDM)), width=bf_rad*1000)
+      width = bf_rad*1000
+      buf_cord <- raster::buffer(SpatialPoints(cord, proj4string =  coord_sys), width=width)
       #dummy_buff <- buffer(buf_cord, width = bf_rad)
       
       #cat(paste("Extrayendo datos del buffer(it can take a long time): " ,i, "\n \n"))
@@ -128,22 +133,33 @@ validation_metrics <- function(n.sample = 100, bf_rad = 50, knl.dens = 30, baseD
       no_gap <- unlist(no_gap)
       no_gap <- no_gap[complete.cases(no_gap)]
       
-      if(length(no_gap)!=0){
+      if(length(no_gap)!=0 ){
         ng <- data.frame( score = no_gap, observe = rep(0, length(no_gap) ))
         gap <- data.frame(score = scr, observe = rep(1, length(scr)))
         
         
         bd <- dplyr::bind_rows(ng, gap, .id = NULL)
+        rm(ng, gap)
         
-        val <- pROC::roc(response = factor(bd$observe), predictor = bd$score )
-        sm <- sdm::evaluates(factor(bd$observe), bd$score )
-        
-        auc <- sm@statistics$AUC
-        m <- which(sm@threshold_based$criteria == "minROCdist")
-        value <- sm@threshold_based$threshold[m]
-        se <- sm@threshold_based$sensitivity[m]
-        es <- sm@threshold_based$specificity[m]
-        tss <- sm@threshold_based$TSS[m] 
+        if(length(levels(factor(bd$observe))) > 1){
+          #val <- pROC::roc(response = factor(bd$observe), predictor = bd$score )
+          sm <- sdm::evaluates(factor(bd$observe), bd$score )
+          
+          auc <- sm@statistics$AUC
+          m <- which(sm@threshold_based$criteria == "minROCdist")
+          value <- sm@threshold_based$threshold[m]
+          se <- sm@threshold_based$sensitivity[m]
+          es <- sm@threshold_based$specificity[m]
+          tss <- sm@threshold_based$TSS[m] 
+          
+        }else{
+          value <- NA
+          auc <- NA
+          se <- NA
+          es <- NA
+          tss <- NA
+        }
+       
       }else{
         
         value <- NA
@@ -159,14 +175,16 @@ validation_metrics <- function(n.sample = 100, bf_rad = 50, knl.dens = 30, baseD
     stopCluster(cl)
   }else{
     
+    cat(paste(">>> Initializing process to calculate the performance parameters for the score in:", pnt, "whit a buffer of", bf_rad, "Km \n \n "))
+    
     results <- lapply(1:n.sample, function(i){
       
       cord <- cords_dummy[n_cords[i], ]
-      buf_cord <- buffer(SpatialPoints(cord, proj4string =  crs(SDM)), width=bf_rad*1000)
+      width = bf_rad*1000
+      buf_cord <- raster::buffer(SpatialPoints(cord, proj4string =  coord_sys), width=width)
       #dummy_buff <- buffer(buf_cord, width = bf_rad)
       
-      #cat(paste("Extrayendo datos del buffer(it can take a long time): " ,i, "\n \n"))
-      
+
       no_gap <- raster::extract(gp_m2, buf_cord)
       no_gap <- unlist(no_gap)
       no_gap <- no_gap[complete.cases(no_gap)]
@@ -177,16 +195,26 @@ validation_metrics <- function(n.sample = 100, bf_rad = 50, knl.dens = 30, baseD
         gap <- data.frame(score = scr, observe = rep(1, length(scr)))
         
         bd <- dplyr::bind_rows(ng, gap, .id = NULL)
-        
-        val <- pROC::roc(response = factor(bd$observe), predictor = bd$score )
-        sm <- sdm::evaluates(factor(bd$observe), bd$score )
-        
-        auc <- sm@statistics$AUC
-        m <- which(sm@threshold_based$criteria == "minROCdist")
-        value <- sm@threshold_based$threshold[m]
-        se <- sm@threshold_based$sensitivity[m]
-        es <- sm@threshold_based$specificity[m]
-        tss <- sm@threshold_based$TSS[m] 
+        if(length(levels(factor(bd$observe))) > 1){
+          #val <- pROC::roc(response = factor(bd$observe), predictor = bd$score )
+          sm <- sdm::evaluates(factor(bd$observe), bd$score )
+          
+          auc <- sm@statistics$AUC
+          m <- which(sm@threshold_based$criteria == "minROCdist")
+          value <- sm@threshold_based$threshold[m]
+          se <- sm@threshold_based$sensitivity[m]
+          es <- sm@threshold_based$specificity[m]
+          tss <- sm@threshold_based$TSS[m] 
+          
+        }else{
+          value <- NA
+          auc <- NA
+          se <- NA
+          es <- NA
+          tss <- NA
+          
+        }
+       
       }else{
         
         value <- NA
@@ -215,41 +243,4 @@ validation_metrics <- function(n.sample = 100, bf_rad = 50, knl.dens = 30, baseD
 }# end function
 
 
-######### *=*=*=*=*=**=*=*=*=*=*=*=*=*=*=*=*=*=**==*=*=**=*=*=*=*=*=*=*=*=*=*=*=*=*= ######################
 
-a <- c("americas", "world")
-g <- c("mesoamerican", "andean")
-c <- "common_bean"
-lvl <- "lvl_1"
-filename <- "gap_score_cost_dist.tif"   #"gap_score_delaunay.tif"
-radius <- seq(6,100, 1)
-
-cl <- makeSOCKcluster(detectCores()-5)
-registerDoSNOW(cl)
-
-pb <- tkProgressBar(max=length(radius))
-progress <- function(n) setTkProgressBar(pb, n)
-opts <- list(progress=progress)
-
-validation_results <- foreach( i = 1:length(radius), .packages = c("raster", "pROC", "dplyr", "sdm"), .options.snow=opts) %dopar% {
-  
-  validation_metrics(n.sample = 1000, bf_rad = radius[i], knl.dens = 20, baseDir = baseDir,area = a[1], group = g[1] , crop = c, lvl = "lvl_1", pnt = "pnt1", ncores = NULL, dens.level = "high_density" ,filename = filename )
-  
-}
-stopCluster(cl)
-
-
-names(validation_results) <- radius
-
-saveRDS(validation_results, paste0(gap_valDir, "/buffer_100km/high_density/pnt1/03_gap_models/validation_metrics_",substr(filename, 11, 14),"_all_radius.rds") )
-
-
-
-proms <- do.call(rbind,lapply(validation_results, function(x){ colMeans(x, na.rm = T) })) %>% as_tibble()
-medians <- do.call(rbind,lapply(validation_results, function(x){ apply(x, 2, function(x){ median(x, na.rm = TRUE)})})) %>%  as_tibble()
-all <-  validation_results %>% mapply(function(x,y){ add_column(x, radius = rep(factor(as.numeric(y)), nrow(x)) ) }, x = ., y = names(.), SIMPLIFY = FALSE)  %>% do.call(rbind, .) %>%  as_tibble() 
-
-proms2 <- all %>% dplyr::group_by(., radius) %>% summarise(.,auc.mean = mean(auc, na.rm = T), score.mean = mean(score, na.rm = T), skewness = skew(score), score.median = median(score, na.rm = T))
-
-plot(all$auc ~ all$radius, ylab = "AUC", xlab = " Buffer Radius (Km)")
-points(proms2$auc.mean, col = "red", lwd = 2)

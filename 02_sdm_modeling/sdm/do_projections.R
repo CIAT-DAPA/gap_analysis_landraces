@@ -2,8 +2,6 @@
 # H. Achicanoy
 # CIAT, 2018
 
-suppressMessages(if(!require(pacman)){install.packages("pacman");library(pacman)}else{library(pacman)})
-pacman::p_load(raster, ff, data.table, gtools, velox)
 
 do.projections <- function(k = m_i, pnts = clim_table, tmpl_raster = mask)
 {
@@ -227,7 +225,8 @@ do.projections <- function(k = m_i, pnts = clim_table, tmpl_raster = mask)
     
     S.x <- fx.calcs - paramet.file$value[which(paramet.file$variable=="linearPredictorNormalizer")]
     Q.x <- exp(S.x)/paramet.file$value[which(paramet.file$variable=="densityNormalizer")]
-    L.x <- (Q.x*exp(paramet.file$value[which(paramet.file$variable=="entropy")]))/(1+Q.x*exp(paramet.file$value[which(paramet.file$variable=="entropy")]))
+    L.x <- 1 - exp(-exp(paramet.file$value[which(paramet.file$variable=="entropy")]) * Q.x)
+    # L.x <- (Q.x*exp(paramet.file$value[which(paramet.file$variable=="entropy")]))/(1+Q.x*exp(paramet.file$value[which(paramet.file$variable=="entropy")]))
     
     # First index corresponds to taxon information, Second index corresponds to climatic information model
     prj_fn <- tmpl_raster

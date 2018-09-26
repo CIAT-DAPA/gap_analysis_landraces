@@ -21,22 +21,20 @@ calc_env_score <- function(lv_name, clus_method = "hclust_mahalanobis", sdm_dir,
   if(!file.exists(paste(out_dir, "/env_score_", clus_method, ".tif", sep = ""))){
     
     #load packages
-    suppressMessages(if(!require(pacman)){install.packages("pacman");library(pacman)}else{library(pacman)})
-    library(raster); library(sdm); library(distances); library(matrixStats)
-    # pacman::p_load(raster, sdm, distances, matrixStats)
+   
     
     #load sdm object
-    sdm_obj <- read.sdm(paste(sdm_dir,"/./../sdm.sdm",sep=""))
+    sdm_obj <- read.sdm(paste(sdm_dir,"/sdm.sdm",sep=""))
     
     #load sdm projection
-    sdm_prj <- raster(paste(sdm_dir,"/",lv_name,"_prj_median.tif",sep=""))
+    sdm_prj <- raster(paste(sdm_dir,"/prj_models/",lv_name,"_prj_median.tif",sep=""))
     sdm_prj <- readAll(sdm_prj)
     
     #load accessions
     if(length(grep(pattern = "gap_validation", x = occ_dir)) > 0){
       occ_data <- read.csv(paste(occ_dir,"/occ_",lv_name,".csv",sep=""), header = T)
     } else {
-      occ_data <- rgdal::readOGR(dsn = occ_dir, layer = "Occ")
+      occ_data <- shapefile(paste0(occ_dir, "/Occ.shp"))
       occ_data <- unique(as.data.frame(occ_data)); rownames(occ_data) <- 1:nrow(occ_data)
       names(occ_data)[2:3] <- c("lon", "lat")
     }
@@ -50,7 +48,7 @@ calc_env_score <- function(lv_name, clus_method = "hclust_mahalanobis", sdm_dir,
     
     #load cluster dataset
     if(!file.exists(paste(gap_dir,"/ecogeo_",clus_method,".tif",sep=""))){
-      clus_rs <- ecogeo_clustering(n.sample = 10000, k.clust = 11)
+      clus_rs <- ecogeo_clustering(n.sample = 6000, k.clust = 10)
     } else {
       clus_rs <- raster(paste(gap_dir,"/ecogeo_",clus_method,".tif",sep=""))
     }
@@ -85,8 +83,8 @@ calc_env_score <- function(lv_name, clus_method = "hclust_mahalanobis", sdm_dir,
         td_all <- as.data.frame(scale(td_all))
         
         #calculate Euclidean distance
-        td_dist <- distances(td_all, normalize="none")
-        td_matrix <- distance_columns(td_dist, c((nrow(xy_clus)+1):nrow(td_all)),
+        td_dist <- distances::distances(td_all, normalize="none")
+        td_matrix <- distances::distance_columns(td_dist, c((nrow(xy_clus)+1):nrow(td_all)),
                                       c(1:nrow(xy_clus)))
         colnames(td_matrix) <- 1:nrow(euc_occ)
         dist_vals <- rowMins(td_matrix)
@@ -110,12 +108,12 @@ calc_env_score <- function(lv_name, clus_method = "hclust_mahalanobis", sdm_dir,
     writeRaster(rs_euc, paste(out_dir,"/euclidean_dist_",clus_method,".tif",sep=""),format="GTiff")
     writeRaster(rs_euc_norm, paste(out_dir,"/env_score_",clus_method,".tif",sep=""),format="GTiff")
     #return rasters
-    return(rs_euc_norm)
+    #return(rs_euc_norm)
     
   } else {
-
-    rs_euc_norm <- raster::raster(paste(out_dir,"/env_score_",clus_method,".tif",sep=""))
-    return(rs_euc_norm)
+    cat("File already created ... \n \n")
+   # rs_euc_norm <- raster::raster(paste(out_dir,"/env_score_",clus_method,".tif",sep=""))
+    #return(rs_euc_norm)
     
   }
   

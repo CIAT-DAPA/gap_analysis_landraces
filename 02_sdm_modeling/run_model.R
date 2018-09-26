@@ -1,5 +1,5 @@
 # Landrace gap analysis: base code
-# Chrystian Sosa, Julian Ramirez-Villegas, Harold Achicanoy
+# Chrystian Sosa, Julian Ramirez-Villegas, Harold Achicanoy, Andres camilo mendez, Maria Victoria, colin khuory
 # CIAT, March 2018
 
 # R options
@@ -14,58 +14,38 @@ baseDir   <- switch(OSys,
 rm(OSys)
 
 srcDir <- paste(baseDir, "/scripts", sep = "") # Software directory
-region <- "americas"                           # Region: "americas", "world"
-raster::rasterOptions(tmpdir = choose.dir(default = "",
-                                          caption = "Please select the temporary folder")) # Temporary files directory
+region <- "sgh_custom"                           # Region: "americas", "world"
 
 source(paste0(srcDir, "/02_sdm_modeling/preprocessing/config_crop.R")) # Configuring crop directories
 
 # Define crop, analysis level and creating needed directories
-crop <- "common_bean"
-level_1 <- c("andean", "mesoamerican") # level 1: genepool
-level_2 <- c("nueva_granada", "peru", "chile", "durango-Jalisco", "mesoamerica","guatemala") # level 2: race
+crop <- "sorghum"
+level_1 <-  c("bicolor", "guinea", "durra", "kafir", "caudatum") # level 1: genepool
+level_2 <- NULL # level 2: race
 level_3 <- NULL # level 3
 level   <- "lvl_1"
-occName <- "mesoamerican" # Level 1: "andean", "mesoamerican"
+occName <- "durra" # Level 1: "andean", "mesoamerican"
 source(paste(srcDir, "/02_sdm_modeling/preprocessing/config.R", sep = ""))
 # config_crop_dirs(baseDir, crop, level_1, level_2, level_3)
+raster::rasterOptions(tmpdir = choose.dir(default = "",
+                                          caption = "Please select the temporary folder")) # Temporary files directory
 
-# Pre-process classified data
-if(!file.exists(paste0(classResults, "/genepool_predicted_original.csv"))){
-  accessions_predicted <- read.csv(paste0(classResults, "/genepool_predicted.csv"))
-  accessions_predicted$Genepool.interpreted.ACID <- as.character(accessions_predicted$Genepool.interpreted.ACID)
-  accessions_predicted$ensemble[!is.na(accessions_predicted$Genepool.interpreted.ACID)] <- accessions_predicted$Genepool.interpreted.ACID[!is.na(accessions_predicted$Genepool.interpreted.ACID)]
-  accessions_predicted$X <- accessions_predicted$Row.names <- NULL
-  accessions_predicted$ensemble <- as.character(accessions_predicted$ensemble)
-  accessions_predicted$ensemble[which(accessions_predicted$Country == "Chile")] <- "Andean"
-  file.rename(from = paste0(classResults, "/genepool_predicted.csv"), to = paste0(classResults, "/genepool_predicted_original.csv"))
-  write.csv(accessions_predicted, paste0(classResults, "/genepool_predicted.csv"), row.names = F)
-  rm(accessions_predicted)
-}
-if(file.exists(paste0(classResults, "/genepool_predicted_original.csv")) &
-   file.exists(paste0(classResults, "/genepool_predicted.csv"))){
-  
-  if(!file.exists(paste0(classResults, "/genepool_predicted_all.csv"))){
-    
-    accessions_predicted <- read.csv(paste0(classResults, "/genepool_predicted.csv"))
-    file.rename(from = paste0(classResults, "/genepool_predicted.csv"), to = paste0(classResults, "/genepool_predicted_all.csv"))
-    accessions_predicted <- accessions_predicted[accessions_predicted$status == "G",]
-    rownames(accessions_predicted) <- 1:nrow(accessions_predicted)
-    write.csv(accessions_predicted, paste0(classResults, "/genepool_predicted.csv"), row.names = F)
-    rm(accessions_predicted)
-    
-  }
-  
-}
+#crop all raster using region mask extent (OPTIONAL)
+crop_raster(mask   = mask,
+            region = region )
 
 # Cost distance process according with the level of analysis
-cost_dist_function(code         = paste0(sp_Dir_input, "/cost_dist.py"),
+cost_dist_function(
                    outDir       = gap_outDir,
                    friction     = friction,
                    classResults = classResults,
                    occName      = occName,
                    mask         = mask,
-                   occDir       = occDir)
+                   occDir       = occDir,
+                   filename     = paste0(crop, "_", level, "_bd.csv"),
+                   arcgis       = FASE,
+                   code         = paste0(sp_Dir_input, "/cost_dist.py")
+                   )
 
 # Model driver function for preparing which variables will be selected to run SDMs and creation of SWD files
 extension_r <- ".tif"
@@ -110,7 +90,7 @@ m2 <- sdm_approach_function(occName      = occName,
                             spData       = spData,
                             model_outDir = sp_Dir,
                             var_names    = var_names,
-                            nCores       = 5,
+                            nCores       = 4,
                             nFolds       = 5,
                             beta         = beta,
                             feat         = feat)
@@ -123,7 +103,7 @@ m2_eval <- evaluation_function(m2, eval_sp_Dir, spData)
 cat("Projecting models\n")
 clim_table <- raster::as.data.frame(clim_layer, xy = T)
 clim_table <- clim_table[complete.cases(clim_table),]
-model      <- projecting_function(m2, m2_eval, clim_table, mask, model_outDir, nCores = 5, obj.size = 3)
+model      <- projecting_function(m2, m2_eval, clim_table, mask, model_outDir, nCores = 5, obj.size = 3, s.dev = TRUE)
 
 # Final evaluation table
 cat("Validating model\n")
@@ -154,15 +134,15 @@ if(!file.exists(paste0(gap_outDir, "/kernel_classes.tif"))){
   qVals <- raster::quantile(x = kernel[], probs = c(.60, .90), na.rm = T)
   kernel_class <- raster::reclassify(kernel, c(-Inf,qVals[1],1, qVals[1],qVals[2],2, qVals[2],Inf,3))
   writeRaster(kernel_class, paste0(gap_outDir, "/kernel_classes.tif"), format = "GTiff")
-  rm(kernel, kernel_class, qVals); gc()
-} else {
-  kernel_class <- raster(paste0(gap_outDir, "/kernel_classes.tif")) 
-}
+  rm(kernel, kernel_class); gc()
+  } #else {
+#   kernel_class <- raster(paste0(gap_outDir, "/kernel_classes.tif")) 
+# }
 
 # Calculating environmental distance
 calc_env_score(lv_name     = occName,
                clus_method = "hclust_mahalanobis",
-               sdm_dir     = model_outDir,
+               sdm_dir     = sp_Dir,
                gap_dir     = gap_outDir,
                occ_dir     = occDir,
                env_dir     = climDir,
@@ -174,14 +154,53 @@ calc_delaunay_score(baseDir    = baseDir,
                     group      = occName,
                     crop       = crop,
                     lvl        = level,
-                    ncores     = 10,
+                    ncores     = 4,
                     validation = FALSE,
+                    dens.level = "high_density",
                     pnt        = NULL)
 
-# Calculating gap metrics
-calc_gap_score(lv_name     = occName,
-               clus_method = "hclust_mahalanobis",
-               gap_method  = "delaunay", # Can be: "cost_dist", "kernel", "delaunay"
-               sdm_dir     = model_outDir,
-               gap_dir     = gap_outDir,
-               out_dir     = gap_outDir)
+# Calculating gap score
+lapply(c("delaunay", "cost_dist"), function(x){
+
+  calc_gap_score(lv_name     = occName,
+                 clus_method = "hclust_mahalanobis",
+                 gap_method  = x, # Can be: "cost_dist", "kernel", "delaunay"
+                 sdm_dir     = model_outDir,
+                 gap_dir     = gap_outDir,
+                 out_dir     = gap_outDir)
+  
+})
+
+#create all neccessary files to carry out the validation process
+
+validation_process(occName = occName,
+                   gap_valDir = gap_valDir,
+                   buffer_radius = 1, # Radius of 100 km for excluding occurrences
+                   density_pattern = 3, # Density pattern (1: low density, 2: medium density, 3: high density)
+                   geo_score = c("cost_dist", "delaunay"),
+                   use.Arcgis = FALSE)
+
+#summarize all validation results
+summary_function(area =region,
+                 group = occName,
+                 crop = crop,
+                 lvl = "lvl_1",
+                 pnt = paste0("pnt", 1:5),
+                 filename = c("gap_score_cost_dist.tif"   ,"gap_score_delaunay.tif"),
+                 radius = seq(55,85, 1), #number of radius size to evaluate
+                 baseDir = baseDir,
+                 dens.level = "high_density",
+                 ncores = 2 #(detectCores()-8)
+)
+
+
+#create png graphs for all rasters
+
+create_png_maps( summ_filepath= paste0(gap_valDir, "/buffer_100km/validation_results.xlsx"), 
+                 rast_dirPath = paste0(results_dir, "/", crop, "/", level, "/", occName, "/", region, "/gap_models"),
+                 grph_dir     = paste0(results_dir, "/", crop, "/lvl_1/", occName, "/", region, "/graphics"),
+                 occName      = occName,
+                 sdm_filepath = paste0(model_outDir, "/", occName, "_prj_median.tif"),
+                 occ_filepath = paste0(occDir, "/Occ.shp"), 
+                 colors       = list(two_cols =  c('grey70', 'red2') , three_cols = c('grey70', 'goldenrod3', 'red2')), 
+                 new_ext        = NULL)

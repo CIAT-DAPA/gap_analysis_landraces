@@ -21,8 +21,6 @@
 
 delaunaypolygons <- function(x, outdir) {
   #load required packages
-  require(deldir);require(sp);require(raster);require(rgeos); require(rgdal)
-  
   #if polygons do not exist then create them
   if (!file.exists(paste0(outdir,"/delaunay/raw_delaunay.shp"))){
     #create spatial polygons from triangulation

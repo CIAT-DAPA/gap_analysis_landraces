@@ -4,9 +4,7 @@
 
 ASD15_function <- function(model_outDir){
   
-  suppressMessages(if(!require(pacman)){install.packages("pacman");library(pacman)}else{library(pacman)})
-  pacman::p_load(raster)
-  
+ 
   ###ASD15
   esdCpt <- raster(paste(model_outDir, "/", occName, "_prj_std.tif", sep = ""))
   dumm <- raster(paste(model_outDir, "/", occName, "_prj_median_thr.tif", sep = ""))

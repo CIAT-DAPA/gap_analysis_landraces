@@ -11,8 +11,6 @@
 
 create_buffers <- function(xy, msk, buff_dist = 0.5, format = "GTiff", filename) {
   
-  suppressMessages(if(!require(pacman)){install.packages("pacman");library(pacman)}else{library(pacman)})
-  pacman::p_load(SDMTools, rgdal, maptools, raster, rgeos)
   
   msk <- raster(msk)
   

@@ -1,7 +1,6 @@
-require(raster)
-require(foreach)
 
-projecting_function <-function(m2, m2_eval, clim_table, mask, model_outDir, nCores, obj.size){
+
+projecting_function <-function(m2, m2_eval, clim_table, mask, model_outDir, nCores, obj.size, s.dev = TRUE){
   
   # Creating projected models replicates directory
   n_projs <- length(list.files(path = model_outDir_rep, pattern = "_prj_th_rep-"))
@@ -67,13 +66,18 @@ projecting_function <-function(m2, m2_eval, clim_table, mask, model_outDir, nCor
     prj_mdn <- raster(paste(model_outDir,"/",occName,"_prj_median.tif",sep=""))
   }
   
-  # Standard deviation
+  
+  #Standard deviation
+  if(s.dev == TRUE){
+    
   if (!file.exists(paste(model_outDir,"/",occName,"_prj_std.tif",sep=""))) {
     prj_std <- calc(prj_stk, fun = function(x) {sd(x, na.rm = T)})
     writeRaster(prj_std, paste(model_outDir,"/",occName,"_prj_std.tif",sep=""),format="GTiff")
   } else {
     prj_std <- raster(paste(model_outDir,"/",occName,"_prj_std.tif",sep=""))
   }
+    
+  }#end if s.dev
   
   cat("Calculating ensemble approaches","\n")
   

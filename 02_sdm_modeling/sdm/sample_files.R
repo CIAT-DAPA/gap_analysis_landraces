@@ -5,9 +5,7 @@
 #function to create background, occurrence, and swd (bg+occ) samples
 samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, climDir, clim_spDir, extension_r, var_names_generic, var_names_sp, overwrite = F, correlation = 0){
   
-  suppressMessages(if(!require(pacman)){install.packages("pacman");library(pacman)}else{library(pacman)})
-  pacman::p_load(dismo, raster, usdm, plsdepot, FactoMineR)
-  
+
   #load raster files
   cat("Loading raster files","\n")
   current_clim_layer_generic <- lapply(paste0(climDir, "/", var_names_generic, extension_r), raster)

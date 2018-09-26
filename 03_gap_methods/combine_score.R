@@ -17,7 +17,7 @@
 calc_gap_score <- function(lv_name, clus_method = "hclust_mahalanobis", gap_method = "cost_dist", sdm_dir, gap_dir, out_dir){
   #load libraries
   
-  require(raster)
+  
   
   if(!file.exists(paste(out_dir,"/gap_score_",gap_method,".tif",sep=""))){
     #load sdm projection
@@ -36,6 +36,7 @@ calc_gap_score <- function(lv_name, clus_method = "hclust_mahalanobis", gap_meth
       geo_score <- mask(geo_score, sdm_prj)
       geo_score[which(is.na(geo_score[]) & !is.na(sdm_prj[]))] <- max(geo_score[],na.rm=T)
       geo_score <- geo_score / max(geo_score[], na.rm=T)
+      
     } else if (gap_method == "kernel") {
       #method kernel, load kernel
       kern_dens <- raster(paste(gap_dir,"/kernel.tif",sep=""))
@@ -49,12 +50,14 @@ calc_gap_score <- function(lv_name, clus_method = "hclust_mahalanobis", gap_meth
       geo_score <- geo_score / max(geo_score[], na.rm=T)
       geo_score <- 1-geo_score #kernel is density so low values would be gaps
     } else if (gap_method == "delaunay") {
+      
       del_triang <- raster(paste(gap_dir,"/delaunay.tif",sep=""))
       del_triang <- readAll(del_triang)
       del_triang <- crop(del_triang, sdm_prj)
       geo_score <- del_triang
       geo_score <- mask(geo_score, sdm_prj)
       geo_score[which(is.na(geo_score[]) & !is.na(sdm_prj[]))] <- max(geo_score[],na.rm=T)
+      
     }
     
     #load environmental score (per-cluster env. distance)
@@ -69,21 +72,21 @@ calc_gap_score <- function(lv_name, clus_method = "hclust_mahalanobis", gap_meth
     #get gap threshold
     #gap_thr <- read.csv(paste(res_dir,"/gap_validation/validation_results.csv"), header=T)
     #gap_thr <- gap_thr$threshold
-    gap_thr <- quantile(na.omit(gap_score[]), probs=c(0.9,0.95)) #temporary
-    
+    # gap_thr <- quantile(na.omit(gap_score[]), probs=c(0.9,0.95)) #temporary
+    # 
     #classify gap score
-    gap_class <- raster(gap_score)
-    gap_class[which(gap_score[] < gap_thr[1])] <- 0
-    gap_class[which(gap_score[] >= gap_thr[1] & gap_score[] < gap_thr[2])] <- 1
-    gap_class[which(gap_score[] >= gap_thr[2])] <- 2
-    
+    # gap_class <- raster(gap_score)
+    # gap_class[which(gap_score[] < gap_thr[1])] <- 0
+    # gap_class[which(gap_score[] >= gap_thr[1] & gap_score[] < gap_thr[2])] <- 1
+    # gap_class[which(gap_score[] >= gap_thr[2])] <- 2
+    #  
     #write gap_score and gap_class rasters
     writeRaster(gap_score, paste(out_dir,"/gap_score_",gap_method,".tif",sep=""), format="GTiff")
-    writeRaster(gap_class, paste(out_dir,"/gap_class_",gap_method,".tif",sep=""), format="GTiff")
+    #writeRaster(gap_class, paste(out_dir,"/gap_class_",gap_method,".tif",sep=""), format="GTiff")
     
     #return stack with rasters
-    rstk <- stack(c(gap_score,gap_class))
-    return(rstk)
+   # rstk <- stack(c(gap_score,gap_class))
+    return(gap_score)
     
   } else {
     gap_score <- raster::raster(paste(out_dir,"/gap_score_",gap_method,".tif",sep=""))

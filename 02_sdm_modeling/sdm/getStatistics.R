@@ -1,8 +1,5 @@
 
-library(tidyverse)
-library(pROC)
-library(sdm)
-library(plyr)
+
 
 occName = "mesoamerican"; geo_score = "cost_dist"; pattern = 3; point = 1
 

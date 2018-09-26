@@ -20,7 +20,7 @@ model_driver <- function(sp_Dir, mask, occName, extension_r, all, overwrite, cls
     mask <- mask
     
     # selected genepool occurrences
-    occFile <- paste0(classResults, "/genepool_predicted_all.csv")
+    occFile <- paste0(classResults, "/", crop, "_", level, "_bd.csv")
     
     # SWD using all variables provided
     

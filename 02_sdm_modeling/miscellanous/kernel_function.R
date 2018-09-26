@@ -5,8 +5,6 @@
 #####################################
 #https://cran.r-project.org/web/packages/adehabitatHR/adehabitatHR.pdf
 
-suppressMessages(if(!require(pacman)){install.packages("pacman");library(pacman)}else{library(pacman)})
-pacman::p_load(spatstat, raster, sp, adehabitatHR, SDMTools, KernSmooth)
 
 ###############
 
@@ -26,8 +24,10 @@ raster_kernel <- function(mask, occurrences, out_dir, kernel_method, scale){
     
     
     ### Transforming mask to owin object 
-    w <- spatstat::owin(xrange=c(extent(mask)[1],extent(mask)[2]),
-                        yrange =c(extent(mask)[3],extent(mask)[4]),
+    w <- spatstat::owin(xrange=c(raster::extent(mask)@xmin,
+                                 raster::extent(mask)@xmax),
+                        yrange =c(raster::extent(mask)@ymin,
+                                  raster::extent(mask)@ymax),
                         mask=matrix(TRUE,dim(mask)[1],dim(mask)[2])
     )
     
@@ -76,16 +76,19 @@ raster_kernel <- function(mask, occurrences, out_dir, kernel_method, scale){
       est <- KernSmooth::bkde2D(occurrences@coords, 
                                 bandwidth=c(dpik(occurrences@coords[,1]),dpik(occurrences@coords[,2])), 
                                 gridsize=c(ncol(mask),nrow(mask)),
-                                range.x=list(c(extent(mask)[1],extent(mask)[2]),c(extent(mask)[3],extent(mask)[4])))
+                                range.x=list(c(raster::extent(mask)@xmin,
+                                               raster::extent(mask)@xmax),
+                                             c(raster::extent(mask)@ymin,
+                                               raster::extent(mask)@ymax)))
       est$fhat[est$fhat<0.00001] <- 0 ## ignore very small values
       
       
       est.raster <-  raster(list(x=est$x1,y=est$x2,z=est$fhat))
       #projection(est.raster) <- CRS("+init=epsg:4326")
-      xmin(est.raster) <- extent(mask)[1]
-      xmax(est.raster) <- extent(mask)[2]
-      ymin(est.raster) <- extent(mask)[3]
-      ymax(est.raster) <- extent(mask)[4]
+      xmin(est.raster) <- raster::extent(mask)@xmin
+      xmax(est.raster) <- raster::extent(mask)@xmax
+      ymin(est.raster) <- raster::extent(mask)@ymin
+      ymax(est.raster) <- raster::extent(mask)@ymax
       
       kernel <- est.raster;rm(est);gc()
       
