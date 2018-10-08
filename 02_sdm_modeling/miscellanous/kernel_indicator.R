@@ -2,7 +2,7 @@
 
 kernel_indicator <- function(kernel,friction,model_outDir,gap_outDir,reverse,cost_dist){
   #loading Maxent Model
-  model <- raster(paste(model_outDir,"/",occName,"_prj_median.tif",sep=""))
+  model <- raster(paste(model_outDir,"/prj_models/",occName,"_prj_median.tif",sep=""))
   #loading friction surface
   friction <-  raster(friction)
   #Transforming friction in 0 - 1 variable

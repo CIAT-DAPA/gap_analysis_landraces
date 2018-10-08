@@ -6,7 +6,7 @@ pacman::p_load(tcltk, adehabitatHR, spatstat, usdm, data.table,
                dismo, rJava, rgeos, distances, matrixStats,  sp, 
                tidyverse, rlang, sf , wordspace , gdistance, caret, earth, 
                fastcluster, xlsx, rmapshaper, FactoMineR,
-               parallelDist, bindrcpp, foreach, doParallel, ff)
+               parallelDist, bindrcpp, foreach, doParallel, ff, pROC)
 
 #, plsdepot
 #, GISTools

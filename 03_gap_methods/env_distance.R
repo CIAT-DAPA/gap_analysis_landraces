@@ -27,7 +27,7 @@ calc_env_score <- function(lv_name, clus_method = "hclust_mahalanobis", sdm_dir,
     sdm_obj <- read.sdm(paste(sdm_dir,"/sdm.sdm",sep=""))
     
     #load sdm projection
-    sdm_prj <- raster(paste(sdm_dir,"/prj_models/",lv_name,"_prj_median.tif",sep=""))
+    sdm_prj <- raster(paste(sdm_dir,"/prj_models/",lv_name,"_prj_median.tif",sep="")) 
     sdm_prj <- readAll(sdm_prj)
     
     #load accessions

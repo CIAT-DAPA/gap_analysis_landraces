@@ -21,7 +21,7 @@ calc_gap_score <- function(lv_name, clus_method = "hclust_mahalanobis", gap_meth
   
   if(!file.exists(paste(out_dir,"/gap_score_",gap_method,".tif",sep=""))){
     #load sdm projection
-    sdm_prj <- raster(paste(sdm_dir,"/",lv_name,"_prj_median.tif",sep=""))
+    sdm_prj <- raster(paste(sdm_dir,"/",lv_name,"_prj_median.tif",sep="")) #paste(sdm_dir,"/",lv_name,"_prj_median.tif",sep="")
     sdm_prj <- readAll(sdm_prj)
     
     #load specified gap_method raster

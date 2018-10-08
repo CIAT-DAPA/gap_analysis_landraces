@@ -66,9 +66,6 @@ spData           <- read.csv(swdFile)
 spData           <- spData[,c(3:ncol(spData))]
 names(spData)[1] <- occName
 
-# Loading raster files
-clim_layer <- lapply(paste0(climDir, "/", var_names, ".tif"), raster)
-clim_layer <- raster::stack(clim_layer)
 
 # Calibration step
 cat("Performing calibration step","\n")
@@ -99,9 +96,14 @@ m2 <- sdm_approach_function(occName      = occName,
 cat("Evaluating models performance\n")
 m2_eval <- evaluation_function(m2, eval_sp_Dir, spData)
 
+# Loading raster files
+clim_layer <- lapply(paste0(climDir, "/", var_names, ".tif"), raster)
+clim_layer <- raster::stack(clim_layer)
+
 # Model projecting
 cat("Projecting models\n")
 clim_table <- raster::as.data.frame(clim_layer, xy = T)
+rm(clim_layer); g <- gc(); rm(g)
 clim_table <- clim_table[complete.cases(clim_table),]
 model      <- projecting_function(m2, m2_eval, clim_table, mask, model_outDir, nCores = 5, obj.size = 3, s.dev = TRUE)
 
