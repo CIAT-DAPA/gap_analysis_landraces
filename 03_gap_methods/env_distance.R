@@ -16,7 +16,7 @@
 #out_dir <- gap_dir
 #env_score <- calc_env_score(lv_name="mesoamerican",clus_method="hclust_mahalanobis",sdm_dir,gap_dir,occ_dir,env_dir,out_dir)
 
-calc_env_score <- function(lv_name, clus_method = "hclust_mahalanobis", sdm_dir, gap_dir, occ_dir, env_dir, out_dir){
+calc_env_score <- function(lv_name, clus_method = "hclust_mahalanobis", sdm_dir, gap_dir, occ_dir, env_dir, out_dir, var_names){
   
   if(!file.exists(paste(out_dir, "/env_score_", clus_method, ".tif", sep = ""))){
     
@@ -24,7 +24,7 @@ calc_env_score <- function(lv_name, clus_method = "hclust_mahalanobis", sdm_dir,
    
     
     #load sdm object
-    sdm_obj <- read.sdm(paste(sdm_dir,"/sdm.sdm",sep=""))
+    #sdm_obj <- read.sdm(paste(sdm_dir,"/sdm.sdm",sep=""))
     
     #load sdm projection
     sdm_prj <- raster(paste(sdm_dir,"/prj_models/",lv_name,"_prj_median.tif",sep="")) 
@@ -40,7 +40,8 @@ calc_env_score <- function(lv_name, clus_method = "hclust_mahalanobis", sdm_dir,
     }
     
     #load environmental layers
-    env_names <- names(sdm_obj@data@features)[2:ncol(sdm_obj@data@features)]
+    env_names <- var_names
+      #names(sdm_obj@data@features)[2:ncol(sdm_obj@data@features)]
     if ("monthCountByTemp10" %in% env_names) env_names <- env_names[-which(env_names=="monthCountByTemp10")]
     env_data <- stack(paste(env_dir,"/",env_names,".tif",sep=""))
     env_data <- readAll(env_data)
@@ -48,7 +49,7 @@ calc_env_score <- function(lv_name, clus_method = "hclust_mahalanobis", sdm_dir,
     
     #load cluster dataset
     if(!file.exists(paste(gap_dir,"/ecogeo_",clus_method,".tif",sep=""))){
-      clus_rs <- ecogeo_clustering(n.sample = 6000, k.clust = 10)
+      clus_rs <- ecogeo_clustering(n.sample = 6000, k.clust = 10, var_names = var_names)
     } else {
       clus_rs <- raster(paste(gap_dir,"/ecogeo_",clus_method,".tif",sep=""))
     }

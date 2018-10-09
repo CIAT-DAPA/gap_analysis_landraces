@@ -7,6 +7,7 @@ CreateMXArgs <- function(calibration){
   mxnt.args <- c("linear")
   
   if(!is.null(calibration)){
+    
     best.ind <- which.min(calibration$deltaAICc)
     features <-as.data.frame(cbind(calibration$linear, calibration$quadratic, calibration$product, calibration$hinge, calibration$threshold))
     names(features) <- c("l", "q", "p", "h", "t")
@@ -57,7 +58,7 @@ CreateMXArgs <- function(calibration){
 ###############################################################################################
 
 Calibration_function <- function(spData, save, sp_Dir, ommit){
-  
+  cat("Initializing calibration step \n")
   suppressMessages(if(!require(pacman)){install.packages("pacman");library(pacman)}else{library(pacman)})
   pacman::p_load(devtools, maxnet)
   if(!require(enmSdm)){
@@ -78,6 +79,7 @@ Calibration_function <- function(spData, save, sp_Dir, ommit){
     }
     
     # Calibration using MaxEnt instead of Maxnet R package.
+    cat("Calculating best parameters for maxent \n")
     tryCatch(expr = {
       calibration <- enmSdm::trainMaxEnt(data = spData[,c(1,4:ncol(spData))], regMult = seq(0.5, 6, 0.5), out = 'tuning', verbose = FALSE, jackknife = F)
     },
@@ -106,4 +108,5 @@ Calibration_function <- function(spData, save, sp_Dir, ommit){
   }
   args <- CreateMXArgs(calibration)
   return(args)
+  cat("Process done... \n")
 }

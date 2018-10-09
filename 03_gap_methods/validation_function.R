@@ -32,7 +32,8 @@ validation_process <- function(occName = occName,
                                buffer_radius = 1, # Radius of 100 km for excluding occurrences
                                density_pattern = 3, # Density pattern (1: low density, 2: medium density, 3: high density)
                                geo_score = c("cost_dist", "delaunay"),# Can be: "cost_dist", "kernel", "delaunay"
-                               use.Arcgis = TRUE) 
+                               use.Arcgis = TRUE,
+                               use.maxnet = FALSE) 
 {
   
   cat(">>> Loading occurrence data ... \n")
@@ -142,39 +143,62 @@ validation_process <- function(occName = occName,
     sdm_excl <- occSDM[which(id_sdm == 1),]
     occSDM_upt <- occSDM[base::setdiff(1:nrow(occSDM), which(id_sdm == 1)),]; rm(id_sdm, sdm_excl)
     
-    cat(">>> Running maxent model approach, evaluate and project ...\n")
-    cat("      This process can take several minutes...... Be patient \n \n ")
-    m2 <- .GlobalEnv$sdm_approach_function(occName = occName,
-                                           spData = occSDM_upt,
-                                           model_outDir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results"),
-                                           var_names = vars,
-                                           nCores = 5,
-                                           nFolds = 5,
-                                           beta = beta,
-                                           feat = feat)
-    
-    m2_eval <- .GlobalEnv$evaluation_function(m2,
-                                              eval_sp_Dir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/evaluation"),
-                                              spData = occSDM_upt)
-    model_outDir_rep <- paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models/replicates")
-    
-    if(!file.exists(paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models/", occName, "_prj_median.tif"))){
-      clim_layer <- lapply(paste0(climDir, "/", vars, ".tif"), raster)
-      clim_layer <- raster::stack(clim_layer)
-      clim_table <- raster::as.data.frame(clim_layer, xy = T)
-      clim_table <- clim_table[complete.cases(clim_table),]
-      model <- .GlobalEnv$projecting_function(m2,
-                                              m2_eval,
-                                              clim_table,
-                                              mask,
+    clim_layer <- lapply(paste0(climDir, "/", vars, ".tif"), raster)
+    clim_layer <- raster::stack(clim_layer)
+    if(use.maxnet){
+      
+      cat("Running sdm modelling approach using Maxnet \n")
+      cat("      This process can take several minutes...... Be patient \n \n ")
+      
+      .GlobalEnv$sdm_maxnet_approach_function(occName      = occName,
+                                              spData       = occSDM_upt,
+                                              var_names    = vars,
                                               model_outDir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models"),
-                                              nCores = 5,
-                                              obj.size = 3,
-                                              s.dev = FALSE)
-      rm(clim_table); g <- gc(); rm(g)
-    } else {
-      cat("SDM model has already been created ... \n")
+                                              sp_Dir        = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models"),
+                                              clim_layer   = clim_layer,
+                                              nFolds       = 5,
+                                              beta         = beta,
+                                              feat         = feat,
+                                              varImp       = FALSE)
+      
+    }else{
+      
+      cat(">>> Running maxent model approach, evaluate and project ...\n")
+      m2 <- .GlobalEnv$sdm_approach_function(occName = occName,
+                                             spData = occSDM_upt,
+                                             model_outDir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results"),
+                                             var_names = vars,
+                                             nCores = 5,
+                                             nFolds = 5,
+                                             beta = beta,
+                                             feat = feat)
+      
+      m2_eval <- .GlobalEnv$evaluation_function(m2,
+                                                eval_sp_Dir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/evaluation"),
+                                                spData = occSDM_upt)
+      model_outDir_rep <- paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models/replicates")
+      
+      if(!file.exists(paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models/", occName, "_prj_median.tif"))){
+        
+        clim_table <- raster::as.data.frame(clim_layer, xy = T)
+        clim_table <- clim_table[complete.cases(clim_table),]
+        model <- .GlobalEnv$projecting_function(m2,
+                                                m2_eval,
+                                                clim_table,
+                                                mask,
+                                                model_outDir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models"),
+                                                nCores = 5,
+                                                obj.size = 3,
+                                                s.dev = FALSE)
+        rm(clim_table); g <- gc(); rm(g)
+      } else {
+        cat("SDM model has already been created ... \n")
+      }
+      
+      
+      
     }
+   
     
     if(!file.exists(paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/03_gap_models/kernel.tif"))){
       cat(">>> Creating a new kernel density ...\n")
@@ -195,7 +219,8 @@ validation_process <- function(occName = occName,
                                 gap_dir = gap_outDir,
                                 occ_dir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/01_selected_points"),
                                 env_dir = climDir,
-                                out_dir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"))
+                                out_dir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"),
+                                var_names = var_names)
     } else {
       cat("Environmental score has already been created ... \n")
     }

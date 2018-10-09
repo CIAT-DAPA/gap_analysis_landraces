@@ -111,8 +111,11 @@ calc_delaunay_score <- function(baseDir, area, group, crop, lvl, ncores = NULL, 
   
   cat("Removing Bad sf geometries \n \n ")
   
+  #geometries not allowed 
+  not_all <- c()
+  
   bad <- unlist(lapply(1:length(i$geometry), function(x){
-    if(is(i$geometry[x])[1] == "sfc_GEOMETRYCOLLECTION" | length(i$geometry[[x]]) == 0){
+    if(is(i$geometry[x])[1] == "sfc_GEOMETRYCOLLECTION"| is(i$geometry[x])[1] == "sfc_POINT" | length(i$geometry[[x]]) == 0){
       return(x)
     } else {
       return(NA)
@@ -126,8 +129,8 @@ calc_delaunay_score <- function(baseDir, area, group, crop, lvl, ncores = NULL, 
   cat("writing intercepted sf as a SpatialPolygons \n \n ")
   
    st_write(i$geometry,
-            dsn = paste0(tempdir(), "/intersection.shp"),
-            layer = "intercep",
+            dsn = tempdir(),
+            layer = "intersection",
             driver = "ESRI Shapefile",
             delete_layer = TRUE,
             delete_dsn = TRUE)

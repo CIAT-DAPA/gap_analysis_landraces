@@ -43,7 +43,7 @@ cost_dist_function(
                    mask         = mask,
                    occDir       = occDir,
                    filename     = paste0(crop, "_", level, "_bd.csv"),
-                   arcgis       = FASE,
+                   arcgis       = FALSE,
                    code         = paste0(sp_Dir_input, "/cost_dist.py")
                    )
 
@@ -81,8 +81,28 @@ if(file.exists(paste0(sp_Dir, "/calibration.csv"))){
   feat <- feat[(!grepl("betamultiplier=", feat))]
 }
 
+# Loading raster files
+clim_layer <- lapply(paste0(climDir, "/", var_names, ".tif"), raster)
+clim_layer <- raster::stack(clim_layer)
+
+use.maxnet <- TRUE
+if(use.maxnet){
+#Use MAXNET to run sdm 
+cat("Running sdm modelling approach using Maxent \n")
+sdm_maxnet_approach_function(occName      = occName,
+                             spData       = spData,
+                             var_names    = var_names,
+                             model_outDir = model_outDir,
+                             sp_Dir        = spDir,
+                             clim_layer   = clim_layer,
+                             nFolds       = 5,
+                             beta         = beta,
+                             feat         = feat,
+                             varImp       = TRUE)
+
+}else{
 # Running SDMs
-cat("Running modeling approach\n")
+cat("Running sdm modelling approach \n")
 m2 <- sdm_approach_function(occName      = occName,
                             spData       = spData,
                             model_outDir = sp_Dir,
@@ -96,9 +116,6 @@ m2 <- sdm_approach_function(occName      = occName,
 cat("Evaluating models performance\n")
 m2_eval <- evaluation_function(m2, eval_sp_Dir, spData)
 
-# Loading raster files
-clim_layer <- lapply(paste0(climDir, "/", var_names, ".tif"), raster)
-clim_layer <- raster::stack(clim_layer)
 
 # Model projecting
 cat("Projecting models\n")
@@ -115,7 +132,10 @@ if(!file.exists(paste0(eval_sp_Dir, "/Final_evaluation.csv"))){
   m2_eval_final <- read.csv(paste0(eval_sp_Dir, "/Final_evaluation.csv"), header = T)
 }
 
+}#end if
+
 # Kernel function #1 spatstat, #2 Adehabitat, #3 Kernsmooth
+cat("Calculating kernel Density \n")
 if(!file.exists(paste0(gap_outDir, "/kernel.tif"))){
   spData <- readOGR(dsn = occDir, layer = "Occ")
   spData <- unique(as.data.frame(spData)); rownames(spData) <- 1:nrow(spData)
@@ -148,7 +168,8 @@ calc_env_score(lv_name     = occName,
                gap_dir     = gap_outDir,
                occ_dir     = occDir,
                env_dir     = climDir,
-               out_dir     = gap_outDir)
+               out_dir     = gap_outDir,
+               var_names   = var_names)
 
 # Calculating Delaunay triangulation
 calc_delaunay_score(baseDir    = baseDir,
@@ -180,7 +201,8 @@ validation_process(occName = occName,
                    buffer_radius = 1, # Radius of 100 km for excluding occurrences
                    density_pattern = 3, # Density pattern (1: low density, 2: medium density, 3: high density)
                    geo_score = c("cost_dist", "delaunay"),
-                   use.Arcgis = FALSE)
+                   use.Arcgis = FALSE,
+                   use.maxnet = TRUE)
 
 #summarize all validation results
 summary_function(area =region,

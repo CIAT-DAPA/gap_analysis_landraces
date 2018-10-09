@@ -21,22 +21,44 @@
 # 3. Validation metrics * done
 #4. project the model to a raster ** done
 
-sdm_approach_function <- function(occName      = occName,
+sdm_maxnet_approach_function <- function(occName      = occName,
                                   spData       = spData,
                                   var_names    = var_names,
                                   model_outDir = model_outDir,
+                                  sp_Dir        = spDir,
                                   clim_layer   = clim_layer,
-                                  nCores       = 5,
                                   nFolds       = 5,
                                   beta         = beta,
                                   feat         = feat,
                                   varImp       = FALSE){
+  
+  
+  cat(
+    "   oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo       
+    N`                                                                                  `N       
+    N`                                                                                  `N       
+    N`                                                                                  `N       
+    N`                 `..`               `.....`        `..`         `...              `N       
+    N`                 omMh-            -sdddmddd/      `oMNd/       .sNNd.             `N       
+    N`                /mooms.         `omh:`   .-.      `sNyhd:     `omsdm-             `N       
+    N`               -dy.`sN+`        /mh-              `sNo:dh-   `+mo-dm-             `N       
+    N`              `yd-  `hm:        +ms`              `sN+ /mh. `/ms`-dm-             `N       
+    N`              sNmddddmMh-       /my-              `sN+ `+Ns`:dy` -dm-             `N       
+    N`             /my:-----sNs.      `sNy:`   `-.      `sN+  .sNhdh.  -dm-             `N       
+    N`            -dd-      `yN+`      `/yddddddh/      `om+   .yMd-   .dd.             `N       
+    N`            `.`        `..          `.....`        `.`    `..     ..              `N       
+    N`                                                                                  `N       
+    N`                                                                                  `N       
+    N++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++N       
+    \n \n" )
+  
+  cat("Initializing MAXNET model fitting throught cross validation. \n ")
+  
   #split data  in nFolds for cross - validation process
-  
   cvfolds <- modelr::crossv_kfold(spData, k= nFolds)
-  
+  cat("Number of folds:", nFolds, "\n")
   #Do all sdm process
-  sdm_results <- cvfolds %>% mutate(.
+  sdm_results <- cvfolds %>% dplyr::mutate(.
     #train 5 sdm models using Maxnet and train data
     ,model_train = purrr::map2(.x = train, .y = .id, function(.x, .y){
       
@@ -102,7 +124,7 @@ sdm_approach_function <- function(occName      = occName,
     return(as.numeric(nAUC$auc))
   }) 
   #Calculate cAUC using the formula cAUC = AUC + 0.5 - max( 0.5, nAUC)
-  , cAUC = pmap(list(.x = AUC, .y = nAUC, .z = .id), function(.x, .y, .z){
+  , cAUC = purrr::pmap(list(.x = AUC, .y = nAUC, .z = .id), function(.x, .y, .z){
     cat("Calculating AUC correction using NULL model", .z, " \n")
     cAUC = .x + 0.5 - max( 0.5, .y)
     return(cAUC)
@@ -112,10 +134,10 @@ sdm_approach_function <- function(occName      = occName,
     
     cat(">>> Proyecting MAXNET model", .y,"to a raster object \n")
     r <- raster::predict(clim_layer, .x, type = "cloglog", progress='text')
-    writeRaster(r, paste0(model_outDir_rep,"/",occName,"_prj_rep-", .y,".tif"), format="GTiff", overwrite = TRUE)
+    writeRaster(r, paste0(model_outDir,"/replicates/",occName,"_prj_rep-", .y,".tif"), format="GTiff", overwrite = TRUE)
     #thresholding raster
     r[which(r[] < .z$threshold)] <- NA
-    writeRaster(r, paste(model_outDir_rep,"/",occName,"_prj_th_rep-", .y,".tif",sep=""), format="GTiff", overwrite = TRUE)
+    writeRaster(r, paste(model_outDir,"/replicates/",occName,"_prj_th_rep-", .y,".tif",sep=""), format="GTiff", overwrite = TRUE)
     return(r)
   })
   
@@ -196,7 +218,7 @@ saveRDS(sdm_results, paste0(sp_Dir, "/sdm.rds"))
  
 
 #######################################################
-########### OTHER WAY TO DO MAXNET ###################
+########### OTHER WAY TO RUN MAXNET ###################
 ######################################################
 
 # USE THIS TO COMPARE RESULTS AGAINST SDM PACKAGE

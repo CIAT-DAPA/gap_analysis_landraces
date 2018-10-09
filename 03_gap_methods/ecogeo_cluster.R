@@ -7,7 +7,7 @@
 
 
                 #### FUNCTION TO CREATE ECOGEOGRAFICAL CLUSTER##############
-ecogeo_clustering <- function(n.sample = 10000, k.clust = 11){
+ecogeo_clustering <- function(n.sample = 10000, var_names,k.clust = 11){
   
 
   # Analysis region: "americas", "world"
@@ -37,9 +37,9 @@ ecogeo_clustering <- function(n.sample = 10000, k.clust = 11){
   
   #selec rasters
   
-  sdm_obj <- read.sdm(paste(sp_Dir,"/sdm.sdm",sep=""))
-  var_names <- names(sdm_obj@data@features)[2:ncol(sdm_obj@data@features)]
-  
+  # sdm_obj <- read.sdm(paste(sp_Dir,"/sdm.sdm",sep=""))
+  # var_names <- names(sdm_obj@data@features)[2:ncol(sdm_obj@data@features)]
+  # 
   var_names <- paste0(var_names,".tif")
   # vars <- c("Accessibility"        ,    "Altitude"       ,          "aridityIndexThornthwaite" ,"bio_14"  ,                
   #  "bio_15"  ,                "bio_18"    ,               "bio_19"    ,               "bio_2"   ,                
@@ -74,7 +74,7 @@ ecogeo_clustering <- function(n.sample = 10000, k.clust = 11){
     dplyr::select(., ncol(.) , 1:(ncol(.)-1) )
   
 
-  rm(pos, var_names, sdm_obj, environ_list); g <- gc(); rm(g); removeTmpFiles()
+  rm(pos, var_names, environ_list); g <- gc(); rm(g); removeTmpFiles()
 
 
 rownames(environ_df) <- environ_df$ID
