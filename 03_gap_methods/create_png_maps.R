@@ -14,7 +14,7 @@ create_png_maps <- function(summ_filepath     ,
                                  colors = list(two_cols =  c('grey70', 'red2') , three_cols = c('grey70', 'goldenrod3', 'red2')), 
                                  new_ext = NULL){
   
-  pacman::p_load(raster, rasterVis, maptools, tidyverse, xlsx)
+  pacman::p_load(raster, rasterVis, maptools, tidyverse, xlsx, latticeExtra, sp)
   
   #import summary table and extrac the thresholds
   summ_table <- read.xlsx(summ_filepath, sheetName = "summary")
@@ -51,8 +51,7 @@ create_png_maps <- function(summ_filepath     ,
   data(wrld_simpl)
   
   # Creating reference lines
-  grat <- sp::gridlines(wrld_simpl, easts = seq(-180, 180, by = 10), norths = seq(-90, 90, by = 15))
-  
+  grat <<- sp::gridlines(wrld_simpl, easts = seq(-180, 180, by = 10), norths = seq(-90, 90, by = 15))
   # creating fancy gap class maps 
   lapply(rst_list, function(rsin){
     
@@ -82,12 +81,10 @@ create_png_maps <- function(summ_filepath     ,
     ht <- 12
     fct <- (rsin@extent@xmin-rsin@extent@xmax)/(rsin@extent@ymin-rsin@extent@ymax)
     wt <- ht*(fct+.1)
-    grat <- gridlines(wrld_simpl, easts=seq(-180,180,by=10), norths=seq(-90,90,by=15))
-    
+
     # My theme
     mThm <- rasterTheme(region = brewer.pal(9, "YlGn"),
                         panel.background = list(col = "#708090"))
-    
     #produce levelplot
     p <- rasterVis:::levelplot(rsin,
                                att = 'level',
@@ -98,20 +95,6 @@ create_png_maps <- function(summ_filepath     ,
       latticeExtra::layer(sp.lines(grat, lwd = 0.5, lty = 2, col = "white")) +
       latticeExtra::layer(sp.polygons(wrld_simpl, lwd = 0.8, col = "black", fill = "#4B4B4B"), under = T)
     
-    
-    # My theme
-    mThm <- rasterTheme(region = brewer.pal(9, "YlGn"),
-                        panel.background = list(col = "#708090"))
-    
-    #produce levelplot
-    p <- rasterVis:::levelplot(rsin,
-                               att = 'level',
-                               margin = F,
-                               par.settings = mThm,
-                               col.regions = cols,
-                               maxpixels = ncell(rsin)) + 
-      latticeExtra::layer(sp.lines(grat, lwd = 0.5, lty = 2, col = "white")) +
-      latticeExtra::layer(sp.polygons(wrld_simpl, lwd = 0.8, col = "black", fill = "#4B4B4B"), under = T)
     
     png(paste0(grph_dir, "/", occName, "_", names(rsin), ".png"), height = 7, width = 10, units = "in", res = 300)
     print(p)
@@ -128,18 +111,17 @@ create_png_maps <- function(summ_filepath     ,
  pos <- setdiff(grep(pattern = "cost|delaunay|score", x = list.files(rast_dirPath, pattern = "\\.tif$" )), grep(pattern = "class", x = list.files(rast_dirPath, pattern = "\\.tif$" )))
  rasts <- c(list.files(rast_dirPath, pattern = "\\.tif$" ,full.names = TRUE)[pos], sdm_filepath)
  
- 
- 
  #import ocurrences
- occ <- shapefile(occ_filepath)
- 
+
  lapply(rasts, function(filepath){
    
    r_temp <- raster(filepath)
+   occ <<- shapefile(occ_filepath)
    
-   #control when to use the occurence shapefile
+   #control whether use or not the occurence shapefile
    if(!file.exists(paste0(grph_dir, "/", occName, "_", names(r_temp), ".png"))){
-   if(!grepl(pattern = "/cost_dist.tif|/delaunay.tif", filepath)){occ = NULL}
+     
+   if(!grepl(pattern = "/cost_dist.tif|/delaunay.tif", filepath)){occ <<- NULL}
    
    # Crop raster according with the extent function
    xyp <- raster::rasterToPoints(r_temp)
@@ -159,11 +141,9 @@ create_png_maps <- function(summ_filepath     ,
                                par.settings = mThm,
                                maxpixels = ncell(r_temp)) + 
        latticeExtra::layer(sp.lines(grat, lwd = 0.5, lty = 2, col = "white")) +
-       latticeExtra::layer(sp.polygons(wrld_simpl, lwd = 0.8, col = "black", fill = "#4B4B4B"), under = T)
-     if(!is.null(occ)){
-       occ <- occ
-       p <- p + latticeExtra::layer(sp.points(occ, pch = 20, cex = .9, col = "red"))
-     }
+       latticeExtra::layer(sp.polygons(wrld_simpl, lwd = 0.8, col = "black", fill = "#4B4B4B"), under = T) +
+       latticeExtra::layer(sp.points(occ, pch = 20, cex = .9, col = "red"))
+     
    } else {
      p <- rasterVis::levelplot(r_temp,
                                att = 'level',
@@ -171,11 +151,9 @@ create_png_maps <- function(summ_filepath     ,
                                par.settings = mThm,
                                maxpixels = ncell(r_temp)) + 
        latticeExtra::layer(sp.lines(grat, lwd = 0.5, lty = 2, col = "white")) +
-       latticeExtra::layer(sp.polygons(wrld_simpl, lwd = 0.8, col = "black", fill = "#4B4B4B"), under = T)
-     if(!is.null(occ)){
-       occ <- occ
-       p <- p + latticeExtra::layer(sp.points(occ, pch = 20, cex = .9, col = "red"))
-     }
+       latticeExtra::layer(sp.polygons(wrld_simpl, lwd = 0.8, col = "black", fill = "#4B4B4B"), under = T) + 
+       latticeExtra::layer(sp.points(occ, pch = 20, cex = .9, col = "red"))
+    
    }
    
    png(paste0(grph_dir, "/", occName, "_", names(r_temp), ".png"), height = 7, width = 10, units = "in", res = 300)
@@ -190,8 +168,7 @@ create_png_maps <- function(summ_filepath     ,
  
   cat("\n Process done. Please check the path:", grph_dir, "\n")
 
-  p_unload(rasterVis, maptools, xlsx)
-  
+  p_unload(rasterVis, maptools, xlsx,latticeExtra)
   }
 
 # create_png_maps( summ_filepath= paste0(gap_valDir, "/buffer_100km/validation_results.xlsx"), 

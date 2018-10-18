@@ -1,5 +1,5 @@
 # Classification function
-# Implemented by: H. Achicanoy
+# Implemented by: H. Achicanoy, M.V. Díaz
 # CIAT, 2018
 
 suppressMessages(library(pacman))

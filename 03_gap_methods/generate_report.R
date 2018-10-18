@@ -1,9 +1,11 @@
 
 filepath <- paste0(results_dir, "/", crop, "/lvl_1/final_results_report")
-generate_report <- function(filepath, class_name = "five_bio_socio.rds", level_1, region, is.everything.finished = FALSE){
+generate_report <- function(filepath, class_name = "five_bio_socio.rds", level_1, region, is.everything.finished = FALSE, disk = "Z:"){
   
   if(is.everything.finished){
     pacman::p_load(rmarkdown, knitr, kableExtra)
+    
+    
     
     cat("Generating HTML report... /n")
     
@@ -15,6 +17,11 @@ cat("#' ---
 #' ---  "  )
 cat("\n \n")
 cat("#'  
+#+  echo = FALSE
+if(!is.null(disk)){
+      baseDir <- paste0(disk, \"/gap_analysis_landraces/runs\")
+  }
+#'
 {{ paste(\"# Crop: \", crop) }} 
 #' 
 #' Here you can check  for each specie, race, sub-race, etc. The main results from the gap analysis methodology that we've proposed.
@@ -43,14 +50,15 @@ cat("\n")
 
 cat("#' * 
 #'     + #### Five most important variables by model: 
-#+ echo = FALSE \n
+#+ echo = FALSE
 kable(class_res$Important_variables) %>% kable_styling(c(\"striped\", \"bordered\"), full_width = F)  " 
     )
 cat("\n")
 cat(
-"#'  * ## Principal Component Analysis (PCA) 
-#+ echo = FALSE 
-![mi image](paste0(input_data_dir, \"/by_crop/\", crop, \"/lvl_1/classification/pca_plot.jpg\"  )) " 
+"#'  * ## Principal Component Analysis (PCA)
+#+  echo = FALSE 
+knitr::include_graphics(paste0(baseDir, \"/input_data/by_crop/\",crop, \"/lvl_1/classification/pca_plot.jpg\")) 
+" 
 )
 cat("\n")
 cat("
@@ -88,30 +96,37 @@ cat("
 #'   probability of find a landrace.  
 #'   
     ")
-
 for(i in level_1){
-cat(paste("
-#' #  Results for:", i, "\n" 
-)  )
-cat("\n")
-cat(paste("#' * ### Cost distance gap score: \n"))
-cat(paste("#+ echo = FALSE \n "))
-cat(paste('include_graphics(paste0(baseDir, "/results/", crop, "/lvl_1/","', i,'", "/","', region, '","/gap_models/gg_gap_cost_dist.jpg"   ))' , sep = ""), "\n")
-cat("\n")
-cat(paste("#' * ### Delaunay gap score: \n"))
-cat(paste("#+ echo = FALSE \n"))
-cat(paste('include_graphics(paste0(baseDir, "/results/", crop, "/lvl_1/","', i, '","/","', region, '","/gap_models/gg_gap_delaunay.jpg"   )) ' , sep = ""), "\n")
-cat("\n")
-cat(paste("#' * ### Final gap score(Combination of cost distance and delaunays raster): \n"))
-cat(paste("#+ echo = FALSE \n"))
-cat(paste('include_graphics(paste0(baseDir, "/results/", crop, "/lvl_1/","', i, '","/","', region, '","/gap_models/gg_gap_final.jpg"   )) ', sep = "" ), "\n")
-cat("\n")
-cat("#' ***** \n")
+  cat(paste("\n#' #  Results for:", i, "\n" ) 
+      )
+  cat("\n")
+  cat(paste("#' * ### Cost distance gap score: \n"))
+  cat(paste("#+ echo = FALSE \n "))
+  cat(paste('include_graphics(paste0(baseDir, "/results/", crop, "/lvl_1/","', i,'", "/","', region, '","/graphics/',i,'_gap_score_cost_dist.png" ))' , sep = ""), "\n")
+  cat("\n")
+  cat(paste("#' * ### Cost distance thresholded: \n"))
+  cat(paste("#+ echo = FALSE \n"))
+  cat(paste('knitr::include_graphics(paste0(baseDir, "/results/", crop, "/lvl_1/","', i, '","/","', region, '","/graphics/',i,'_gap_class_cost_dist.png" )) ' , sep = ""), "\n")
+  cat("\n")
+  cat(paste("#' * ### Delaunay gap score: \n"))
+  cat(paste("#+ echo = FALSE \n"))
+  cat(paste('knitr::include_graphics(paste0(baseDir, "/results/", crop, "/lvl_1/","', i, '","/","', region, '","/graphics/',i,'_gap_score_delaunay.png" )) ', sep = "" ), "\n")
+  cat("\n")
+  cat(paste("#' * ### Delaunay gap score thresholded: \n"))
+  cat(paste("#+ echo = FALSE \n"))
+  cat(paste('knitr::include_graphics(paste0(baseDir, "/results/", crop, "/lvl_1/","', i, '","/","', region, '","/graphics/',i,'_gap_class_delaunay.png" )) ', sep = "" ), "\n")
+  cat("\n")
+  cat(paste("#' * ### Final gap map (sum of both cost distance and delaunay gap scores thresholded): \n"))
+  cat(paste("#+ echo = FALSE \n"))
+  cat(paste('knitr::include_graphics(paste0(baseDir, "/results/", crop, "/lvl_1/","', i, '","/","', region, '","/graphics/',i,'_gap_class_final.png" )) ', sep = "" ), "\n")
+  cat("\n")
+  cat("#' ***** \n")
   
 }
+
 sink()
 
-rmarkdown::render(paste0(filepath, ".R"),  "html_document", clean = FALSE  )
+rmarkdown::render(paste0(filepath, ".R"),  "html_document")
 
 cat("Process done. Final report generated at:" , filepath,".html  \n")
 file.remove(paste0(filepath, ".R"))
@@ -124,3 +139,7 @@ pacman::p_unload(rmarkdown, knitr, kableExtra)
   
 
 }#end function
+
+
+
+
