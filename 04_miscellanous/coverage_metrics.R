@@ -21,7 +21,7 @@ coverage_metrics<-function(crop, occName , level ,  region , mask_dir = mask){
   summm <- lapply(1:length(crop), function(i){
       
     cat(i, "\n")
-    wmask <- raster::raster(mask)
+    wmask <- raster::raster(paste0(mask_dir, "/mask_",region[i], ".tif" ))
       
     sdm_model<- raster(paste0(results_dir, "/", crop[i], "/", level, "/", occName[i], "/", region[i], "/prj_models/", occName[i],"_prj_median.tif"))
     
@@ -34,7 +34,6 @@ coverage_metrics<-function(crop, occName , level ,  region , mask_dir = mask){
     sdm_area <- sdm_mask * rast_area
     total_sdm_area <- sum(sdm_area[], na.rm = TRUE)
     
-    rm( rast_area, sdm_mask );g <- gc(); rm(g)
     
     cat(paste0("Calculating High Confidence coverage area for ", crop[i], " ", occName[i]), "\n")
     
@@ -45,7 +44,7 @@ coverage_metrics<-function(crop, occName , level ,  region , mask_dir = mask){
     total_hg_conf <- sum(high_conf[], na.rm = TRUE)
     
     high_conf_percent <-  (total_hg_conf/total_sdm_area)*100
-
+    
     rm(high_conf);g <- gc(); rm(g)
     
     
@@ -58,6 +57,7 @@ coverage_metrics<-function(crop, occName , level ,  region , mask_dir = mask){
     
     low_conf_percent <-  (total_lw_conf/total_sdm_area)*100
     
+    rm( rast_area, sdm_mask );g <- gc(); rm(g)
     
     
     cat(paste0("Calculating Gap model performance for ", crop[i], " ", occName[i], "..."), "\n")
@@ -108,4 +108,4 @@ coverage_metrics<-function(crop, occName , level ,  region , mask_dir = mask){
 
 #### Test funcion ### 
 
-coverage_metrics(crop = c("sorghum", "sorghum", "sorghum", "sorghum", "sorghum",  "banana"), occName = c("guinea","durra","kafir","caudatum","bicolor","all"), level = level, region = c("sgh_custom","sgh_custom","sgh_custom","sgh_custom","sgh_custom",  "banana_custom"), mask_dir = mask_dir)
+#coverage_metrics(crop = c("sorghum", "sorghum", "sorghum", "sorghum", "sorghum",  "banana"), occName = c("guinea","durra","kafir","caudatum","bicolor","all"), level = level, region = c("sgh_custom","sgh_custom","sgh_custom","sgh_custom","sgh_custom",  "banana_custom"), mask_dir = mask_dir)
