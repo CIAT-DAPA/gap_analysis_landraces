@@ -2,13 +2,13 @@
 cat("Loading R packages\n")
 suppressMessages(if(!require(pacman)){install.packages("pacman");library(pacman)}else{library(pacman)})
 pacman::p_load(tcltk, adehabitatHR, spatstat, data.table, 
-               KernSmooth ,raster, rgdal, doSNOW, 
+               KernSmooth ,raster, rgdal, doSNOW, sdm,
                dismo, rJava, rgeos, distances, matrixStats,  sp, 
                tidyverse, rlang, sf , wordspace , gdistance, caret, earth, 
                fastcluster, xlsx, rmapshaper, FactoMineR,
                parallelDist, bindrcpp, foreach, doParallel, ff, pROC, maxnet)
 
-#, sdm
+
 #, SDMTools
 #, usdm
 

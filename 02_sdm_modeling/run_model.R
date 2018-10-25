@@ -153,7 +153,7 @@ if(!file.exists(paste0(gap_outDir, "/kernel_classes.tif"))){
   kernel <- raster(paste0(gap_outDir, "/kernel.tif"))
   kernel[kernel[] == 0] <- NA
   kernel <- kernel * 10000
-  qVals <- raster::quantile(x = kernel[], probs = c(.60, .90), na.rm = T)
+  qVals <- raster::quantile(x = kernel[], probs = c(.85, .90), na.rm = T)
   kernel_class <- raster::reclassify(kernel, c(-Inf,qVals[1],1, qVals[1],qVals[2],2, qVals[2],Inf,3))
   writeRaster(kernel_class, paste0(gap_outDir, "/kernel_classes.tif"), format = "GTiff")
   rm(kernel, kernel_class); gc()

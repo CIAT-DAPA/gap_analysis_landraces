@@ -103,14 +103,11 @@ sdm_maxnet_approach_function <- function(occName      = occName,
     
     cat("Calculating threshold using max TSS criterion \n")
     croc <- pROC::roc(response = .x$obs, predictor = .x$pred)
-    croc_summ <- data.frame (sensi = croc$sensitivities, speci = croc$specificities, threshold =  croc$thresholds) %>% 
-      dplyr::mutate(., max.TSS = sensi + speci - 1) %>% round(., 3)
-    #Select the 75% of highest TSS and select the highest  especifitity to reduce commission error
-    quants <- stats::quantile(croc_summ$max.TSS)[4]
-    max <-  max(croc_summ$max.TSS)
-    min <- max(croc_summ$max.TSS)- round(sd(croc_summ$max.TSS[which(croc_summ$max.TSS >= quants)]), 3)
-    croc_summ <- croc_summ[which(croc_summ$max.TSS <= max & croc_summ$max.TSS >= min),]
-    croc_summ <- croc_summ[which.max(croc_summ$speci),]
+    croc_summ <- data.frame (sensi = croc$sensitivities, speci = croc$specificities, threshold =  croc$thresholds) %>% round(., 3) %>% 
+      dplyr::mutate(., max.TSS = sensi + speci - 1) %>% dplyr::mutate(., minROCdist = sqrt((1- sensi)^2 + (speci -1)^2))
+    max.tss <- corc_summ %>% dplyr::filter(., max.TSS == max(max.TSS)) %>% dplyr::mutate(., method = rep("max(TSS)", nrow(.)))
+    minRoc <- corc_summ %>% dplyr::filter(., minROCdist == min(minROCdist))%>% dplyr::mutate(., method = rep("minROCdist", nrow(.)))
+    croc_summ <- rbind(max.tss, minRoc) %>% dplyr::filter(., speci == max(speci))  %>% dplyr::sample_n(., 1)
     return(croc_summ)
   })
   #Calculate nAUC using both train and test data

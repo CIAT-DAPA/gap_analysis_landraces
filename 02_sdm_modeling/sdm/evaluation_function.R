@@ -7,7 +7,7 @@ ASD15_function <- function(model_outDir){
  
   ###ASD15
   esdCpt <- raster(paste(model_outDir, "/", occName, "_prj_std.tif", sep = ""))
-  dumm <- raster(paste(model_outDir, "/", occName, "_prj_median_thr.tif", sep = ""))
+  dumm <- raster(paste(model_outDir, "/", occName, "_prj_median.tif", sep = ""))
   
   esdCpt[which(dumm[] < 0.001)] <- NA
   
