@@ -14,17 +14,17 @@ baseDir   <- switch(OSys,
 rm(OSys)
 
 srcDir <- paste(baseDir, "/scripts", sep = "") # Software directory
-region <- "sgh_custom"                           # Region: "americas", "world"
+region <- "americas"                           # Region: "americas", "world"
 
 source(paste0(srcDir, "/02_sdm_modeling/preprocessing/config_crop.R")) # Configuring crop directories
 
 # Define crop, analysis level and creating needed directories
-crop <- "sorghum"
-level_1 <-  c("bicolor", "guinea", "durra", "kafir", "caudatum") # level 1: genepool
+crop <- "potato"
+level_1 <-  c("ajanhuiri", "tuberosum_andigenum", "tuberosum_chilotanum") # level 1: genepool
 level_2 <- NULL # level 2: race
 level_3 <- NULL # level 3
 level   <- "lvl_1"
-occName <- "durra" # Level 1: "andean", "mesoamerican"
+occName <- "tuberosum_chilotanum" # Level 1: "andean", "mesoamerican"
 source(paste(srcDir, "/02_sdm_modeling/preprocessing/config.R", sep = ""))
 # config_crop_dirs(baseDir, crop, level_1, level_2, level_3)
 raster::rasterOptions(tmpdir = choose.dir(default = "",
@@ -93,7 +93,7 @@ sdm_maxnet_approach_function(occName      = occName,
                              spData       = spData,
                              var_names    = var_names,
                              model_outDir = model_outDir,
-                             sp_Dir        = spDir,
+                             sp_Dir        = sp_Dir,
                              clim_layer   = clim_layer,
                              nFolds       = 5,
                              beta         = beta,
@@ -119,10 +119,32 @@ m2_eval <- evaluation_function(m2, eval_sp_Dir, spData)
 
 # Model projecting
 cat("Projecting models\n")
-clim_table <- raster::as.data.frame(clim_layer, xy = T)
-rm(clim_layer); g <- gc(); rm(g)
-clim_table <- clim_table[complete.cases(clim_table),]
-model      <- projecting_function(m2, m2_eval, clim_table, mask, model_outDir, nCores = 5, obj.size = 3, s.dev = TRUE)
+# clim_table <- raster::as.data.frame(clim_layer, xy = T)
+# rm(clim_layer); g <- gc(); rm(g)
+# clim_table <- clim_table[complete.cases(clim_table),]
+# model      <- projecting_function(m2, m2_eval, clim_table, mask, model_outDir, nCores = 5, obj.size = 3, s.dev = TRUE)
+
+svPth <- paste0(results_dir, "/", crop, "/", level, "/", occName, "/", region, "/prj_models/replicates")
+
+models <- lapply(X = 1:5, FUN = function(i){
+  cat("Projectin model", i, " to a raster object \n")
+  p <- raster::predict(m2@models[[1]]$maxent[[i]]@object, clim_layer, type = "cloglog", progress='text')
+  p_tst <- p
+  p_tst[p_tst[] <= m2_eval$threshold[i]] <- NA
+  writeRaster(p, paste0(svPth, "/", occName, "_prj_rep-", i, ".tif"))
+  writeRaster(p_tst, paste0(svPth, "/", occName, "_prj_th_rep-", i, ".tif"))
+  
+})
+
+prj_stk <- raster::stack(models)
+
+cat("Calculating mean, median and sd for replicates \n")
+mean(prj_stk, na.rm = TRUE) %>% writeRaster(., paste0(model_outDir,"/", occName, "_prj_mean.tif" ), overwrite = TRUE)
+cat("Mean raster calculated \n")
+raster::calc(prj_stk, fun = function(x) {median(x, na.rm = T)}) %>% writeRaster(., paste0(model_outDir,"/", occName, "_prj_median.tif" ), overwrite = TRUE)
+cat("Median raster calculated \n")
+raster::calc(prj_stk, fun = function(x) {sd(x, na.rm = T)}) %>% writeRaster(., paste0(model_outDir,"/", occName, "_prj_std.tif" ), overwrite = TRUE)
+cat("Sd raster calculated \n")
 
 # Final evaluation table
 cat("Validating model\n")

@@ -81,6 +81,11 @@ sdm_maxnet_approach_function <- function(occName      = occName,
     return(fit.maxent)
     
   })
+  #make response plots
+  , response_plots = purrr::map2(.x = model_train, .y = .id, function(.x , .y){
+    p <- plot(.x, type = "cloglog", main = paste("response plots for model train ", .y))
+    return(p)
+  })
   #Make predictions using testing data
   , predictions_test = purrr::pmap(list(.x = test, .y = model_train, .z = .id), function(.x, .y, .z){
     
@@ -105,8 +110,8 @@ sdm_maxnet_approach_function <- function(occName      = occName,
     croc <- pROC::roc(response = .x$obs, predictor = .x$pred)
     croc_summ <- data.frame (sensi = croc$sensitivities, speci = croc$specificities, threshold =  croc$thresholds) %>% round(., 3) %>% 
       dplyr::mutate(., max.TSS = sensi + speci - 1) %>% dplyr::mutate(., minROCdist = sqrt((1- sensi)^2 + (speci -1)^2))
-    max.tss <- corc_summ %>% dplyr::filter(., max.TSS == max(max.TSS)) %>% dplyr::mutate(., method = rep("max(TSS)", nrow(.)))
-    minRoc <- corc_summ %>% dplyr::filter(., minROCdist == min(minROCdist))%>% dplyr::mutate(., method = rep("minROCdist", nrow(.)))
+    max.tss <- croc_summ %>% dplyr::filter(., max.TSS == max(max.TSS)) %>% dplyr::mutate(., method = rep("max(TSS)", nrow(.)))
+    minRoc <- croc_summ %>% dplyr::filter(., minROCdist == min(minROCdist))%>% dplyr::mutate(., method = rep("minROCdist", nrow(.)))
     croc_summ <- rbind(max.tss, minRoc) %>% dplyr::filter(., speci == max(speci))  %>% dplyr::sample_n(., 1)
     return(croc_summ)
   })

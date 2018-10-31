@@ -154,7 +154,7 @@ validation_process <- function(occName = occName,
                                               spData       = occSDM_upt,
                                               var_names    = vars,
                                               model_outDir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models"),
-                                              sp_Dir        = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models"),
+                                              sp_Dir       = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models"),
                                               clim_layer   = clim_layer,
                                               nFolds       = 5,
                                               beta         = beta,
@@ -180,17 +180,42 @@ validation_process <- function(occName = occName,
       
       if(!file.exists(paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models/", occName, "_prj_median.tif"))){
         
-        clim_table <- raster::as.data.frame(clim_layer, xy = T)
-        clim_table <- clim_table[complete.cases(clim_table),]
-        model <- .GlobalEnv$projecting_function(m2,
-                                                m2_eval,
-                                                clim_table,
-                                                mask,
-                                                model_outDir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models"),
-                                                nCores = 5,
-                                                obj.size = 3,
-                                                s.dev = FALSE)
-        rm(clim_table); g <- gc(); rm(g)
+        # clim_table <- raster::as.data.frame(clim_layer, xy = T)
+        # clim_table <- clim_table[complete.cases(clim_table),]
+        # model <- .GlobalEnv$projecting_function(m2,
+        #                                         m2_eval,
+        #                                         clim_table,
+        #                                         mask,
+        #                                         model_outDir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models"),
+        #                                         nCores = 5,
+        #                                         obj.size = 3,
+        #                                         s.dev = FALSE)
+        # rm(clim_table); g <- gc(); rm(g)
+        # 
+        # 
+
+        svPth <- paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models")
+        
+        models <- lapply(X = 1:5, FUN = function(i){
+          cat("Projectin model", i, " to a raster object \n")
+          p <- raster::predict(m2@models[[1]]$maxent[[i]]@object, clim_layer, type = "cloglog", progress='text')
+          p_tst <- p
+          p_tst[p_tst[] <= m2_eval$threshold[i]] <- NA
+          writeRaster(p, paste0(svPth, "/replicates/", occName, "_prj_rep-", i, ".tif"))
+          writeRaster(p_tst, paste0(svPth, "/replicates/", occName, "_prj_th_rep-", i, ".tif"))
+          
+        })
+        
+        prj_stk <- raster::stack(models)
+        
+        cat("Calculating mean, median and sd for replicates \n")
+        mean(prj_stk, na.rm = TRUE) %>% writeRaster(., paste0(svPth,"/", occName, "_prj_mean.tif" ), overwrite = TRUE)
+        cat("Mean raster calculated \n")
+        raster::calc(prj_stk, fun = function(x) {median(x, na.rm = T)}) %>% writeRaster(., paste0(svPth,"/", occName, "_prj_median.tif" ), overwrite = TRUE)
+        cat("Median raster calculated \n")
+        raster::calc(prj_stk, fun = function(x) {sd(x, na.rm = T)}) %>% writeRaster(., paste0(svPth,"/", occName, "_prj_std.tif" ), overwrite = TRUE)
+        cat("Sd raster calculated \n")
+        
       } else {
         cat("SDM model has already been created ... \n")
       }
