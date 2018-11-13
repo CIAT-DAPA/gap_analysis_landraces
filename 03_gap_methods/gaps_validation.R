@@ -93,7 +93,8 @@ validation_metrics <- function(n.sample = 100, bf_rad = 50, baseDir, area, group
   
   knl <- raster(paste0(outDir, "/kernel.tif")) 
   knl <- raster::mask(knl, buff_omit, maskvalue = 1)
-  knl.dens <-  raster::quantile(x = knl[], probs = c(.60, .90), na.rm = T)
+  knl[which(knl[] == 0 )] <- NA
+  knl.dens <-  raster::quantile(x = knl[], probs = c(.60, .80), na.rm = T)
   knl[knl[] <   knl.dens[2] ] <- NA
   knl[knl[] >=  knl.dens[2] ] <- 1
   b_occr <- raster::as.data.frame(knl, xy=T)

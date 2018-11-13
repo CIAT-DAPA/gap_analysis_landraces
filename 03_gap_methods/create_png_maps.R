@@ -18,8 +18,8 @@ create_png_maps <- function(summ_filepath     ,
   
   #import summary table and extrac the thresholds
   summ_table <- read.xlsx(summ_filepath, sheetName = "summary")
-  thresh_cost_dist <- as.numeric(as.character(summ_table[7,7]))
-  thresh_delaunay <- as.numeric(as.character(summ_table[15,7]))
+  thresh_cost_dist <- as.numeric(as.character(summ_table[7,7])) #6
+  thresh_delaunay <- as.numeric(as.character(summ_table[15,7])) #13
   
   #import gap score rasters
   cost_dist_rast <- raster(paste0(rast_dirPath, "/gap_score_cost_dist.tif"))

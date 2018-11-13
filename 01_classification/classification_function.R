@@ -114,7 +114,7 @@ classification_fun <- function(df = all_data3,
     data       = training,
     trControl  = control_prmt,
     tuneList   = list(ranger = caretModelSpec(method = "ranger", importance = "impurity")),
-    methodList = c("svmRadial", "knn", "bagFDA", "avNNet")
+    methodList = c("svmRadial", "knn", "avNNet") #"bagFDA", 
   )
   
   cat(">>> Calculating correlation and accuracy metrics over resamples ...\n")

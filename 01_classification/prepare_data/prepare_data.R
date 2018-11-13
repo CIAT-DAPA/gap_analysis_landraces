@@ -9,7 +9,7 @@ pacman::p_load(tidyverse, caret, randomForest, ISLR, nnet, caretEnsemble, ranger
 
 ################################# Preparing dataset ######################################################
 
-df<-"//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/input_data/by_crop/sorghum/databases/combined_database_crop_climate.csv"
+df<-"//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/input_data/by_crop/sorghum/databases/final_base_climate_socio.csv"
 df<-read.csv(df, header = T)
 df %>% apply(.,2,function(x) sum(is.na(x))) %>% sort(., decreasing = T)
 #df<-df[,-which(names(df) %in% c("collectioncode","Headbug","Cultivar.name","Downy.mildew....glasshouse.","Strigol.control","Downy.mildew....field.","Lysine....","Protein...." ))]
@@ -17,7 +17,7 @@ df %>% apply(.,2,function(x) sum(is.na(x))) %>% sort(., decreasing = T)
 analysis<-"all" # "socioeconomic", "bioclimatic", "all"
 
 if(analysis == "all"){
-  base<-df %>% select(ensemble:Yield, Altitude:elevation,Latitude, Longitude) #all variables : socio + bioclimatic
+  base<-df %>% select(ensemble:elevation,Latitude, Longitude) #all variables : socio + bioclimatic
   
 }else if(analysis == "bioclimatic"){
   base<-df %>% select(ensemble, Altitude:thermicityIndex, Latitude, Longitude) #only bioclimatic variables
@@ -27,14 +27,15 @@ if(analysis == "all"){
   base<-df %>% select(ensemble, Accessibility, dist_h_set:elevation, Latitude, Longitude) #only socioeconomic variables
 }
 
+
 names(base)[1]<-"Y"
 
 table(base$Y) #check the ocurrences number for each race.
 
-base<-base[which(base$Y %in% c("Bicolor", "Durra", "Guinea", "Caudatum", "Kafir")),]; levels(base$Y)[c(3,5,6,8,9,10,11,13,14,15)]<-NA  #remove the races with 0 ocurrences or races you want to remove
+#base<-base[which(base$Y %in% c("Bicolor", "Durra", "Guinea", "Caudatum", "Kafir")),]; levels(base$Y)[c(3,5,6,8,9,10,11,13,14,15)]<-NA  #remove the races with 0 ocurrences or races you want to remove
 base_1<-base %>% drop_na()  #remove NAs for all dataframe
 
-base_1$Y <- base$Y %>% as.character() %>% as.factor(); base_1<-base_1[complete.cases(base_1),]
+base_1$Y <- base_1$Y %>% as.character() %>% as.factor(); base_1<-base_1[complete.cases(base_1),]
 base_2<-base[which(is.na(base$Y)),];base_2<-base_2[,-1] ;base_2<-base_2[complete.cases(base_2),] #Only if you want to predict NAs races, because it has NAs for races. It is in external_df parameter into the function (external_df=base_2)
 
 
@@ -62,7 +63,7 @@ base_2<-base[which(is.na(base$Y)),];base_2<-base_2[,-1] ;base_2<-base_2[complete
 
 source("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/scripts/01_classification/classification_function.R") #Load the classification function R script in its file location
 
-classification<-classification_fun(df=base_1, external_df = NULL, standardize_all = T, top_variables = 10,omit_correlated = T,sampling_mthd = "down") 
+classification<-classification_fun(df=base_1, external_df = base_2, standardize_all = T, top_variables = 5,omit_correlated = T,sampling_mthd = "none") 
 
 #df= dataframe with all complete data (base_1) 
 #external_df = NULL by default ... Also it could be base_2 if you want to predict NAs races

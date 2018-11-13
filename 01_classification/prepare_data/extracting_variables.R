@@ -7,11 +7,11 @@ root     <- switch(OSys, "Linux" = "/mnt/workspace_cluster_9", "Windows" = "//da
 
 library(raster)
 
-region<- "sgh_custom" # Can be "world"
+region<- "world" # Can be "world"
 
 rStack <- list.files(paste0(root, "/gap_analysis_landraces/runs/input_data/generic_rasters/", region), pattern = ".tif$", full.names = TRUE);rStack <- raster::stack(rStack)
 
-sorghum<-list.files(paste0(root,"/gap_analysis_landraces/runs/input_data/by_crop/sorghum/raster/",region), pattern = ".tif$",full.names = TRUE);sorghum <- raster::stack(sorghum)
+banana<-list.files(paste0(root,"/gap_analysis_landraces/runs/input_data/by_crop/banana/raster/",region), pattern = ".tif$",full.names = TRUE);banana <- raster::stack(banana)
 
 elevation<-raster("//dapadfs/data_cluster_4/observed/gridded_products/srtm/SRTM_v41_30s/srtm_v41_30s/w001001.adf") #only, if you have a few occurrences with available data for elevation. You can obtain elevation values for all locations
 

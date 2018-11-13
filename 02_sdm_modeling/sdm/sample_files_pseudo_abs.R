@@ -5,7 +5,7 @@
 #function to create background, occurrence, and swd (bg+occ) samples
 samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, climDir, clim_spDir, extension_r, var_names_generic, var_names_sp, overwrite = F, correlation = 0){
   
-
+  
   #load raster files
   cat("Loading raster files","\n")
   current_clim_layer_generic <- lapply(paste0(climDir, "/", var_names_generic, extension_r), raster)
@@ -20,7 +20,7 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
   #create background if it doesnt exist
   if (!file.exists(outBackName) | overwrite) {
     cat("Processing:", paste(occName), "\n")
-   # spData <- readRDS(occFile)
+    # spData <- readRDS(occFile)
     spData <- read.csv(occFile, header = T)
     spData[,clsModel] <- tolower(spData[,clsModel])
     spData <- spData[which(spData[,clsModel] == occName),]
@@ -28,36 +28,33 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
     #create random points
     cat("Creating random points\n")
     
-    mask <- raster(mask)
-    #verification of unique locations #commented out
-    #tcell <- unique(cellFromXY(mask,spData[,c("Longitude","Latitude")]))
-    #xycell <- xyFromCell(mask,tcell)
-    #plot(spData[,c("Longitude","Latitude")], ty="p", pch=20, col="red")
-    #points(xycell, pch=21, col="black")
+    # Load mask
+    mask <- raster::raster(mask)
+    # Load native area restricted by ecoregions
+    ntva <- raster::raster("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/input_data/by_crop/potato/native_area/native_area_tuberosum_chilotanum.tif")
     
-    #number of samples
-    nSamples <- length(unique(cellFromXY(mask, spData[,c("Longitude", "Latitude")]))) * 10
-    cat("generating", nSamples, "pseudoabsences for n =", nSamples/10, "presences\n")
+    climLayers <- raster::crop(current_clim_layer, raster::extent(ntva))
+    climLayers <- raster::mask(climLayers, ntva)
     
-    xran <- xyFromCell(mask, which(!is.na(mask[])))
-    xran <- cbind(cell=which(!is.na(mask[])), xran)
-    xran <- as.data.frame(xran)
-    spDataCells <- unique(cellFromXY(mask, spData[,c("Longitude","Latitude")]))
-    xran <- xran[c(!xran$cell %in% spDataCells),]
-    set.seed(1234)
-    xranSample <- xran[sample(nrow(xran), size = nSamples, replace = F),]
-    row.names(xranSample) <- 1:nrow(xranSample)
-    xranSample <- xranSample[,c("x","y")]
-    names(xranSample) <- c("lon","lat")
-    #plot(xranSample$x, xranSample$y, ty="p", pch=20, col="red")
-    #points(spData$Longitude, spData$Latitude, pch=20, col="black")
-    cat(nrow(xranSample), "pseudoabsences generated for n =", nSamples/10, "presences\n")
+    unsuit_bg <- mopa::OCSVMprofiling(xy = unique(spData[,c("Longitude","Latitude")]), varstack = climLayers)
+    random_bg <- mopa::pseudoAbsences(xy = unique(spData[,c("Longitude","Latitude")]), background = unsuit_bg$absence, exclusion.buffer = 0.083*5, prevalence = 0.05)
+    random_bg_df <- as.data.frame(random_bg$species1$PA01)
+    spPoints  <- SpatialPoints(coords = random_bg_df[random_bg_df$v == 0, c("x", "y")])
+    proj4string(spPoints)<- CRS("+proj=longlat +datum=WGS84")
     
-    #extract variable data
+    raster::shapefile(spPoints, "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/input_data/by_crop/potato/lvl_1/tuberosum_chilotanum/americas/background/bg_tuberosum_chilotanum.shp")
+    
+    nSamples <- nrow(random_bg_df[random_bg_df$v == 0, c("x", "y")])
+    cat(nSamples, "pseudo-absences generated for n =", nrow(unique(spData[,c("Longitude","Latitude")])), "presences\n")
+    
+    xranSample <- random_bg_df[random_bg_df$v == 0, c("x", "y")]
+    colnames(xranSample) <- c("lon","lat")
+    
+    # Extract variable data
     ex_raster_env <- as.data.frame(raster::extract(current_clim_layer, xranSample))
     z <- cbind(id = 1:nrow(xranSample), species = occName, status = 0, xranSample, ex_raster_env)
     z <- z[complete.cases(z),]
-    cat(nrow(z), "pseudoabsences ready to use\n")
+    cat(nrow(z), "pseudo-absences ready to use\n")
     occ <- z
     #preparing samples
     occSample <- unique(spData[,c("Longitude", "Latitude")])
@@ -118,9 +115,9 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
       descrCor <- usdm::vifstep(swdSample[,vars], th = 10)
       highlyCorDescr <- descrCor@excluded
       swdSample <- swdSample[,!colnames(swdSample) %in% highlyCorDescr]
-  }
+    }
     cat("Saving csv files","\n")
-
+    
     write.csv(swdSample_Complete, outSWDComplete_Name, quote = F, row.names = F)
     write.csv(occ, outBackName, quote = F, row.names = F)
     write.csv(occSample, outOccName, quote = F, row.names = F)

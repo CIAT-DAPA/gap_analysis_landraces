@@ -81,11 +81,6 @@ sdm_maxnet_approach_function <- function(occName      = occName,
     return(fit.maxent)
     
   })
-  #make response plots
-  , response_plots = purrr::map2(.x = model_train, .y = .id, function(.x , .y){
-    p <- plot(.x, type = "cloglog", main = paste("response plots for model train ", .y))
-    return(p)
-  })
   #Make predictions using testing data
   , predictions_test = purrr::pmap(list(.x = test, .y = model_train, .z = .id), function(.x, .y, .z){
     
@@ -104,15 +99,26 @@ sdm_maxnet_approach_function <- function(occName      = occName,
     return(as.numeric(croc$auc))
   } ) 
   #calculate max preformance measures (sensitivity, specificity and Treshold) using max(TSS) criterion
-  , threshold_max_TSS = map(.x = predictions_test, function(.x){
+  , threshold_max_TSS = map2(.x = predictions_test, .y = .id, function(.x, .y){
     
-    cat("Calculating threshold using max TSS criterion \n")
+    cat("Calculating optimal threshold for model", .y, "\n")
     croc <- pROC::roc(response = .x$obs, predictor = .x$pred)
-    croc_summ <- data.frame (sensi = croc$sensitivities, speci = croc$specificities, threshold =  croc$thresholds) %>% round(., 3) %>% 
-      dplyr::mutate(., max.TSS = sensi + speci - 1) %>% dplyr::mutate(., minROCdist = sqrt((1- sensi)^2 + (speci -1)^2))
-    max.tss <- croc_summ %>% dplyr::filter(., max.TSS == max(max.TSS)) %>% dplyr::mutate(., method = rep("max(TSS)", nrow(.)))
-    minRoc <- croc_summ %>% dplyr::filter(., minROCdist == min(minROCdist))%>% dplyr::mutate(., method = rep("minROCdist", nrow(.)))
-    croc_summ <- rbind(max.tss, minRoc) %>% dplyr::filter(., speci == max(speci))  %>% dplyr::sample_n(., 1)
+    croc_summ <- data.frame (sensi = croc$sensitivities, speci = croc$specificities, threshold =  croc$thresholds) %>% 
+      round(., 3) %>% 
+      dplyr::mutate(., max.TSS = sensi + speci - 1) %>% 
+      dplyr::mutate(., minROCdist = sqrt((1- sensi)^2 + (speci -1)^2))
+    
+    max.tss <- croc_summ %>% dplyr::filter(., max.TSS == max(max.TSS)) %>% 
+      dplyr::mutate(., method = rep("max(TSS)", nrow(.)))
+    
+    minRoc <- croc_summ %>% 
+      dplyr::filter(., minROCdist == min(minROCdist))%>% 
+      dplyr::mutate(., method = rep("minROCdist", nrow(.)))
+    
+    croc_summ <- rbind(max.tss, minRoc) %>% 
+      dplyr::filter(., speci == max(speci))  %>% 
+      dplyr::sample_n(., 1)
+    
     return(croc_summ)
   })
   #Calculate nAUC using both train and test data

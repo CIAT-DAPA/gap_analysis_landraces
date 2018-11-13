@@ -14,17 +14,17 @@ baseDir   <- switch(OSys,
 rm(OSys)
 
 srcDir <- paste(baseDir, "/scripts", sep = "") # Software directory
-region <- "americas"                           # Region: "americas", "world"
+region <- "sgh_custom"                           # Region: "americas", "world"
 
 source(paste0(srcDir, "/02_sdm_modeling/preprocessing/config_crop.R")) # Configuring crop directories
 
 # Define crop, analysis level and creating needed directories
-crop <- "potato"
-level_1 <-  c("ajanhuiri", "tuberosum_andigenum", "tuberosum_chilotanum") # level 1: genepool
+crop <- "sorghum"
+level_1 <-  c("bicolor", "caudatum", "durra", "guinea", "kafir") # level 1: genepool
 level_2 <- NULL # level 2: race
 level_3 <- NULL # level 3
 level   <- "lvl_1"
-occName <- "tuberosum_chilotanum" # Level 1: "andean", "mesoamerican"
+occName <- "caudatum" # Level 1: "andean", "mesoamerican"
 source(paste(srcDir, "/02_sdm_modeling/preprocessing/config.R", sep = ""))
 # config_crop_dirs(baseDir, crop, level_1, level_2, level_3)
 raster::rasterOptions(tmpdir = choose.dir(default = "",
@@ -43,7 +43,7 @@ cost_dist_function(
                    mask         = mask,
                    occDir       = occDir,
                    filename     = paste0(crop, "_", level, "_bd.csv"),
-                   arcgis       = FALSE,
+                   arcgis       = TRUE,
                    code         = paste0(sp_Dir_input, "/cost_dist.py")
                    )
 
@@ -160,7 +160,8 @@ if(!file.exists(paste0(eval_sp_Dir, "/Final_evaluation.csv"))){
 cat("Calculating kernel Density \n")
 if(!file.exists(paste0(gap_outDir, "/kernel.tif"))){
   spData <- readOGR(dsn = occDir, layer = "Occ")
-  spData <- unique(as.data.frame(spData)); rownames(spData) <- 1:nrow(spData)
+  spData <- unique(as.data.frame(spData))
+  rownames(spData) <- 1:nrow(spData)
   names(spData)[2:3] <- c("lon", "lat")
   spData[,1] <- 1
   kernel <- raster_kernel(mask          = mask,
@@ -175,7 +176,7 @@ if(!file.exists(paste0(gap_outDir, "/kernel_classes.tif"))){
   kernel <- raster(paste0(gap_outDir, "/kernel.tif"))
   kernel[kernel[] == 0] <- NA
   kernel <- kernel * 10000
-  qVals <- raster::quantile(x = kernel[], probs = c(.85, .90), na.rm = T)
+  qVals <- raster::quantile(x = kernel[], probs = c(.60, .97), na.rm = T)
   kernel_class <- raster::reclassify(kernel, c(-Inf,qVals[1],1, qVals[1],qVals[2],2, qVals[2],Inf,3))
   writeRaster(kernel_class, paste0(gap_outDir, "/kernel_classes.tif"), format = "GTiff")
   rm(kernel, kernel_class); gc()
@@ -199,7 +200,7 @@ calc_delaunay_score(baseDir    = baseDir,
                     group      = occName,
                     crop       = crop,
                     lvl        = level,
-                    ncores     = 4,
+                    ncores     = 15,
                     validation = FALSE,
                     dens.level = "high_density",
                     pnt        = NULL)
@@ -223,8 +224,8 @@ validation_process(occName = occName,
                    buffer_radius = 1, # Radius of 100 km for excluding occurrences
                    density_pattern = 3, # Density pattern (1: low density, 2: medium density, 3: high density)
                    geo_score = c("cost_dist", "delaunay"),
-                   use.Arcgis = FALSE,
-                   use.maxnet = TRUE)
+                   use.Arcgis = TRUE,
+                   use.maxnet = use.maxnet)
 
 #summarize all validation results
 summary_function(area =region,
@@ -236,7 +237,7 @@ summary_function(area =region,
                  radius = seq(55,85, 1), #number of radius size to evaluate
                  baseDir = baseDir,
                  dens.level = "high_density",
-                 ncores = 2 #(detectCores()-8)
+                 ncores = 15 #(detectCores()-8)
 )
 
 

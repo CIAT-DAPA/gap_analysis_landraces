@@ -107,14 +107,16 @@ r_list <- list(
 rsin <- lapply(r_list, function(i){
   
   rsin <-  raster(i)
-  rsin <- ratify(rsin)
-  rat <- levels(rsin)[[1]]
-  rat$level <- c('Well conserved', 'Gap by one approach', 'Gap by both approaches')
-  levels(rsin) <- rat
+  #rsin <- ratify(rsin)
+  #rat <- levels(rsin)[[1]]
+  #rat$level <- c('Well conserved', 'Gap by one approach', 'Gap by both approaches')
+  #levels(rsin) <- rat
   
   return(rsin)
 })
-rsin2 <- rsin
+
+
+rsin2 <- raster::stack(rsin)
 rsin2[which(rsin2[] != 2)] <- NA
 rsin2
 rsin_points <- rasterToPoints(rsin2)
