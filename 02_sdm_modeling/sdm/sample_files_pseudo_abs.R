@@ -3,8 +3,8 @@
 #CIAT, Nov 2017
 
 #function to create background, occurrence, and swd (bg+occ) samples
-samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, climDir, clim_spDir, extension_r, var_names_generic, var_names_sp, overwrite = F, correlation = 0){
-  
+# pseudo_abs = c(1, 2) # 1: occurrence ecoregions masked by native area, 2: occurrence ecoregions for complete extent of mask
+samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, climDir, clim_spDir, extension_r, var_names_generic, var_names_sp, overwrite = F, correlation = 0, pseudo_abs = 1){
   
   #load raster files
   cat("Loading raster files","\n")
@@ -30,25 +30,47 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
     
     # Load mask
     mask <- raster::raster(mask)
-    # Load native area restricted by ecoregions
-    ntva <- raster::raster("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/input_data/by_crop/potato/native_area/native_area_tuberosum_chilotanum.tif")
     
-    climLayers <- raster::crop(current_clim_layer, raster::extent(ntva))
-    climLayers <- raster::mask(climLayers, ntva)
-    
-    unsuit_bg <- mopa::OCSVMprofiling(xy = unique(spData[,c("Longitude","Latitude")]), varstack = climLayers)
-    random_bg <- mopa::pseudoAbsences(xy = unique(spData[,c("Longitude","Latitude")]), background = unsuit_bg$absence, exclusion.buffer = 0.083*5, prevalence = 0.05)
-    random_bg_df <- as.data.frame(random_bg$species1$PA01)
-    spPoints  <- SpatialPoints(coords = random_bg_df[random_bg_df$v == 0, c("x", "y")])
-    proj4string(spPoints)<- CRS("+proj=longlat +datum=WGS84")
-    
-    raster::shapefile(spPoints, "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/input_data/by_crop/potato/lvl_1/tuberosum_chilotanum/americas/background/bg_tuberosum_chilotanum.shp")
-    
-    nSamples <- nrow(random_bg_df[random_bg_df$v == 0, c("x", "y")])
-    cat(nSamples, "pseudo-absences generated for n =", nrow(unique(spData[,c("Longitude","Latitude")])), "presences\n")
-    
-    xranSample <- random_bg_df[random_bg_df$v == 0, c("x", "y")]
-    colnames(xranSample) <- c("lon","lat")
+    if(pseudo_abs == 1){
+      # Load native area restricted by ecoregions
+      ntva <- raster::raster("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/input_data/by_crop/potato/native_area/native_area_tuberosum_chilotanum.tif")
+      
+      climLayers <- raster::crop(current_clim_layer, raster::extent(ntva))
+      climLayers <- raster::mask(climLayers, ntva)
+      
+      unsuit_bg <- mopa::OCSVMprofiling(xy = unique(spData[,c("Longitude","Latitude")]), varstack = climLayers)
+      random_bg <- mopa::pseudoAbsences(xy = unique(spData[,c("Longitude","Latitude")]), background = unsuit_bg$absence, exclusion.buffer = 0.083*5, prevalence = 0.05)
+      random_bg_df <- as.data.frame(random_bg$species1$PA01)
+      spPoints  <- SpatialPoints(coords = random_bg_df[random_bg_df$v == 0, c("x", "y")])
+      proj4string(spPoints)<- CRS("+proj=longlat +datum=WGS84")
+      
+      raster::shapefile(spPoints, "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/input_data/by_crop/potato/lvl_1/tuberosum_chilotanum/americas/background/bg_tuberosum_chilotanum.shp")
+      
+      nSamples <- nrow(random_bg_df[random_bg_df$v == 0, c("x", "y")])
+      cat(nSamples, "pseudo-absences generated for n =", nrow(unique(spData[,c("Longitude","Latitude")])), "presences\n")
+      
+      xranSample <- random_bg_df[random_bg_df$v == 0, c("x", "y")]
+      colnames(xranSample) <- c("lon","lat")
+    }
+    if(pseudo_abs == 2){
+      
+      climLayers <- raster::crop(current_clim_layer, raster::extent(ntva))
+      climLayers <- raster::mask(climLayers, ntva)
+      
+      unsuit_bg <- mopa::OCSVMprofiling(xy = unique(spData[,c("Longitude","Latitude")]), varstack = climLayers)
+      random_bg <- mopa::pseudoAbsences(xy = unique(spData[,c("Longitude","Latitude")]), background = unsuit_bg$absence, exclusion.buffer = 0.083*5, prevalence = 0.05)
+      random_bg_df <- as.data.frame(random_bg$species1$PA01)
+      spPoints  <- SpatialPoints(coords = random_bg_df[random_bg_df$v == 0, c("x", "y")])
+      proj4string(spPoints)<- CRS("+proj=longlat +datum=WGS84")
+      
+      raster::shapefile(spPoints, "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/input_data/by_crop/potato/lvl_1/tuberosum_chilotanum/americas/background/bg_tuberosum_chilotanum.shp")
+      
+      nSamples <- nrow(random_bg_df[random_bg_df$v == 0, c("x", "y")])
+      cat(nSamples, "pseudo-absences generated for n =", nrow(unique(spData[,c("Longitude","Latitude")])), "presences\n")
+      
+      xranSample <- random_bg_df[random_bg_df$v == 0, c("x", "y")]
+      colnames(xranSample) <- c("lon","lat")
+    }
     
     # Extract variable data
     ex_raster_env <- as.data.frame(raster::extract(current_clim_layer, xranSample))

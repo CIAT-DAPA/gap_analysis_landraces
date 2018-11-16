@@ -9,7 +9,8 @@ cost_dist_function <-  function( outDir, friction, classResults, occName, mask, 
     
     cat("Creating occurrences shapefile"," \n ")
     Occ <- read.csv(paste0(classResults, "/", filename), header = T)
-    Occ <- Occ  %>% dplyr::select(., contains("long"), contains("lat"), one_of(c("y", "ensemble")))
+ #   Occ <- Occ  %>% dplyr::select(., contains("long"), contains("lat"), one_of(c("y", "ensemble")))
+    Occ <- Occ  %>% dplyr::select(., "Longitude", "Latitude",one_of(c("y", "ensemble")))
     names(Occ) <- c("Longitude", "Latitude", "ensemble")
     Occ$ensemble <- tolower(Occ$ensemble)
     Occ <- Occ[which(Occ$ensemble == occName),]

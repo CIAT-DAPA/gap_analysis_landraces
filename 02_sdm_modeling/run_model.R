@@ -14,17 +14,17 @@ baseDir   <- switch(OSys,
 rm(OSys)
 
 srcDir <- paste(baseDir, "/scripts", sep = "") # Software directory
-region <- "sgh_custom"                           # Region: "americas", "world"
+region <- "potato_custom"                           # Region: "americas", "world"
 
 source(paste0(srcDir, "/02_sdm_modeling/preprocessing/config_crop.R")) # Configuring crop directories
 
 # Define crop, analysis level and creating needed directories
-crop <- "sorghum"
-level_1 <-  c("bicolor", "caudatum", "durra", "guinea", "kafir") # level 1: genepool
+crop <- "potato"
+level_1 <-  c("ajanhuiri", "tuberosum_andigenum", "tuberosum_chilotanum") # level 1: genepool
 level_2 <- NULL # level 2: race
 level_3 <- NULL # level 3
 level   <- "lvl_1"
-occName <- "caudatum" # Level 1: "andean", "mesoamerican"
+occName <- "tuberosum_chilotanum" # Level 1: "andean", "mesoamerican"
 source(paste(srcDir, "/02_sdm_modeling/preprocessing/config.R", sep = ""))
 # config_crop_dirs(baseDir, crop, level_1, level_2, level_3)
 raster::rasterOptions(tmpdir = choose.dir(default = "",
@@ -82,8 +82,11 @@ if(file.exists(paste0(sp_Dir, "/calibration.csv"))){
 }
 
 # Loading raster files
-clim_layer <- lapply(paste0(climDir, "/", var_names, ".tif"), raster)
-clim_layer <- raster::stack(clim_layer)
+clim_vars <-  paste0(var_names, ".tif")  %in% list.files(climDir) 
+generic_vars <- paste0(var_names, ".tif") %in% list.files(clim_spReg)
+clim_layer <- lapply(paste0(climDir, "/", var_names[clim_vars], ".tif"), raster)
+generic_layer <- lapply(paste0(clim_spReg,"/", var_names[generic_vars],".tif"), raster)
+clim_layer <- raster::stack(c(clim_layer, generic_layer))
 
 use.maxnet <- TRUE
 if(use.maxnet){

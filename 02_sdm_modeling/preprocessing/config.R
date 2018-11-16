@@ -22,12 +22,13 @@ pacman::p_load(tcltk, adehabitatHR, spatstat, data.table,
 
 # Source functions
 cat("Loading R scripts\n")
+source(paste0(srcDir, "/02_sdm_modeling/preprocessing/crop_raster.R"))
 source(paste0(srcDir, "/02_sdm_modeling/preprocessing/cost_distance_function.R"))
 source(paste0(srcDir, "/02_sdm_modeling/sdm/sample_files.R"))
+source(paste0(srcDir, "/02_sdm_modeling/sdm/model_driver.R"))
 source(paste0(srcDir, "/02_sdm_modeling/sdm/null_model.R"))
 source(paste0(srcDir, "/02_sdm_modeling/sdm/calibration_function.R"))
 source(paste0(srcDir, "/02_sdm_modeling/sdm/evaluation_function.R"))
-source(paste0(srcDir, "/02_sdm_modeling/sdm/model_driver.R"))
 source(paste0(srcDir, "/02_sdm_modeling/sdm/create_buffers.R"))
 source(paste0(srcDir, "/02_sdm_modeling/sdm/sdm_approach_function.R"))
 source(paste0(srcDir, "/02_sdm_modeling/sdm/sdm_maxnet_approach_function.R"))
@@ -44,7 +45,6 @@ source(paste0(srcDir, "/03_gap_methods/gaps_validation.R"))
 source(paste0(srcDir, "/03_gap_methods/summary_function.R"))
 source(paste0(srcDir, "/03_gap_methods/validation_function.R"))
 source(paste0(srcDir, "/03_gap_methods/create_png_maps.R"))
-source(paste0(srcDir, "/02_sdm_modeling/preprocessing/crop_raster.R"))
 
 # Working directories
 cat("Loading working directories\n")

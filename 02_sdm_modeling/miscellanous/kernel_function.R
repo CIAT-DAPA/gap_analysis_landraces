@@ -53,16 +53,21 @@ raster_kernel <- function(mask, occurrences, out_dir, kernel_method, scale){
   
     } else if(kernel_method==2){
     cat("Using Adehabitat Kernel UD version","\n")
-    rAsc <- asc.from.raster(mask);rAsc <- adehabitatMA::asc2spixdf(rAsc);gc()
-    kernel <- adehabitatHR::kernelUD(occurrences,h="href",grid=rAsc)
+      
+      df_mask <- as.data.frame(mask, xy = TRUE )
+      df_mask_sp <- SpatialPoints(df_mask[, c(1,2)])
+      crs(df_mask_sp) <- crs(mask)
+      spixels <- SpatialPixels(df_mask_sp)
+      
+    kernel <- adehabitatHR::kernelUD(occurrences, h = "LSCV", grid= spixels)
     
     
     res <- as.data.frame(kernel[[1]])
-    sp::coordinates(res) <- coordinates(kernel)
+    sp::coordinates(res) <- ~ Var2 + Var1
     sp::gridded(res) <- TRUE
-    sp::proj4string(res) <- CRS(proj4string(kernel))
+    crs(res) <- crs(mask)
     
-    kernel<- raster::raster(res);rm(res,rAsc);gc()
+    kernel<- raster::raster(res);rm(res);gc()
     
     if(scale==T){
       #kernel <- kernel/max(kernel[],na.rm=T)
