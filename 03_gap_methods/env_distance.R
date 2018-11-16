@@ -40,9 +40,10 @@ calc_env_score <- function(lv_name, clus_method = "hclust_mahalanobis", sdm_dir,
     }
     
     #load environmental layers
-    env_names <- var_names
+    env_names <- var_names[ paste0(var_names, ".tif") %in% list.files(env_dir)]
       #names(sdm_obj@data@features)[2:ncol(sdm_obj@data@features)]
     if ("monthCountByTemp10" %in% env_names) env_names <- env_names[-which(env_names=="monthCountByTemp10")]
+
     env_data <- stack(paste(env_dir,"/",env_names,".tif",sep=""))
     env_data <- readAll(env_data)
     occ_data <- cbind(occ_data, raster::extract(x = env_data, y = occ_data[,c("lon", "lat")]))
