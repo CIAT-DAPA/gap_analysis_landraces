@@ -94,12 +94,17 @@ validation_metrics <- function(n.sample = 100, bf_rad = 50, baseDir, area, group
   knl <- raster(paste0(outDir, "/kernel.tif")) 
   knl <- raster::mask(knl, buff_omit, maskvalue = 1)
   knl[which(knl[] == 0 )] <- NA
-  knl.dens <-  raster::quantile(x = knl[], probs = c(.60, .80), na.rm = T)
-  knl[knl[] <   knl.dens[2] ] <- NA
-  knl[knl[] >=  knl.dens[2] ] <- 1
+  knl.dens <-  raster::quantile(x = knl[], probs = c(.9, 1), na.rm = T)
+  knl[knl[] <=   knl.dens[1] ] <- NA
+  
+  knl.dens_2 <- raster::quantile(x = knl[], probs = c(.8, .90), na.rm = T)
+  
+  knl[knl[] <= knl.dens_2[1]] <- NA
+  knl[!is.na(knl[])] <- 1
+  
   b_occr <- raster::as.data.frame(knl, xy=T)
   
-  rm(knl, knl.dens); g <-gc(); rm(g)
+  rm(knl, knl.dens, knl.dens_2); g <-gc(); rm(g)
   
   b_occr <- b_occr[complete.cases(b_occr),]
   cords_dummy <- b_occr[,1:2] 

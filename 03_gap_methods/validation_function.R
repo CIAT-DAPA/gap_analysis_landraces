@@ -230,7 +230,7 @@ validation_process <- function(occName = occName,
       kernel <- .GlobalEnv$raster_kernel(mask = mask,
                                          occurrences = spData_upt, # spData_upt[spData_upt[,1] == 1,],
                                          out_dir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"),
-                                         kernel_method = 3,
+                                         kernel_method = 2,
                                          scale = T)
     } else {
       cat("Kernel raster has already been created ... \n")

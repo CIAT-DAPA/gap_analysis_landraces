@@ -68,6 +68,7 @@ raster_kernel <- function(mask, occurrences, out_dir, kernel_method, scale){
     crs(res) <- crs(mask)
     
     kernel<- raster::raster(res);rm(res);gc()
+    kernel <- raster::mask(kernel, mask = mask)
     
     if(scale==T){
       #kernel <- kernel/max(kernel[],na.rm=T)

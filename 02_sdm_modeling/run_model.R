@@ -14,7 +14,7 @@ baseDir   <- switch(OSys,
 rm(OSys)
 
 srcDir <- paste(baseDir, "/scripts", sep = "") # Software directory
-region <- "potato_custom"                           # Region: "americas", "world"
+region <- "americas"                           # Region: "americas", "world"
 
 source(paste0(srcDir, "/02_sdm_modeling/preprocessing/config_crop.R")) # Configuring crop directories
 
@@ -24,7 +24,7 @@ level_1 <-  c("ajanhuiri", "tuberosum_andigenum", "tuberosum_chilotanum") # leve
 level_2 <- NULL # level 2: race
 level_3 <- NULL # level 3
 level   <- "lvl_1"
-occName <- "tuberosum_chilotanum" # Level 1: "andean", "mesoamerican"
+occName <- "tuberosum_andigenum" # Level 1: "andean", "mesoamerican"
 source(paste(srcDir, "/02_sdm_modeling/preprocessing/config.R", sep = ""))
 # config_crop_dirs(baseDir, crop, level_1, level_2, level_3)
 raster::rasterOptions(tmpdir = choose.dir(default = "",
@@ -170,7 +170,7 @@ if(!file.exists(paste0(gap_outDir, "/kernel.tif"))){
   kernel <- raster_kernel(mask          = mask,
                           occurrences   = spData[spData[,1] == 1,],
                           out_dir       = gap_outDir,
-                          kernel_method = 3,
+                          kernel_method = 2,
                           scale         = T)
 } else {
   kernel <- raster(paste0(gap_outDir, "/kernel.tif")) 
@@ -179,10 +179,14 @@ if(!file.exists(paste0(gap_outDir, "/kernel_classes.tif"))){
   kernel <- raster(paste0(gap_outDir, "/kernel.tif"))
   kernel[kernel[] == 0] <- NA
   kernel <- kernel * 10000
-  qVals <- raster::quantile(x = kernel[], probs = c(.60, .97), na.rm = T)
-  kernel_class <- raster::reclassify(kernel, c(-Inf,qVals[1],1, qVals[1],qVals[2],2, qVals[2],Inf,3))
+  qVal_1 <- raster::quantile(x = kernel[], probs = c(.9, 1), na.rm = T)
+  knl_temp <- kernel
+  knl_temp[which(knl_temp[] <= qVal_1[1])] <- NA
+  qVal_2 <- raster::quantile(x = knl_temp, probs = c(.6, .95), na.rm = TRUE)
+  kernel_class <- raster::reclassify(kernel, c(-Inf,qVal_1[1],1, qVal_1[1],qVal_2[2],2, qVal_2[2],Inf,3))
+  
   writeRaster(kernel_class, paste0(gap_outDir, "/kernel_classes.tif"), format = "GTiff")
-  rm(kernel, kernel_class); gc()
+  rm(kernel, kernel_class, knl_temp, qVal_1, qVal_2); gc()
   } #else {
 #   kernel_class <- raster(paste0(gap_outDir, "/kernel_classes.tif")) 
 # }
