@@ -143,8 +143,11 @@ validation_process <- function(occName = occName,
     sdm_excl <- occSDM[which(id_sdm == 1),]
     occSDM_upt <- occSDM[base::setdiff(1:nrow(occSDM), which(id_sdm == 1)),]; rm(id_sdm, sdm_excl)
     
-    clim_layer <- lapply(paste0(climDir, "/", vars, ".tif"), raster)
-    clim_layer <- raster::stack(clim_layer)
+    clim_vars <-  paste0(var_names, ".tif")  %in% list.files(climDir) 
+    generic_vars <- paste0(var_names, ".tif") %in% list.files(clim_spReg)
+    clim_layer <- lapply(paste0(climDir, "/", var_names[clim_vars], ".tif"), raster)
+    generic_layer <- lapply(paste0(clim_spReg,"/", var_names[generic_vars],".tif"), raster)
+    clim_layer <- raster::stack(c(clim_layer, generic_layer))
     if(use.maxnet){
       
       cat("Running sdm modelling approach using Maxnet \n")
