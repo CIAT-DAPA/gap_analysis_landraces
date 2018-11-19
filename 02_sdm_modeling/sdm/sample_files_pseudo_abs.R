@@ -38,6 +38,11 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
       climLayers <- raster::crop(current_clim_layer, raster::extent(ntva))
       climLayers <- raster::mask(climLayers, ntva)
       
+      climLayers <- climLayers[[1:42]]
+      saveRDS(climLayers, "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/input_data/by_crop/potato/native_area/tuberosum_chilotanum/climLayers_cropped.rds")
+      
+      climLayers <- readRDS("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/input_data/by_crop/potato/native_area/tuberosum_chilotanum/climLayers_cropped.rds")
+      
       unsuit_bg <- mopa::OCSVMprofiling(xy = unique(spData[,c("Longitude","Latitude")]), varstack = climLayers)
       random_bg <- mopa::pseudoAbsences(xy = unique(spData[,c("Longitude","Latitude")]), background = unsuit_bg$absence, exclusion.buffer = 0.083*5, prevalence = 0.05)
       random_bg_df <- as.data.frame(random_bg$species1$PA01)

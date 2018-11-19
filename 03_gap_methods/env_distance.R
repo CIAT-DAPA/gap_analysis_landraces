@@ -17,7 +17,7 @@
 #env_score <- calc_env_score(lv_name="mesoamerican",clus_method="hclust_mahalanobis",sdm_dir,gap_dir,occ_dir,env_dir,out_dir)
 
 calc_env_score <- function(lv_name, clus_method = "hclust_mahalanobis", sdm_dir, gap_dir, occ_dir, env_dir, out_dir, var_names){
-  
+  cat("Intializing calc environmental score process \n \n")
   if(!file.exists(paste(out_dir, "/env_score_", clus_method, ".tif", sep = ""))){
     
     #load packages
@@ -82,7 +82,11 @@ calc_env_score <- function(lv_name, clus_method = "hclust_mahalanobis", sdm_dir,
         
         #normalise variables
         td_all <- rbind(xy_clus,euc_occ)
+        #if all values of a variable are the same.
+        zero_var <- caret::nearZeroVar(td_all)
+        if(length(zero_var) != 0){ td_all <- td_all[, -zero_var]}
         td_all <- as.data.frame(scale(td_all))
+        td_all <- td_all[complete.cases(td_all), ]
         
         #calculate Euclidean distance
         td_dist <- distances::distances(td_all, normalize="none")
