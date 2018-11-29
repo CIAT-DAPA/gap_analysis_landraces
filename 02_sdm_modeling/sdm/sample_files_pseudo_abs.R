@@ -1,147 +1,245 @@
-#Create sample (background, occurrences, swd) for SDMs
-#Chrystiam Sosa, Julian Ramirez-Villegas
-#CIAT, Nov 2017
+# Create sample (background, occurrences, swd) for SDMs
+# Chrystiam Sosa, Julian Ramirez-Villegas, Harold Achicanoy
+# CIAT, Nov 2018
 
-#function to create background, occurrence, and swd (bg+occ) samples
-# pseudo_abs = c(1, 2) # 1: occurrence ecoregions masked by native area, 2: occurrence ecoregions for complete extent of mask
-samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, climDir, clim_spDir, extension_r, var_names_generic, var_names_sp, overwrite = F, correlation = 0, pseudo_abs = 1){
+# Creating Native area filtered by EcoRegions raster file
+NAFiltered <- function(crop = "potato", occName = "ajanhuiri"){
   
-  #load raster files
+  outFile <- paste0(input_data_dir, "/by_crop/", crop, "/native_area/", occName, "/native_area_", occName, ".tif")
+  
+  if(!file.exists(outFile)){
+    
+    # Load occurrence and ecoregions data
+    occ <- raster::shapefile(paste0(input_data_dir, "/by_crop/", crop, "/lvl_1/", occName, "/americas/occurrences/Occ.shp"))
+    elu <- raster::raster(paste0(input_data_dir, "/ecosystems/globalelu/World_ELU_2015_5km.tif"))
+    
+    # Extract specific ecoregions using occurrence data
+    regions <- raster::extract(x = elu, y = occ@coords); regions <- sort(unique(regions)) # print(regions)
+    elu[!(elu[] %in% regions)] <- NA # Exclude ecoregions that are not in occurrence data
+    
+    # Load country level native area
+    # Created independently from GRIN
+    nac <- raster::shapefile(paste0(input_data_dir, "/by_crop/", crop, "/native_area/", occName, "/native_area_", occName, ".shp"))
+    
+    # Crop native area by extracted regions
+    elu_crpd <- raster::crop(elu, raster::extent(nac))
+    elu_crpd <- raster::mask(x = elu_crpd, mask = nac)
+    elu_crpd[!is.na(elu_crpd[])] <- 1
+    raster::writeRaster(elu_crpd, outFile)
+    
+  } else {
+    
+    occ <- raster::shapefile(paste0(input_data_dir, "/by_crop/", crop, "/lvl_1/", occName, "/americas/occurrences/Occ.shp"))
+    elu_crpd <- raster::raster(outFile)
+    
+  }
+  
+  cat(paste0("Number of unique accessions: ", nrow(unique(occ@coords)), "\n"))
+  cat(paste0("Number of pixels on native area filtered: ", sum(!is.na(elu_crpd[])), "\n"))
+  if(sum(!is.na(elu_crpd[])) > 10*nrow(unique(occ@coords))){cat("Defined Area able to generate enough number of pseudo-absences\n")}
+  
+}
+
+# Profiling function
+OCSVMprofiling2 <- function(xy, varstack, nu = 0.5){
+  
+  background <- raster::as.data.frame(varstack[[1]], xy = T, na.rm = T)[,1:2]
+  bioclim    <- varstack
+  coo        <- background
+  mat        <- cbind(xy, rep(1, nrow(xy)))
+  mat        <- as.data.frame(cbind(1, raster::extract(bioclim, mat[,1:2])))
+  
+  mod        <- e1071::svm(mat[, -1], y = NULL, type = "one-classification", nu = nu)
+  proj       <- as.data.frame(cbind(1, raster::extract(bioclim, cbind(coo))))
+  pre        <- predict(mod, proj[, -1])
+  absence    <- coo[(which(pre == 0)),]
+  presence   <- coo[(which(pre != 0)),]
+  
+  return(list(Absences = absence, Presences = presence))
+}
+
+# Pseudo-absences function
+pseudoAbsences2 <- function(xy, background, exclusion.buffer = 0.0166, tms = 10){
+  
+  polybuffs <- list()
+  r         <- exclusion.buffer
+  pr        <- xy
+  polys     <- list()
+  for (i in 1:nrow(pr)) {
+    discbuff <- spatstat::disc(radius = r, centre = c(pr[i, 1], pr[i, 2]))
+    discpoly <- sp::Polygon(rbind(cbind(discbuff$bdry[[1]]$x, y = discbuff$bdry[[1]]$y), c(discbuff$bdry[[1]]$x[1], y = discbuff$bdry[[1]]$y[1])))
+    polys    <- c(polys, discpoly)
+  }
+  spolys <- list()
+  for (i in 1:length(polys)) {
+    spolybuff <- sp::Polygons(list(polys[[i]]), ID = i)
+    spolys    <- c(spolys, spolybuff)
+    spol      <- sp::SpatialPolygons(spolys)
+  }
+  coords.l  <- background
+  coords    <- coords.l
+  sp.coords <- sp::SpatialPoints(coords)
+  a         <- sp::over(sp.coords, spol)
+  abs.bg    <- coords[which(is.na(a)), 1:2]
+  set.seed(1234)
+  aa <- abs.bg[sample(1:nrow(abs.bg), size = tms * nrow(pr)),]
+  colnames(aa) <- c("Longitude", "Latitude")
+  aa$Status <- 0
+  xy$Status <- 1
+  ab <- rbind(xy, aa); rownames(ab) <- 1:nrow(ab)
+  
+  return(ab)
+}
+
+# Pseudo-absences options: pa_method
+# "ntv_area_ecoreg": Native Area cropped by EcoRegion
+# "ecoreg": EcoRegion
+# "all_area": Full extent of mask
+samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, climDir, clim_spDir, extension_r, var_names_generic, var_names_sp, overwrite = F, correlation = 0, pa_method = "ntv_area_ecoreg"){
+  
   cat("Loading raster files","\n")
   current_clim_layer_generic <- lapply(paste0(climDir, "/", var_names_generic, extension_r), raster)
-  current_clim_layer_sp <- lapply(paste0(baseDir, "/input_data/by_crop/", crop, "/raster/", region, "/", var_names_sp, extension_r), raster)
-  current_clim_layer <- stack(c(current_clim_layer_generic, current_clim_layer_sp))
+  current_clim_layer_sp      <- lapply(paste0(baseDir, "/input_data/by_crop/", crop, "/raster/", region, "/", var_names_sp, extension_r), raster)
+  current_clim_layer         <- stack(c(current_clim_layer_generic, current_clim_layer_sp))
   
-  # background samples file name
-  outBackName <- paste0(backDir, "/bg_", occName, ".csv")
-  outOccName <- paste0(occDir, "/occ_", occName, ".csv")
-  outSWDName <- paste0(swdDir, "/swd_", occName, ".csv")
+  # Background samples file name
+  outBackName         <- paste0(backDir, "/bg_", occName, ".csv")
+  outOccName          <- paste0(occDir, "/occ_", occName, ".csv")
+  outSWDName          <- paste0(swdDir, "/swd_", occName, ".csv")
   outSWDComplete_Name <- paste0(swdDir, "/swd_Complete_", occName, ".csv")
-  #create background if it doesnt exist
-  if (!file.exists(outBackName) | overwrite) {
+  
+  # Create background if it does not exist
+  if (!file.exists(outBackName) | overwrite){
+    
     cat("Processing:", paste(occName), "\n")
-    # spData <- readRDS(occFile)
-    spData <- read.csv(occFile, header = T)
+    spData            <- read.csv(occFile, header = T)
     spData[,clsModel] <- tolower(spData[,clsModel])
-    spData <- spData[which(spData[,clsModel] == occName),]
+    spData            <- spData[which(spData[,clsModel] == occName),]
     
-    #create random points
-    cat("Creating random points\n")
-    
-    # Load mask
+    cat("Creating random Pseudo-absences points\n")
     mask <- raster::raster(mask)
     
-    if(pseudo_abs == 1){
-      # Load native area restricted by ecoregions
-      ntva <- raster::raster("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/input_data/by_crop/potato/native_area/native_area_tuberosum_chilotanum.tif")
+    if(pa_method == "ntv_area_ecoreg"){
       
-      climLayers <- raster::crop(current_clim_layer, raster::extent(ntva))
-      climLayers <- raster::mask(climLayers, ntva)
+      cat("Load native area restricted by ecoregions\n")
+      if(!file.exists(paste0(input_data_dir, "/by_crop/", crop, "/native_area/", occName, "/native_area_", occName,".tif"))){
+        ntv_area <- NAFiltered(crop = crop, occName = occName)
+      } else {
+        ntv_area <- raster::raster(paste0(input_data_dir, "/by_crop/", crop, "/native_area/", occName, "/native_area_", occName,".tif"))
+      }
       
+      climLayers <- raster::crop(current_clim_layer, raster::extent(ntv_area))
+      climLayers <- raster::mask(climLayers, ntv_area)
       climLayers <- climLayers[[1:42]]
-      saveRDS(climLayers, "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/input_data/by_crop/potato/native_area/tuberosum_chilotanum/climLayers_cropped.rds")
       
-      climLayers <- readRDS("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/input_data/by_crop/potato/native_area/tuberosum_chilotanum/climLayers_cropped.rds")
+      unsuit_bg <- OCSVMprofiling2(xy = unique(spData[,c("Longitude","Latitude")]), varstack = climLayers)
+      random_bg <- pseudoAbsences2(xy = unique(spData[,c("Longitude","Latitude")]), background = unsuit_bg$Absences, exclusion.buffer = 0.083*5, tms = 10)
       
-      unsuit_bg <- mopa::OCSVMprofiling(xy = unique(spData[,c("Longitude","Latitude")]), varstack = climLayers)
-      random_bg <- mopa::pseudoAbsences(xy = unique(spData[,c("Longitude","Latitude")]), background = unsuit_bg$absence, exclusion.buffer = 0.083*5, prevalence = 0.05)
-      random_bg_df <- as.data.frame(random_bg$species1$PA01)
-      spPoints  <- SpatialPoints(coords = random_bg_df[random_bg_df$v == 0, c("x", "y")])
-      proj4string(spPoints)<- CRS("+proj=longlat +datum=WGS84")
+      bg_spPoints  <- SpatialPoints(coords = random_bg[random_bg$Status == 0, c("Longitude", "Latitude")])
+      proj4string(bg_spPoints)<- CRS("+proj=longlat +datum=WGS84")
+      raster::shapefile(bg_spPoints, paste0(input_data_dir, "/by_crop/", crop, "/lvl_1/", occName, "/americas/background/background_", occName, ".shp"))
       
-      raster::shapefile(spPoints, "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/input_data/by_crop/potato/lvl_1/tuberosum_chilotanum/americas/background/bg_tuberosum_chilotanum.shp")
-      
-      nSamples <- nrow(random_bg_df[random_bg_df$v == 0, c("x", "y")])
+      nSamples <- nrow(random_bg[random_bg$Status == 0, c("Longitude", "Latitude")])
       cat(nSamples, "pseudo-absences generated for n =", nrow(unique(spData[,c("Longitude","Latitude")])), "presences\n")
       
-      xranSample <- random_bg_df[random_bg_df$v == 0, c("x", "y")]
+      xranSample <- random_bg[random_bg$Status == 0, c("Longitude","Latitude")]
       colnames(xranSample) <- c("lon","lat")
     }
-    if(pseudo_abs == 2){
+    if(pa_method == "ecoreg"){
       
-      climLayers <- raster::crop(current_clim_layer, raster::extent(ntva))
-      climLayers <- raster::mask(climLayers, ntva)
+      elu     <- raster::raster(paste0(input_data_dir, "/ecosystems/globalelu/World_ELU_2015_5km.tif"))
+      regions <- raster::extract(x = elu, y = unique(spData[,c("Longitude","Latitude")])); regions <- sort(unique(regions))
+      elu[!(elu[] %in% regions)] <- NA # Exclude ecoregions that are not in occurrence data
+      elu     <- raster::crop(elu, raster::extent(mask))
+      elu     <- raster::mask(elu, mask)
       
-      unsuit_bg <- mopa::OCSVMprofiling(xy = unique(spData[,c("Longitude","Latitude")]), varstack = climLayers)
-      random_bg <- mopa::pseudoAbsences(xy = unique(spData[,c("Longitude","Latitude")]), background = unsuit_bg$absence, exclusion.buffer = 0.083*5, prevalence = 0.05)
-      random_bg_df <- as.data.frame(random_bg$species1$PA01)
-      spPoints  <- SpatialPoints(coords = random_bg_df[random_bg_df$v == 0, c("x", "y")])
-      proj4string(spPoints)<- CRS("+proj=longlat +datum=WGS84")
+      climLayers <- raster::crop(current_clim_layer, elu)
+      climLayers <- raster::mask(climLayers, elu)
+      climLayers <- climLayers[[1:42]]
       
-      raster::shapefile(spPoints, "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/input_data/by_crop/potato/lvl_1/tuberosum_chilotanum/americas/background/bg_tuberosum_chilotanum.shp")
+      unsuit_bg <- OCSVMprofiling2(xy = unique(spData[,c("Longitude","Latitude")]), varstack = climLayers)
+      random_bg <- pseudoAbsences2(xy = unique(spData[,c("Longitude","Latitude")]), background = unsuit_bg$Absences, exclusion.buffer = 0.083*5, tms = 10)
       
-      nSamples <- nrow(random_bg_df[random_bg_df$v == 0, c("x", "y")])
+      bg_spPoints  <- SpatialPoints(coords = random_bg[random_bg$Status == 0, c("Longitude", "Latitude")])
+      proj4string(bg_spPoints)<- CRS("+proj=longlat +datum=WGS84")
+      raster::shapefile(bg_spPoints, paste0(input_data_dir, "/by_crop/", crop, "/lvl_1/", occName, "/americas/background/background_", occName, ".shp"))
+      
+      nSamples <- nrow(random_bg[random_bg$Status == 0, c("Longitude", "Latitude")])
       cat(nSamples, "pseudo-absences generated for n =", nrow(unique(spData[,c("Longitude","Latitude")])), "presences\n")
       
-      xranSample <- random_bg_df[random_bg_df$v == 0, c("x", "y")]
+      xranSample <- random_bg[random_bg$Status == 0, c("Longitude","Latitude")]
+      colnames(xranSample) <- c("lon","lat")
+    }
+    if(pa_method == "all_area"){
+      
+      climLayers <- current_clim_layer
+      climLayers <- climLayers[[1:42]]
+      
+      unsuit_bg <- OCSVMprofiling2(xy = unique(spData[,c("Longitude","Latitude")]), varstack = climLayers)
+      random_bg <- pseudoAbsences2(xy = unique(spData[,c("Longitude","Latitude")]), background = unsuit_bg$Absences, exclusion.buffer = 0.083*5, tms = 10)
+      
+      bg_spPoints  <- SpatialPoints(coords = random_bg[random_bg$Status == 0, c("Longitude", "Latitude")])
+      proj4string(bg_spPoints)<- CRS("+proj=longlat +datum=WGS84")
+      raster::shapefile(bg_spPoints, paste0(input_data_dir, "/by_crop/", crop, "/lvl_1/", occName, "/americas/background/background_", occName, ".shp"))
+      
+      nSamples <- nrow(random_bg[random_bg$Status == 0, c("Longitude", "Latitude")])
+      cat(nSamples, "pseudo-absences generated for n =", nrow(unique(spData[,c("Longitude","Latitude")])), "presences\n")
+      
+      xranSample <- random_bg[random_bg$Status == 0, c("Longitude","Latitude")]
       colnames(xranSample) <- c("lon","lat")
     }
     
     # Extract variable data
     ex_raster_env <- as.data.frame(raster::extract(current_clim_layer, xranSample))
-    z <- cbind(id = 1:nrow(xranSample), species = occName, status = 0, xranSample, ex_raster_env)
-    z <- z[complete.cases(z),]
+    z             <- cbind(id = 1:nrow(xranSample), species = occName, status = 0, xranSample, ex_raster_env)
+    z             <- z[complete.cases(z),]
     cat(nrow(z), "pseudo-absences ready to use\n")
-    occ <- z
-    #preparing samples
-    occSample <- unique(spData[,c("Longitude", "Latitude")])
-    names(occSample) <- c("lon", "lat")
-    occ_env_data <- as.data.frame(raster::extract(current_clim_layer, occSample))
-    occSample <- cbind(id = 1:nrow(occSample), species = occName, status = 1, occSample, occ_env_data)
-    occSample <- occSample[complete.cases(occSample),]
+    occ           <- z
     
-    #prepare swd
+    # Preparing samples
+    occSample        <- unique(spData[,c("Longitude", "Latitude")])
+    names(occSample) <- c("lon", "lat")
+    occ_env_data     <- as.data.frame(raster::extract(current_clim_layer, occSample))
+    occSample        <- cbind(id = 1:nrow(occSample), species = occName, status = 1, occSample, occ_env_data)
+    occSample        <- occSample[complete.cases(occSample),]
+    
+    # Preparing swd
     swdSample_Complete <- rbind(occSample, z)
-    swdSample <- swdSample_Complete
-    #excluiding correlation
+    swdSample          <- swdSample_Complete
+    
+    # Excluding correlated variables
     if(correlation == 0){
       cat("Ommiting the correlation approach\n")
-      
       swdSample <- swdSample_Complete
-      
     }
     
-    #Using choose variables algorithms (Correlation, VIF, or PCA + VIF)
+    # Using choose variables algorithms (Correlation, VIF, or PCA + VIF)
     if(correlation == 1){
       cat("Using Pearson correlation approach\n")
-      
-      descrCor <- cor(swdSample[,-c(1:5)])
+      descrCor       <- cor(swdSample[,-c(1:5)])
       highlyCorDescr <- caret::findCorrelation(descrCor, cutoff = .75)
-      swdSample <- swdSample[,!colnames(swdSample) %in% (colnames(descrCor)[highlyCorDescr])]
-      
+      swdSample      <- swdSample[,!colnames(swdSample) %in% (colnames(descrCor)[highlyCorDescr])]
     }
     
     if(correlation == 2){
       cat("Using VIF approach\n")
-      
-      descrCor <- vifstep(swdSample[,-c(1:5)], th = 5)
+      descrCor       <- usdm::vifstep(swdSample[,-c(1:5)], th = 5)
       highlyCorDescr <- descrCor@excluded
-      swdSample <- swdSample[,!colnames(swdSample) %in% highlyCorDescr]
-      
+      swdSample      <- swdSample[,!colnames(swdSample) %in% highlyCorDescr]
     }
     
-    if(correlation==3){
+    if(correlation == 3){
       cat("Using PCA + VIF approach","\n")
-      
       z <- FactoMineR::PCA(X = swdSample[,-c(1:5)], ncp = 5, scale.unit = T, graph = F)
       # Selecting a number of components based on the cumulative ratio of variance which has more than 70%
       ncomp <- as.numeric(which(z$eig[,ncol(z$eig)] >= 70)[1])
-      vars <- rownames(z$var$cos2)[unlist(lapply(X = 1:nrow(z$var$cos2[,1:ncomp]), FUN = function(r){
-        if(length(which(z$var$cos2[r,1:ncomp] >= .15)) > 0){
-          res <- T
-        } else {
-          res <- F
-        }
+      vars  <- rownames(z$var$cos2)[unlist(lapply(X = 1:nrow(z$var$cos2[,1:ncomp]), FUN = function(r){
+        if(length(which(z$var$cos2[r,1:ncomp] >= .15)) > 0){ res <- T } else { res <- F }
         return(res)
       }))]
-      #vars1 <- z$var$cor[,1] > 0.7 | z$var$cor[,1] < -0.7
-      #vars2 <- z$var$cor[,2] > 0.7 | z$var$cor[,2] < -0.7
-      #vars <- c(vars1, vars2)
-      #vars <- names(vars[which(vars == TRUE)])
-      
-      descrCor <- usdm::vifstep(swdSample[,vars], th = 10)
+      descrCor       <- usdm::vifstep(swdSample[,vars], th = 10)
       highlyCorDescr <- descrCor@excluded
-      swdSample <- swdSample[,!colnames(swdSample) %in% highlyCorDescr]
+      swdSample      <- swdSample[,!colnames(swdSample) %in% highlyCorDescr]
     }
     cat("Saving csv files","\n")
     
@@ -152,7 +250,7 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
     
   } else {
     
-    cat("already processed\n")
+    cat("Already processed\n")
     swdSample <- read.csv(outSWDName, header = T)
     
   }

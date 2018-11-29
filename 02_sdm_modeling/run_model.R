@@ -14,17 +14,17 @@ baseDir   <- switch(OSys,
 rm(OSys)
 
 srcDir <- paste(baseDir, "/scripts", sep = "") # Software directory
-region <- "americas"                           # Region: "americas", "world"
+region <- "sgh_custom"                           # Region: "americas", "world"
 
 source(paste0(srcDir, "/02_sdm_modeling/preprocessing/config_crop.R")) # Configuring crop directories
 
 # Define crop, analysis level and creating needed directories
-crop <- "potato"
-level_1 <-  c("ajanhuiri", "tuberosum_andigenum", "tuberosum_chilotanum") # level 1: genepool
+crop <- "sorghum"
+level_1 <-  c("bicolor", "caudatum", "durra", "guinea", "kafir") # level 1: genepool
 level_2 <- NULL # level 2: race
 level_3 <- NULL # level 3
 level   <- "lvl_1"
-occName <- "tuberosum_andigenum" # Level 1: "andean", "mesoamerican"
+occName <- "durra" # Level 1: "andean", "mesoamerican"
 source(paste(srcDir, "/02_sdm_modeling/preprocessing/config.R", sep = ""))
 # config_crop_dirs(baseDir, crop, level_1, level_2, level_3)
 raster::rasterOptions(tmpdir = choose.dir(default = "",
