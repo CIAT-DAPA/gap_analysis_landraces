@@ -30,6 +30,7 @@ sdm_maxnet_approach_function <- function(occName      = occName,
                                   nFolds       = 5,
                                   beta         = beta,
                                   feat         = feat,
+                                  doSDraster   = TRUE,
                                   varImp       = FALSE){
   
   
@@ -165,8 +166,10 @@ mean(prj_stk, na.rm = TRUE) %>% writeRaster(., paste0(model_outDir,"/", occName,
 cat("Mean raster calculated \n")
 raster::calc(prj_stk, fun = function(x) {median(x, na.rm = T)}) %>% writeRaster(., paste0(model_outDir,"/", occName, "_prj_median.tif" ), overwrite = TRUE)
 cat("Median raster calculated \n")
-raster::calc(prj_stk, fun = function(x) {sd(x, na.rm = T)}) %>% writeRaster(., paste0(model_outDir,"/", occName, "_prj_std.tif" ), overwrite = TRUE)
-cat("Sd raster calculated \n")
+if(doSDraster){
+  raster::calc(prj_stk, fun = function(x) {sd(x, na.rm = T)}) %>% writeRaster(., paste0(model_outDir,"/", occName, "_prj_std.tif" ), overwrite = TRUE)
+  cat("Sd raster calculated \n")
+}
 
 
 ######## calculate varImportance ########

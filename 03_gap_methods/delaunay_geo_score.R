@@ -92,6 +92,11 @@ calc_delaunay_score <- function(baseDir, area, group, crop, lvl, ncores = NULL, 
     delanuay$area <- raster::area(delanuay)/1000000
   }
   
+  if(sum(which(delanuay@data$area == 0)) > 0){
+    delanuay <- delanuay[-which(delanuay@data$area == 0), ]
+    
+  }
+  
   if( length(grep("centroid", names(delanuay@data))) == 0){
     
     centroids <- getSpPPolygonsLabptSlots(delanuay)
@@ -115,7 +120,7 @@ calc_delaunay_score <- function(baseDir, area, group, crop, lvl, ncores = NULL, 
   not_all <- c()
   
   bad <- unlist(lapply(1:length(i$geometry), function(x){
-    if(is(i$geometry[x])[1] == "sfc_GEOMETRYCOLLECTION"| is(i$geometry[x])[1] == "sfc_POINT" | length(i$geometry[[x]]) == 0){
+    if(is(i$geometry[x])[1] == "sfc_GEOMETRYCOLLECTION"| is(i$geometry[x])[1] == "sfc_LINESTRING" |is(i$geometry[x])[1] == "sfc_POINT" | length(i$geometry[[x]]) == 0){
       return(x)
     } else {
       return(NA)
@@ -228,7 +233,7 @@ calc_delaunay_score <- function(baseDir, area, group, crop, lvl, ncores = NULL, 
     
     opts <- list(progress = progress)
     
-    delaDist_list <- foreach(x = 1:length(delanuay), .options.snow = opts, .packages = c("raster", "sp", "rgdal")) %dopar% {
+    delaDist_list <- foreach(x = 1:length(delanuay), .options.snow = opts, .export = ls(globalenv()), .packages = c("raster", "sp", "rgdal")) %dopar% {
       
       vertex_1 <- delanuay@polygons[[x]]@Polygons[[1]]@coords[1,] 
       vertex_1 <- SpatialPoints(data.frame(x = vertex_1[1], y = vertex_1[2]), proj4string = coord_sys)

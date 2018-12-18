@@ -12,7 +12,7 @@ cost_dist_function <-  function( outDir, friction, classResults, occName, mask, 
  #   Occ <- Occ  %>% dplyr::select(., contains("long"), contains("lat"), one_of(c("y", "ensemble")))
     Occ <- Occ  %>% dplyr::select(., "Longitude", "Latitude",one_of(c("y", "ensemble")))
     names(Occ) <- c("Longitude", "Latitude", "ensemble")
-    Occ$ensemble <- tolower(Occ$ensemble)
+    #Occ$ensemble <- tolower(Occ$ensemble)
     Occ <- Occ[which(Occ$ensemble == occName),]
     Occ <- Occ[which(!is.na(raster::extract(x = msk, y = Occ[,c("Longitude", "Latitude")]))),]
     coordinates(Occ) <- ~Longitude+Latitude

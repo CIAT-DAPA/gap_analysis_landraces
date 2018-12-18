@@ -162,6 +162,7 @@ validation_process <- function(occName = occName,
                                               nFolds       = 5,
                                               beta         = beta,
                                               feat         = feat,
+                                              doSDraster   = FALSE,
                                               varImp       = FALSE)
       
     }else{

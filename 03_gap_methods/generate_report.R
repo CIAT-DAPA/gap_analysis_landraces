@@ -1,6 +1,6 @@
 
 filepath <- paste0(results_dir, "/", crop, "/lvl_1/final_results_report")
-generate_report <- function(filepath, class_name = "five_bio_socio.rds", level_1, region, is.everything.finished = FALSE, disk = "Z:"){
+generate_report <- function(filepath, class_name = "rice_afican_dartseq_kclust.rds", level_1, region, is.everything.finished = FALSE, disk = "Z:"){
   
   if(is.everything.finished){
     pacman::p_load(rmarkdown, knitr, kableExtra, xlsx)
@@ -57,7 +57,7 @@ cat("\n")
 cat(
 "#'  * ## Principal Component Analysis (PCA)
 #+  echo = FALSE 
-knitr::include_graphics(paste0(baseDir, \"/input_data/by_crop/\",crop, \"/lvl_1/classification/pca_plot.jpg\")) 
+knitr::include_graphics(paste0(baseDir, \"/input_data/by_crop/\",crop, \"/lvl_1/classification/pca_plot.jpeg\")) 
 " 
 )
 cat("\n")
@@ -86,8 +86,12 @@ cat("
 #'   these area are not well represented in the collection. Moreover we have calculated others two measures
 #'   for each triangulation and combine them with the area in order to get a better result. 
 
-#' * ### Environmental distance
-#'   The environmental distance raster is a ...   
+#' * ### Environmental raster
+#'   to establish a measure of gaps from an environmental perspective the approach followed consists in measuring how well the 
+#'   environment of the accessions are already represented in the genebanks and allows determining which environments are not well
+#'   represented (environmental gaps). The Environmental score developed is based on the construction of environmental clusters in
+#'   the spatial distribution of the landrace, and then calculate the environmental distance to closest accession for each 
+#'   environmental cluster.  
     
 #' * ### Spatial specie distribution(SDM)    
 #'   The SDM represents the main input for the gaps scores calculation and is calculated through maxent model (for 

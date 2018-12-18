@@ -14,17 +14,17 @@ baseDir   <- switch(OSys,
 rm(OSys)
 
 srcDir <- paste(baseDir, "/scripts", sep = "") # Software directory
-region <- "sgh_custom"                           # Region: "americas", "world"
+region <- "africa"                           # Region: "americas", "world"
 
 source(paste0(srcDir, "/02_sdm_modeling/preprocessing/config_crop.R")) # Configuring crop directories
 
 # Define crop, analysis level and creating needed directories
-crop <- "sorghum"
-level_1 <-  c("bicolor", "caudatum", "durra", "guinea", "kafir") # level 1: genepool
+crop <- "rice_african"
+level_1 <-  c("K2", "k4", "K5" ) # level 1: genepool
 level_2 <- NULL # level 2: race
 level_3 <- NULL # level 3
 level   <- "lvl_1"
-occName <- "durra" # Level 1: "andean", "mesoamerican"
+occName <- "k2" # Level 1: "andean", "mesoamerican"
 source(paste(srcDir, "/02_sdm_modeling/preprocessing/config.R", sep = ""))
 # config_crop_dirs(baseDir, crop, level_1, level_2, level_3)
 raster::rasterOptions(tmpdir = choose.dir(default = "",
@@ -101,6 +101,7 @@ sdm_maxnet_approach_function(occName      = occName,
                              nFolds       = 5,
                              beta         = beta,
                              feat         = feat,
+                             doSDraster   = TRUE,
                              varImp       = TRUE)
 
 }else{

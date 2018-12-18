@@ -79,6 +79,11 @@ ecogeo_clustering <- function(n.sample = 10000, var_names,k.clust = 11){
 
 rownames(environ_df) <- environ_df$ID
 
+zeroVar <- caret::nearZeroVar(environ_df)
+if(length(zeroVar) != 0){
+  environ_df <- environ_df[, -zeroVar]
+}
+
 environ_df_in <- environ_df[,-c(1,2,3)]
 rownames(environ_df_in) <- rownames(environ_df)
 #environ <- environ[complete.cases(environ),]
@@ -95,6 +100,8 @@ rownames(df_temp) <- rownames(environ_df[muestra, ])
 df_temp_in <-  df_temp[, 4:ncol(df_temp)]
 
 cat( "Calculating Mahalanobis distances... \n   \n \n")
+
+
 
 mahaRed_dist <-  parallelDist::parDist(as.matrix(df_temp_in), method = "mahalanobis")
 
