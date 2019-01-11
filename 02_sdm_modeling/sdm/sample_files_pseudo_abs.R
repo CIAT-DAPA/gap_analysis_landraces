@@ -59,26 +59,33 @@ OCSVMprofiling2 <- function(xy, varstack, nu = 0.5){
 }
 
 # Pseudo-absences function
-pseudoAbsences2 <- function(xy, background, exclusion.buffer = 0.0166, tms = 10){
+pseudoAbsences2 <- function(xy, background, exclusion.buffer = 0.0166, tms = 10, coord.sys = crs(mask)){
   
-  polybuffs <- list()
-  r         <- exclusion.buffer
-  pr        <- xy
-  polys     <- list()
-  for (i in 1:nrow(pr)) {
-    discbuff <- spatstat::disc(radius = r, centre = c(pr[i, 1], pr[i, 2]))
-    discpoly <- sp::Polygon(rbind(cbind(discbuff$bdry[[1]]$x, y = discbuff$bdry[[1]]$y), c(discbuff$bdry[[1]]$x[1], y = discbuff$bdry[[1]]$y[1])))
-    polys    <- c(polys, discpoly)
-  }
-  spolys <- list()
-  for (i in 1:length(polys)) {
-    spolybuff <- sp::Polygons(list(polys[[i]]), ID = i)
-    spolys    <- c(spolys, spolybuff)
-    spol      <- sp::SpatialPolygons(spolys)
-  }
+  presences <- sp::SpatialPoints(xy)
+  crs(presences) <- coord.sys
+  spol <- rgeos::gBuffer(presences, width = exclusion.buffer)
+  
+  #very HARD WAY TO CREATE THE BUFFERS
+  # polybuffs <- list()
+  # r         <- exclusion.buffer
+  # pr        <- xy
+  # polys     <- list()
+  # for (i in 1:nrow(pr)) {
+  #   discbuff <- spatstat::disc(radius = r, centre = c(pr[i, 1], pr[i, 2]))
+  #   discpoly <- sp::Polygon(rbind(cbind(discbuff$bdry[[1]]$x, y = discbuff$bdry[[1]]$y), c(discbuff$bdry[[1]]$x[1], y = discbuff$bdry[[1]]$y[1])))
+  #   polys    <- c(polys, discpoly)
+  # }
+  # spolys <- list()
+  # for (i in 1:length(polys)) {
+  #   spolybuff <- sp::Polygons(list(polys[[i]]), ID = i)
+  #   spolys    <- c(spolys, spolybuff)
+  #   spol      <- sp::SpatialPolygons(spolys)
+  # }
+  
   coords.l  <- background
   coords    <- coords.l
   sp.coords <- sp::SpatialPoints(coords)
+  crs(sp.coords) <- coord.sys
   a         <- sp::over(sp.coords, spol)
   abs.bg    <- coords[which(is.na(a)), 1:2]
   set.seed(1234)
@@ -130,7 +137,8 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
       
       climLayers <- raster::crop(current_clim_layer, raster::extent(ntv_area))
       climLayers <- raster::mask(climLayers, ntv_area)
-      climLayers <- climLayers[[1:42]]
+      #Remove variables that are causing problems
+      climLayers <- climLayers[[ -grep(paste0(c("Yield", "Production", "Harvested"), collapse = "|"), names(climLayers)) ]] 
       
       unsuit_bg <- OCSVMprofiling2(xy = unique(spData[,c("Longitude","Latitude")]), varstack = climLayers)
       random_bg <- pseudoAbsences2(xy = unique(spData[,c("Longitude","Latitude")]), background = unsuit_bg$Absences, exclusion.buffer = 0.083*5, tms = 10)
@@ -158,7 +166,7 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
       climLayers <- climLayers[[1:42]]
       
       unsuit_bg <- OCSVMprofiling2(xy = unique(spData[,c("Longitude","Latitude")]), varstack = climLayers)
-      random_bg <- pseudoAbsences2(xy = unique(spData[,c("Longitude","Latitude")]), background = unsuit_bg$Absences, exclusion.buffer = 0.083*5, tms = 10)
+      random_bg <- pseudoAbsences2(xy = unique(spData[,c("Longitude","Latitude")]), background = unsuit_bg$Absences, exclusion.buffer = 0.083*5, tms = 10, coord.sys = crs(current_clim_layer))
       
       bg_spPoints  <- SpatialPoints(coords = random_bg[random_bg$Status == 0, c("Longitude", "Latitude")])
       proj4string(bg_spPoints)<- CRS("+proj=longlat +datum=WGS84")

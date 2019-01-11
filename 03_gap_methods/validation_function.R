@@ -27,13 +27,15 @@ allglobal()
 # density_pattern = 3
 # geo_score = c("cost_dist", "delaunay")
 
-validation_process <- function(occName = occName,
-                               gap_valDir = gap_valDir,
-                               buffer_radius = 1, # Radius of 100 km for excluding occurrences
+validation_process <- function(occName         = occName,
+                               gap_valDir      = gap_valDir,
+                               buffer_radius   = 1, # Radius of 100 km for excluding occurrences
                                density_pattern = 3, # Density pattern (1: low density, 2: medium density, 3: high density)
-                               geo_score = c("cost_dist", "delaunay"),# Can be: "cost_dist", "kernel", "delaunay"
-                               use.Arcgis = TRUE,
-                               use.maxnet = FALSE) 
+                               geo_score       = c("cost_dist", "delaunay"),# Can be: "cost_dist", "kernel", "delaunay"
+                               use.Arcgis      = TRUE,
+                               n.points        = 5,
+                               doPar           = FALSE,
+                               use.maxnet      = FALSE) 
 {
   
   cat(">>> Loading occurrence data ... \n")
@@ -62,7 +64,7 @@ validation_process <- function(occName = occName,
   
   cat(">>> Selecting 5 points randomly using kernel density level as weights ... \n")
   set.seed(1234)
-  seedList <- round(runif(n = 5, min = 1, max = 10000))
+  seedList <- round(runif(n = n.points, min = 1, max = 10000))
   
   # ----------------------------------------------------------------------------------- #
   allglobal()
@@ -303,10 +305,37 @@ validation_process <- function(occName = occName,
     
   }
   
-  for(k in 1:5){
-    cat(paste0(">>> Processing point: ", k, " <<<\n"))
-    run_function(i = k)
+  if(doPar){
+    
+    cl <- makeSOCKcluster(n.points)
+    registerDoSNOW(cl)
+    #on.exit(stopCluster(cl))
+    pb <- tkProgressBar( max = n.points, label = "Creating needed files for validation")
+    progress <- function(n) setTkProgressBar(pb, n)
+    opts <- list(progress=progress)
+    
+    foreach( k = 1:n.points, 
+             .packages = devtools::loaded_packages()$package, 
+             .options.snow=opts,  
+             .export = ls(globalenv())) %dopar% {
+               
+               run_function(i = k)  
+               
+               
+             }
+    stopCluster(cl)
+    
+  }else{
+    
+    for(k in 1:n.points){
+      cat(paste0(">>> Processing point: ", k, " <<<\n"))
+      run_function(i = k)
+    }
+    
   }
+ 
+  
+  
   
 }
 

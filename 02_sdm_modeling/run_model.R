@@ -233,6 +233,8 @@ validation_process(occName = occName,
                    density_pattern = 3, # Density pattern (1: low density, 2: medium density, 3: high density)
                    geo_score = c("cost_dist", "delaunay"),
                    use.Arcgis = TRUE,
+                   n.points = 5,
+                   doPar    = FALSE,# whether or not parallelize
                    use.maxnet = use.maxnet)
 
 #summarize all validation results
