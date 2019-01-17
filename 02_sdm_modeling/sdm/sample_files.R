@@ -5,12 +5,15 @@
 #function to create background, occurrence, and swd (bg+occ) samples
 samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, climDir, clim_spDir, extension_r, var_names_generic, var_names_sp, overwrite = F, correlation = 0){
   
-
+  mask <- raster(mask)
+  
   #load raster files
   cat("Loading raster files","\n")
   current_clim_layer_generic <- lapply(paste0(climDir, "/", var_names_generic, extension_r), raster)
   current_clim_layer_sp <- lapply(paste0(baseDir, "/input_data/by_crop/", crop, "/raster/", region, "/", var_names_sp, extension_r), raster)
   current_clim_layer <- stack(c(current_clim_layer_generic, current_clim_layer_sp))
+  #Remove variables that are causing problems
+  current_clim_layer <- current_clim_layer[[ -grep(paste0(c("Yield", "Production", "Harvested"), collapse = "|"), names(current_clim_layer)) ]] 
   
   # background samples file name
   outBackName <- paste0(backDir, "/bg_", occName, ".csv")
@@ -24,11 +27,13 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
     spData <- read.csv(occFile, header = T)
     spData[,clsModel] <- tolower(spData[,clsModel])
     spData <- spData[which(spData[,clsModel] == occName),]
+    #remove repeated coordinates
+    rep <- which(duplicated( raster::extract(mask, spData[, c("Longitude", "Latitude")], cellnumbers = TRUE)  ))
+    spData <- spData[-rep, ]
     
     #create random points
     cat("Creating random points\n")
     
-    mask <- raster(mask)
     #verification of unique locations #commented out
     #tcell <- unique(cellFromXY(mask,spData[,c("Longitude","Latitude")]))
     #xycell <- xyFromCell(mask,tcell)

@@ -89,7 +89,7 @@ pseudoAbsences2 <- function(xy, background, exclusion.buffer = 0.0166, tms = 10,
   a         <- sp::over(sp.coords, spol)
   abs.bg    <- coords[which(is.na(a)), 1:2]
   set.seed(1234)
-  aa <- abs.bg[sample(1:nrow(abs.bg), size = tms * nrow(pr)),]
+  aa <- abs.bg[sample(1:nrow(abs.bg), size = tms * nrow(xy)),]
   colnames(aa) <- c("Longitude", "Latitude")
   aa$Status <- 0
   xy$Status <- 1
@@ -117,14 +117,19 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
   
   # Create background if it does not exist
   if (!file.exists(outBackName) | overwrite){
+    mask <- raster::raster(mask)
     
     cat("Processing:", paste(occName), "\n")
     spData            <- read.csv(occFile, header = T)
     spData[,clsModel] <- tolower(spData[,clsModel])
     spData            <- spData[which(spData[,clsModel] == occName),]
     
+    #remove repeated coordinates
+    rep <- which(duplicated( raster::extract(mask, spData[, c("Longitude", "Latitude")], cellnumbers = TRUE)  ))
+    spData <- spData[-rep, ]
+    
+    
     cat("Creating random Pseudo-absences points\n")
-    mask <- raster::raster(mask)
     
     if(pa_method == "ntv_area_ecoreg"){
       
@@ -141,11 +146,11 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
       climLayers <- climLayers[[ -grep(paste0(c("Yield", "Production", "Harvested"), collapse = "|"), names(climLayers)) ]] 
       
       unsuit_bg <- OCSVMprofiling2(xy = unique(spData[,c("Longitude","Latitude")]), varstack = climLayers)
-      random_bg <- pseudoAbsences2(xy = unique(spData[,c("Longitude","Latitude")]), background = unsuit_bg$Absences, exclusion.buffer = 0.083*5, tms = 10)
+      random_bg <- pseudoAbsences2(xy = unique(spData[,c("Longitude","Latitude")]), background = unsuit_bg$Absences, exclusion.buffer = 0.083*5, tms = 10, coord.sys = crs(current_clim_layer))
       
       bg_spPoints  <- SpatialPoints(coords = random_bg[random_bg$Status == 0, c("Longitude", "Latitude")])
-      proj4string(bg_spPoints)<- CRS("+proj=longlat +datum=WGS84")
-      raster::shapefile(bg_spPoints, paste0(input_data_dir, "/by_crop/", crop, "/lvl_1/", occName, "/americas/background/background_", occName, ".shp"))
+      proj4string(bg_spPoints)<- crs(mask)
+      raster::shapefile(bg_spPoints, paste0(input_data_dir, "/by_crop/", crop, "/lvl_1/", occName, "/americas/background/background_", occName, ".shp"), overwrite = TRUE)
       
       nSamples <- nrow(random_bg[random_bg$Status == 0, c("Longitude", "Latitude")])
       cat(nSamples, "pseudo-absences generated for n =", nrow(unique(spData[,c("Longitude","Latitude")])), "presences\n")
@@ -163,13 +168,14 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
       
       climLayers <- raster::crop(current_clim_layer, elu)
       climLayers <- raster::mask(climLayers, elu)
-      climLayers <- climLayers[[1:42]]
+      #Remove variables that are causing problems
+      climLayers <- climLayers[[ -grep(paste0(c("Yield", "Production", "Harvested"), collapse = "|"), names(climLayers)) ]] 
       
       unsuit_bg <- OCSVMprofiling2(xy = unique(spData[,c("Longitude","Latitude")]), varstack = climLayers)
       random_bg <- pseudoAbsences2(xy = unique(spData[,c("Longitude","Latitude")]), background = unsuit_bg$Absences, exclusion.buffer = 0.083*5, tms = 10, coord.sys = crs(current_clim_layer))
       
       bg_spPoints  <- SpatialPoints(coords = random_bg[random_bg$Status == 0, c("Longitude", "Latitude")])
-      proj4string(bg_spPoints)<- CRS("+proj=longlat +datum=WGS84")
+      proj4string(bg_spPoints)<- crs(mask)
       raster::shapefile(bg_spPoints, paste0(input_data_dir, "/by_crop/", crop, "/lvl_1/", occName, "/americas/background/background_", occName, ".shp"))
       
       nSamples <- nrow(random_bg[random_bg$Status == 0, c("Longitude", "Latitude")])
@@ -181,13 +187,14 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
     if(pa_method == "all_area"){
       
       climLayers <- current_clim_layer
-      climLayers <- climLayers[[1:42]]
+      #Remove variables that are causing problems
+      climLayers <- climLayers[[ -grep(paste0(c("Yield", "Production", "Harvested"), collapse = "|"), names(climLayers)) ]] 
       
       unsuit_bg <- OCSVMprofiling2(xy = unique(spData[,c("Longitude","Latitude")]), varstack = climLayers)
-      random_bg <- pseudoAbsences2(xy = unique(spData[,c("Longitude","Latitude")]), background = unsuit_bg$Absences, exclusion.buffer = 0.083*5, tms = 10)
+      random_bg <- pseudoAbsences2(xy = unique(spData[,c("Longitude","Latitude")]), background = unsuit_bg$Absences, exclusion.buffer = 0.083*5, tms = 10, coord.sys = crs(current_clim_layer))
       
       bg_spPoints  <- SpatialPoints(coords = random_bg[random_bg$Status == 0, c("Longitude", "Latitude")])
-      proj4string(bg_spPoints)<- CRS("+proj=longlat +datum=WGS84")
+      proj4string(bg_spPoints)<- crs(mask)
       raster::shapefile(bg_spPoints, paste0(input_data_dir, "/by_crop/", crop, "/lvl_1/", occName, "/americas/background/background_", occName, ".shp"))
       
       nSamples <- nrow(random_bg[random_bg$Status == 0, c("Longitude", "Latitude")])
@@ -198,7 +205,7 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
     }
     
     # Extract variable data
-    ex_raster_env <- as.data.frame(raster::extract(current_clim_layer, xranSample))
+    ex_raster_env <- as.data.frame(raster::extract(climLayers, xranSample))
     z             <- cbind(id = 1:nrow(xranSample), species = occName, status = 0, xranSample, ex_raster_env)
     z             <- z[complete.cases(z),]
     cat(nrow(z), "pseudo-absences ready to use\n")
@@ -207,7 +214,7 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
     # Preparing samples
     occSample        <- unique(spData[,c("Longitude", "Latitude")])
     names(occSample) <- c("lon", "lat")
-    occ_env_data     <- as.data.frame(raster::extract(current_clim_layer, occSample))
+    occ_env_data     <- as.data.frame(raster::extract(climLayers, occSample))
     occSample        <- cbind(id = 1:nrow(occSample), species = occName, status = 1, occSample, occ_env_data)
     occSample        <- occSample[complete.cases(occSample),]
     

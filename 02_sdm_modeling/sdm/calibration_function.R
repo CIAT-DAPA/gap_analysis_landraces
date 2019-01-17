@@ -2,10 +2,46 @@
 ####Creating arguments to run MaxEnt in the SDM Packages (Modified of Jorge Velasquez Script###
 ###############################################################################################
 
-CreateMXArgs <- function(calibration){
+CreateMXArgs <- function(calibration, use.maxnet = TRUE){
   
   mxnt.args <- c("linear")
+if(use.maxnet){
   
+  if(!is.null(calibration)){
+    best.ind <- which.min(calibration$deltaAICc)
+    args <- calibration[best.ind, ]
+    features <- args$classes
+    betamultiplier <- args$regMult
+  
+  if(grepl("q", features)){
+    mxnt.args <- c(mxnt.args, "quadratic")
+  } else {
+    mxnt.args <- c(mxnt.args, "")
+  }
+  if(grepl("h", features)){
+    mxnt.args <- c(mxnt.args, "hinge")
+  } else {
+    mxnt.args <- c(mxnt.args, "")
+  }
+  if(grepl("p", features)){
+    mxnt.args <- c(mxnt.args, "product")
+  } else {
+    mxnt.args <- c(mxnt.args, "")
+  }
+  if(grepl("t", features)){
+    mxnt.args <- c(mxnt.args, "threshold")
+  } else {
+    mxnt.args <- c(mxnt.args, "")
+  }
+  mxnt.args <- c(mxnt.args, paste0("betamultiplier=", betamultiplier))
+  }else{
+   mxnt.args <- c(mxnt.args, "quadratic", "hinge", "product", "", "betamultiplier=1.0")
+ }
+  
+  mxnt.args <- mxnt.args[which(mxnt.args != "")]
+  
+  
+}else{
   if(!is.null(calibration)){
     
     best.ind <- which.min(calibration$deltaAICc)
@@ -45,10 +81,12 @@ CreateMXArgs <- function(calibration){
     }
     mxnt.args <- c(mxnt.args, paste0("betamultiplier=", betamultiplier))
   } else {
-    mxnt.args <- c(mxnt.args, "quadratic", "hinge", "product", "", "betamultiplier=1.0")
-  }
+     mxnt.args <- c(mxnt.args, "quadratic", "hinge", "product", "", "betamultiplier=1.0")
+   }
   
   mxnt.args <- mxnt.args[which(mxnt.args != "")]
+ 
+}  
   return(mxnt.args)
   
 }
@@ -57,13 +95,13 @@ CreateMXArgs <- function(calibration){
 ####Calibration function using wright et al., 2014 approach###
 ###############################################################################################
 
-Calibration_function <- function(spData, save, sp_Dir, ommit){
+Calibration_function <- function(spData, save, sp_Dir, ommit, use.maxnet = TRUE){
   cat("Initializing calibration step \n")
-  suppressMessages(if(!require(pacman)){install.packages("pacman");library(pacman)}else{library(pacman)})
+  #suppressMessages(if(!require(pacman)){install.packages("pacman");library(pacman)}else{library(pacman)})
   pacman::p_load(devtools, maxnet)
   if(!require(enmSdm)){
-    install_github('adamlilith/omnibus')
-    install_github('adamlilith/enmSdm')
+    devtools::install_github('adamlilith/omnibus')
+    devtools::install_github('adamlilith/enmSdm')
     library(omnibus)
     library(enmSdm)
   } else {
@@ -79,10 +117,21 @@ Calibration_function <- function(spData, save, sp_Dir, ommit){
     }
     
     # Calibration using MaxEnt instead of Maxnet R package.
-    cat("Calculating best parameters for maxent \n")
+    
     tryCatch(expr = {
-      calibration <- enmSdm::trainMaxEnt(data = spData[,c(1,4:ncol(spData))], regMult = seq(0.5, 6, 0.5), out = 'tuning', verbose = FALSE, jackknife = F)
-    },
+      if(use.maxnet){
+        #use maxnet
+        cat("Calculating best parameters for maxNet \n")
+        calibration <- enmSdm::trainMaxNet(data = spData[,c(1,4:ncol(spData))], regMult = seq(0.5, 6, 0.5), out = 'tuning', verbose = FALSE)
+        
+      }else{
+        #use maxent
+        cat("Calculating best parameters for maxent \n")
+        calibration <- enmSdm::trainMaxEnt(data = spData[,c(1,4:ncol(spData))], regMult = seq(0.5, 6, 0.5), out = 'tuning', verbose = FALSE, jackknife = F)
+        
+      }
+      
+      },
     error = function(e){
       cat("Calibration process failed:","\n")
       return("Done\n")  
@@ -106,7 +155,7 @@ Calibration_function <- function(spData, save, sp_Dir, ommit){
     cat("Ommiting calibration step\n")
     calibration <- NULL
   }
-  args <- CreateMXArgs(calibration)
+  args <- CreateMXArgs(calibration, use.maxnet)
   return(args)
   cat("Process done... \n")
 }

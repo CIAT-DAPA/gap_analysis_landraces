@@ -14,17 +14,17 @@ baseDir   <- switch(OSys,
 rm(OSys)
 
 srcDir <- paste(baseDir, "/scripts", sep = "") # Software directory
-region <- "africa"                           # Region: "americas", "world"
+region <- "americas"                           # Region: "americas", "world"
 
 source(paste0(srcDir, "/02_sdm_modeling/preprocessing/config_crop.R")) # Configuring crop directories
 
 # Define crop, analysis level and creating needed directories
-crop <- "rice_african"
-level_1 <-  c("K2", "k4", "K5" ) # level 1: genepool
+crop <- "potato"
+level_1 <-  c("ajanhuiri") # level 1: genepool
 level_2 <- NULL # level 2: race
 level_3 <- NULL # level 3
 level   <- "lvl_1"
-occName <- "k2" # Level 1: "andean", "mesoamerican"
+occName <- "ajanhuiri" # Level 1: "andean", "mesoamerican"
 source(paste(srcDir, "/02_sdm_modeling/preprocessing/config.R", sep = ""))
 # config_crop_dirs(baseDir, crop, level_1, level_2, level_3)
 raster::rasterOptions(tmpdir = choose.dir(default = "",
@@ -65,6 +65,7 @@ swdFile          <- paste0(swdDir, "/swd_", occName, ".csv")
 spData           <- read.csv(swdFile)
 spData           <- spData[,c(3:ncol(spData))]
 names(spData)[1] <- occName
+use.maxnet <- TRUE
 
 
 # Calibration step
@@ -76,8 +77,9 @@ if(file.exists(paste0(sp_Dir, "/calibration.csv"))){
   feat <- feat[(!grepl("betamultiplier=", feat))]
   rm(calibration)
 } else {
-  feat <- Calibration_function(spData = spData, save = T, sp_Dir = sp_Dir, ommit = F)
-  beta <- feat[(grepl("betamultiplier=", feat))]; beta <- as.numeric(gsub("betamultiplier=", "", beta))
+  feat <- Calibration_function(spData = spData, save = T, sp_Dir = sp_Dir, ommit = F, use.maxnet = use.maxnet )
+  beta <- feat[(grepl("betamultiplier=", feat))]
+  beta <- as.numeric(gsub("betamultiplier=", "", beta))
   feat <- feat[(!grepl("betamultiplier=", feat))]
 }
 
@@ -88,7 +90,6 @@ clim_layer <- lapply(paste0(climDir, "/", var_names[clim_vars], ".tif"), raster)
 generic_layer <- lapply(paste0(clim_spReg,"/", var_names[generic_vars],".tif"), raster)
 clim_layer <- raster::stack(c(clim_layer, generic_layer))
 
-use.maxnet <- TRUE
 if(use.maxnet){
 #Use MAXNET to run sdm 
 cat("Running sdm modelling approach using Maxent \n")
