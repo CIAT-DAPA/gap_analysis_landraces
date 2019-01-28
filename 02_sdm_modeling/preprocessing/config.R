@@ -24,7 +24,7 @@ pacman::p_load(tcltk, adehabitatHR, spatstat, data.table,
 cat("Loading R scripts\n")
 source(paste0(srcDir, "/02_sdm_modeling/preprocessing/crop_raster.R"))
 source(paste0(srcDir, "/02_sdm_modeling/preprocessing/cost_distance_function.R"))
-source(paste0(srcDir, "/02_sdm_modeling/sdm/sample_files.R"))
+source(paste0(srcDir, "/02_sdm_modeling/sdm/sample_files_psuedo_abs.R"))
 source(paste0(srcDir, "/02_sdm_modeling/sdm/model_driver.R"))
 source(paste0(srcDir, "/02_sdm_modeling/sdm/null_model.R"))
 source(paste0(srcDir, "/02_sdm_modeling/sdm/calibration_function.R"))
