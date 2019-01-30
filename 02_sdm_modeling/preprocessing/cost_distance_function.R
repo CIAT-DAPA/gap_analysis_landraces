@@ -1,25 +1,11 @@
 
-cost_dist_function <-  function( outDir, friction, classResults, occName, mask, occDir, filename, arcgis = FALSE, code ){
+cost_dist_function <-  function( outDir, friction, mask, occDir, arcgis = FALSE, code ){
   
  
 
   if(!file.exists(paste0(outDir, "/cost_dist.tif"))){
    
      msk <- raster(mask)
-    
-    cat("Creating occurrences shapefile"," \n ")
-    Occ <- read.csv(paste0(classResults, "/", filename), header = T)
- #   Occ <- Occ  %>% dplyr::select(., contains("long"), contains("lat"), one_of(c("y", "ensemble")))
-    Occ <- Occ  %>% dplyr::select(., "Longitude", "Latitude",one_of(c("y", "ensemble")))
-    names(Occ) <- c("Longitude", "Latitude", "ensemble")
-    #Occ$ensemble <- tolower(Occ$ensemble)
-    Occ <- Occ[which(Occ$ensemble == occName),]
-    Occ <- Occ[which(!is.na(raster::extract(x = msk, y = Occ[,c("Longitude", "Latitude")]))),]
-    coordinates(Occ) <- ~Longitude+Latitude
-    crs(Occ)  <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
-    Occ@bbox <- matrix(raster::extent(msk), ncol = 2, byrow = T)
-    cat("Saving occurrences \n")
-    writeOGR(Occ, paste0(occDir,"/Occ.shp"), "Occ", driver="ESRI Shapefile", overwrite_layer=TRUE)
     
     
   if(arcgis){

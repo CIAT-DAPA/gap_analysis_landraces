@@ -34,15 +34,16 @@ raster::rasterOptions(tmpdir = choose.dir(default = "",
 crop_raster(mask   = mask,
             region = region )
 
+#prepare the input file and convert it to a Spatial valid format
+prepare_input_data(file_path   = paste0(classResults, "/", crop, "_lvl_1_bd.csv"),
+                   file_output = paste0(occDir,"/Occ.shp"))
+
 # Cost distance process according with the level of analysis
 cost_dist_function(
                    outDir       = gap_outDir,
                    friction     = friction,
-                   classResults = classResults,
-                   occName      = occName,
                    mask         = mask,
                    occDir       = occDir,
-                   filename     = paste0(crop, "_", level, "_bd.csv"),
                    arcgis       = TRUE,
                    code         = paste0(sp_Dir_input, "/cost_dist.py")
                    )
