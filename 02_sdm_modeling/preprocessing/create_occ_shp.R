@@ -1,0 +1,51 @@
+#### FUNCTION TO CREATE THE SHAPEFILE OF OCCURRENCES ####
+# AUTHOR: ANDRES CAMILO MENDEZ ALZATE
+###############################################
+
+
+create_occ_shp <- function(file_path, file_output ){
+  
+  cat("Importing data base \n")
+  msk <- raster(mask)
+  
+  Occ <- read.csv(file_path, header  = TRUE)
+
+  Occ <- Occ  %>% dplyr::select(., "Longitude", "Latitude", one_of(c("y", "ensemble")))
+  
+  cat("Removing duplicated coordinates \n")
+  
+  #remove repeated coordinates
+  rep <- which(duplicated( raster::extract(msk, Occ[, c("Longitude", "Latitude")], cellnumbers = TRUE)  ))
+  Occ  <- Occ[-rep, ]
+  
+  
+  names(Occ) <- c("Longitude", "Latitude", "ensemble")
+  #Occ$ensemble <- tolower(Occ$ensemble)
+  Occ <- Occ[which(Occ$ensemble == occName),]
+  
+  cat("Removing coordiantes on the ocean/sea \n")
+  Occ <- Occ[which(!is.na(raster::extract(x = msk, y = Occ[,c("Longitude", "Latitude")]))),]
+  #save occurrences in csv format
+  write.csv(Occ, paste0(r))
+  coordinates(Occ) <- ~Longitude+Latitude
+  crs(Occ)  <- crs(msk)
+  #Occ@bbox <- matrix(raster::extent(msk), ncol = 2, byrow = T)
+  cat("Saving occurrences \n")
+  shapefile(Occ, file_output, overwrite = TRUE)
+  #save the same file but into the results folder
+  shapefile(Occ, paste0(input_data_aux_dir, "/Occ.shp"), overwrite = TRUE)
+  
+  
+  #writeOGR(Occ, paste0(occDir,"/Occ.shp"), "Occ", driver="ESRI Shapefile", overwrite_layer=TRUE)
+  
+  cat(">>> Total number of occurrences:", nrow(Occ), " \n")
+  
+
+  
+}
+
+
+
+
+
+

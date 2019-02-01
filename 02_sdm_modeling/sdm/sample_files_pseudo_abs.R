@@ -10,7 +10,7 @@ NAFiltered <- function(crop = "potato", occName = "ajanhuiri"){
   if(!file.exists(outFile)){
     
     # Load occurrence and ecoregions data
-    occ <- raster::shapefile(paste0(input_data_dir, "/by_crop/", crop, "/lvl_1/", occName, "/americas/occurrences/Occ.shp"))
+    occ <- raster::shapefile(paste0(input_data_dir, "/by_crop/", crop, "/lvl_1/", occName, "/", region, "/occurrences/Occ.shp"))
     elu <- raster::raster(paste0(input_data_dir, "/ecosystems/globalelu/World_ELU_2015_5km.tif"))
     
     # Extract specific ecoregions using occurrence data
@@ -29,7 +29,7 @@ NAFiltered <- function(crop = "potato", occName = "ajanhuiri"){
     
   } else {
     
-    occ <- raster::shapefile(paste0(input_data_dir, "/by_crop/", crop, "/lvl_1/", occName, "/americas/occurrences/Occ.shp"))
+    occ <- raster::shapefile(paste0(input_data_dir, "/by_crop/", crop, "/lvl_1/", occName, "/", region, "/occurrences/Occ.shp"))
     elu_crpd <- raster::raster(outFile)
     
   }
@@ -37,7 +37,7 @@ NAFiltered <- function(crop = "potato", occName = "ajanhuiri"){
   cat(paste0("Number of unique accessions: ", nrow(unique(occ@coords)), "\n"))
   cat(paste0("Number of pixels on native area filtered: ", sum(!is.na(elu_crpd[])), "\n"))
   if(sum(!is.na(elu_crpd[])) > 10*nrow(unique(occ@coords))){cat("Defined Area able to generate enough number of pseudo-absences\n")}
-  
+  return(elu_crpd)
 }
 
 # Profiling function
@@ -125,9 +125,12 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
     spData            <- spData[which(spData[,clsModel] == occName),]
     
     #remove repeated coordinates
-    rep <- which(duplicated( raster::extract(mask, spData[, c("Longitude", "Latitude")], cellnumbers = TRUE)  ))
-    spData <- spData[-rep, ]
+    #rep <- which(duplicated( raster::extract(mask, spData[, c("Longitude", "Latitude")], cellnumbers = TRUE)  ))
+    #spData <- spData[-rep, ]
     
+    spData$cellID <-NA
+    spData$cellID <-raster::extract(msk,SpatialPoints(cbind(spData$Longitude, spData$Latitude)),cellnumbers=TRUE) 
+    spData <-spData[!duplicated(spData$cellID),- which(names(spData) %in% c("cellID"))]
     
     cat("Creating random Pseudo-absences points\n")
     
@@ -150,7 +153,7 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
       
       bg_spPoints  <- SpatialPoints(coords = random_bg[random_bg$Status == 0, c("Longitude", "Latitude")])
       proj4string(bg_spPoints)<- crs(mask)
-      raster::shapefile(bg_spPoints, paste0(input_data_dir, "/by_crop/", crop, "/lvl_1/", occName, "/americas/background/background_", occName, ".shp"), overwrite = TRUE)
+      raster::shapefile(bg_spPoints, paste0(input_data_dir, "/by_crop/", crop, "/lvl_1/", occName,"/" ,region, "/background/background_", occName, ".shp"), overwrite = TRUE)
       
       nSamples <- nrow(random_bg[random_bg$Status == 0, c("Longitude", "Latitude")])
       cat(nSamples, "pseudo-absences generated for n =", nrow(unique(spData[,c("Longitude","Latitude")])), "presences\n")
@@ -176,7 +179,7 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
       
       bg_spPoints  <- SpatialPoints(coords = random_bg[random_bg$Status == 0, c("Longitude", "Latitude")])
       proj4string(bg_spPoints)<- crs(mask)
-      raster::shapefile(bg_spPoints, paste0(input_data_dir, "/by_crop/", crop, "/lvl_1/", occName, "/americas/background/background_", occName, ".shp"))
+      raster::shapefile(bg_spPoints, paste0(input_data_dir, "/by_crop/", crop, "/lvl_1/", occName, "/",region,"/background/background_", occName, ".shp"))
       
       nSamples <- nrow(random_bg[random_bg$Status == 0, c("Longitude", "Latitude")])
       cat(nSamples, "pseudo-absences generated for n =", nrow(unique(spData[,c("Longitude","Latitude")])), "presences\n")
@@ -195,7 +198,7 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
       
       bg_spPoints  <- SpatialPoints(coords = random_bg[random_bg$Status == 0, c("Longitude", "Latitude")])
       proj4string(bg_spPoints)<- crs(mask)
-      raster::shapefile(bg_spPoints, paste0(input_data_dir, "/by_crop/", crop, "/lvl_1/", occName, "/americas/background/background_", occName, ".shp"))
+      raster::shapefile(bg_spPoints, paste0(input_data_dir, "/by_crop/", crop, "/lvl_1/", occName,"/",region, "/background/background_", occName, ".shp"))
       
       nSamples <- nrow(random_bg[random_bg$Status == 0, c("Longitude", "Latitude")])
       cat(nSamples, "pseudo-absences generated for n =", nrow(unique(spData[,c("Longitude","Latitude")])), "presences\n")
@@ -262,7 +265,8 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
     write.csv(occ, outBackName, quote = F, row.names = F)
     write.csv(occSample, outOccName, quote = F, row.names = F)
     write.csv(swdSample, outSWDName, quote = F, row.names = F)
-    
+    #save swd file in the input data auxiliar folder
+    write.csv(swdSample, paste0(input_data_aux_dir, "/pseudo_abs_file_", occName, ".csv" ), quote = F, row.names = F)
   } else {
     
     cat("Already processed\n")

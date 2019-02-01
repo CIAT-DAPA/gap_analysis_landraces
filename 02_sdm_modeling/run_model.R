@@ -21,21 +21,27 @@ source(paste0(srcDir, "/02_sdm_modeling/preprocessing/config_crop.R")) # Configu
 # Define crop, analysis level and creating needed directories
 crop <- "potato"
 level_1 <-  c("ajanhuiri") # level 1: genepool
-level_2 <- NULL # level 2: race
-level_3 <- NULL # level 3
 level   <- "lvl_1"
 occName <- "ajanhuiri" # Level 1: "andean", "mesoamerican"
 source(paste(srcDir, "/02_sdm_modeling/preprocessing/config.R", sep = ""))
 # config_crop_dirs(baseDir, crop, level_1, level_2, level_3)
-raster::rasterOptions(tmpdir = choose.dir(default = "",
-                                          caption = "Please select the temporary folder")) # Temporary files directory
 
 #crop all raster using region mask extent (OPTIONAL)
 crop_raster(mask   = mask,
             region = region )
 
+#prepare input data
+prepare_input_data(data_path = choose.files( caption = "Select a valid .csv file"), 
+                   col_number = NULL, 
+                   do.ensemble.models = TRUE,
+                   add.latitude = FALSE,
+                   add.longitude = FALSE,
+                   do.predictions = FALSE,
+                   sampling_mthd = "none",
+                   mask = mask)
+
 #prepare the input file and convert it to a Spatial valid format
-prepare_input_data(file_path   = paste0(classResults, "/", crop, "_lvl_1_bd.csv"),
+create_occ_shp(file_path   = paste0(classResults, "/", crop, "_lvl_1_bd.csv"),
                    file_output = paste0(occDir,"/Occ.shp"))
 
 # Cost distance process according with the level of analysis
@@ -49,17 +55,15 @@ cost_dist_function(
                    )
 
 # Model driver function for preparing which variables will be selected to run SDMs and creation of SWD files
-extension_r <- ".tif"
-clsModel    <- "ensemble"
-correlation <- 3 # 1. Correlation, 2. VIF, 3. PCA + VIF
 var_names   <- model_driver(sp_Dir      = sp_Dir,
                             mask        = mask,
                             occName     = occName,
-                            extension_r = extension_r,
+                            extension_r = ".tif",
                             all         = F,
                             overwrite   = T,
-                            clsModel    = clsModel,
-                            correlation = correlation)
+                            clsModel    = "ensemble",
+                            correlation = 3# 1. Correlation, 2. VIF, 3. PCA + VIF
+                            )
 
 # Loading SWD file and occurrence data
 swdFile          <- paste0(swdDir, "/swd_", occName, ".csv")
@@ -68,8 +72,7 @@ spData           <- spData[,c(3:ncol(spData))]
 names(spData)[1] <- occName
 use.maxnet <- TRUE
 
-
-# Calibration step
+# Calibrate parameter for MAXENT
 cat("Performing calibration step","\n")
 if(file.exists(paste0(sp_Dir, "/calibration.csv"))){
   calibration <- read.csv(paste0(sp_Dir, "/calibration.csv"))
@@ -85,12 +88,13 @@ if(file.exists(paste0(sp_Dir, "/calibration.csv"))){
 }
 
 # Loading raster files
-clim_vars <-  paste0(var_names, ".tif")  %in% list.files(climDir) 
-generic_vars <- paste0(var_names, ".tif") %in% list.files(clim_spReg)
+clim_vars <-  paste0(var_names, ".tif")  %in% list.files(climDir, pattern = ".tif$") 
+generic_vars <- paste0(var_names, ".tif") %in% list.files(clim_spReg, pattern = ".tif$")
 clim_layer <- lapply(paste0(climDir, "/", var_names[clim_vars], ".tif"), raster)
 generic_layer <- lapply(paste0(clim_spReg,"/", var_names[generic_vars],".tif"), raster)
 clim_layer <- raster::stack(c(clim_layer, generic_layer))
 
+## Spatial Distribution Modelling
 if(use.maxnet){
 #Use MAXNET to run sdm 
 cat("Running sdm modelling approach using Maxent \n")
@@ -122,14 +126,8 @@ m2 <- sdm_approach_function(occName      = occName,
 cat("Evaluating models performance\n")
 m2_eval <- evaluation_function(m2, eval_sp_Dir, spData)
 
-
 # Model projecting
 cat("Projecting models\n")
-# clim_table <- raster::as.data.frame(clim_layer, xy = T)
-# rm(clim_layer); g <- gc(); rm(g)
-# clim_table <- clim_table[complete.cases(clim_table),]
-# model      <- projecting_function(m2, m2_eval, clim_table, mask, model_outDir, nCores = 5, obj.size = 3, s.dev = TRUE)
-
 svPth <- paste0(results_dir, "/", crop, "/", level, "/", occName, "/", region, "/prj_models/replicates")
 
 models <- lapply(X = 1:5, FUN = function(i){

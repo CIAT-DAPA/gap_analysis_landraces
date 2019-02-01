@@ -22,8 +22,10 @@ pacman::p_load(tcltk, adehabitatHR, spatstat, data.table,
 
 # Source functions
 cat("Loading R scripts\n")
+source(paste0(srcDir, "/01_classification/classification_function.R"))
 source(paste0(srcDir, "/02_sdm_modeling/preprocessing/crop_raster.R"))
 source(paste0(srcDir, "/02_sdm_modeling/preprocessing/cost_distance_function.R"))
+source(paste0(srcDir, "/02_sdm_modeling/preprocessing/create_occ_shp.R"))
 source(paste0(srcDir, "/02_sdm_modeling/preprocessing/prepare_input_data.R"))
 source(paste0(srcDir, "/02_sdm_modeling/sdm/sample_files_pseudo_abs.R"))
 source(paste0(srcDir, "/02_sdm_modeling/sdm/model_driver.R"))
@@ -56,7 +58,6 @@ climDir        <- paste0(input_data_dir, "/generic_rasters/", region);if(!file.e
 shp_dir        <- paste0(input_data_dir, "/shapefiles")
 mask_dir       <- paste0(input_data_dir, "/mask")
 classResults   <- paste0(input_data_dir, "/by_crop/", crop, "/", level, "/classification");if(!file.exists(classResults)){dir.create(classResults)}
-
 # Defining species directory
 crop_result_dir  <- paste0(results_dir, "/", crop)
 level_result_dir <- paste0(crop_result_dir, "/", level)
@@ -84,6 +85,7 @@ gap_outDir       <- paste0(sp_Dir, "/gap_models"); if(!file.exists(gap_outDir)){
 gap_valDir       <- paste0(sp_Dir, "/gap_validation"); if(!file.exists(gap_valDir)){dir.create(gap_valDir, recursive = TRUE)}
 gap_del_outDir   <- paste0(gap_outDir, "/delaunay"); if(!file.exists(gap_del_outDir)){dir.create(gap_del_outDir, recursive = TRUE)}
 grph_dir         <- paste0(results_dir, "/", crop, "/lvl_1/", occName, "/", region, "/graphics");if(!dir.exists(grph_dir)){ dir.create(grph_dir, recursive = T) }
+input_data_aux_dir <- paste0(results_dir, "/", crop, "/lvl_1/", occName, "/", region, "/input_data");if(!dir.exists(input_data_aux_dir)){ dir.create(input_data_aux_dir, recursive = T) }
 
 cat("Loading dirs for validation process")
 
