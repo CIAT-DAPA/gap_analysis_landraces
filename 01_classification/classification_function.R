@@ -167,6 +167,22 @@ classification_fun <- function(df = all_data3,
     results$External_data_predictions <- external_df; rm(external_df, external_preds)
   }
   
+  ###PCA (not finished)
+  
+  bd <- df %>% 
+    dplyr::mutate(., Y = as.factor(Y)) 
+  
+  pca <- FactoMineR::PCA(bd[, c(-1,-2)], scale.unit = TRUE, ncp = 3)
+  
+  df <- data.frame(  pca$ind$coord[, c(1,2)], specie = bd$Y)
+  plt <- ggplot(data = df, aes(x = Dim.1, y = Dim.2, color = factor(Y))) +
+    geom_point()+
+    xlab(paste("PC_1:", round(pca$eig[1,2],1),  "%") )+
+    ylab(paste("PC_2:", round(pca$eig[2,2],1), "%"))+
+    geom_vline(xintercept = 0)+
+    geom_hline(yintercept = 0)
+  plot(plt)
+  
   return(results)
   
 }

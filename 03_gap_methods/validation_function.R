@@ -114,15 +114,17 @@ validation_process <- function(occName         = occName,
       spData_upt <- read.csv(paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/01_selected_points/occ_", occName, ".csv"))
     }
     
+    cat(">>> Creating occurrences shapefile... \n")
+    
+    .GlobalEnv$create_occ_shp(file_path   = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/01_selected_points", "/", crop, "_lvl_1_bd.csv"),
+                              file_output = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/01_selected_points","/Occ.shp"))
+    
     cat(">>> Creating cost distance raster ... \n")
     .GlobalEnv$cost_dist_function(
                                   outDir       = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"),
                                   friction     = friction,
-                                  classResults = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/01_selected_points"),
-                                  occName      = occName,
                                   mask         = mask,
                                   occDir       = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/01_selected_points"),
-                                  filename     = paste0(crop, "_", level, "_bd.csv"),
                                   arcgis       = use.Arcgis,
                                   code         = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/01_selected_points/cost_dist.py")
     )
