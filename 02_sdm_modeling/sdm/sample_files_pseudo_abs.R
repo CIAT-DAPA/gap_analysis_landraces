@@ -121,8 +121,14 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
     
     cat("Processing:", paste(occName), "\n")
     spData            <- read.csv(occFile, header = T)
-    spData[,clsModel] <- tolower(spData[,clsModel])
+    #spData[,clsModel] <- tolower(spData[,clsModel])
     spData            <- spData[which(spData[,clsModel] == occName),]
+    
+    #remove H accessions
+    if(grepl("status", names(spData))){
+      spData <- spData[which(spData$status != "H"), ]
+      spData$status <- NULL
+    }
     
     #remove repeated coordinates
     #rep <- which(duplicated( raster::extract(mask, spData[, c("Longitude", "Latitude")], cellnumbers = TRUE)  ))

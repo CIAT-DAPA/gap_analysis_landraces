@@ -181,7 +181,10 @@ classification_fun <- function(df = all_data3,
     ylab(paste("PC_2:", round(pca$eig[2,2],1), "%"))+
     geom_vline(xintercept = 0)+
     geom_hline(yintercept = 0)
-  plot(plt)
+ 
+  results$PCA <- pca
+  
+  results$PCA_plot <- plt
   
   return(results)
   

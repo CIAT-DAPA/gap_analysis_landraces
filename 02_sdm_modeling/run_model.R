@@ -108,7 +108,8 @@ sdm_maxnet_approach_function(occName      = occName,
                              beta         = beta,
                              feat         = feat,
                              doSDraster   = TRUE,
-                             varImp       = TRUE)
+                             varImp       = TRUE,
+                             validation   = FALSE)
 
 }else{
 # Running SDMs
