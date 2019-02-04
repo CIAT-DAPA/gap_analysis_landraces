@@ -5,8 +5,8 @@
 suppressMessages(library(pacman))
 suppressMessages(pacman::p_load(tidyverse, caret, randomForest, ISLR, nnet, caretEnsemble, ranger, ModelMetrics, rminer))
 
-cat(">>>>>>>>>>>>>> For categorical predictors, please create dummy variables before running the function. <<<<<<<<<<<<\n")
-cat(">>>>>>>>>>>>>> All the predictors this function receive are numerical. <<<<<<<<<<<<\n")
+#cat(">>>>>>>>>>>>>> For categorical predictors, please create dummy variables before running the function. <<<<<<<<<<<<\n")
+#cat(">>>>>>>>>>>>>> All the predictors this function receive are numerical. <<<<<<<<<<<<\n")
 
 # sampling_mthd <- c("none", "down", "up")
 
@@ -174,8 +174,8 @@ classification_fun <- function(df = all_data3,
   
   pca <- FactoMineR::PCA(bd[, c(-1,-2)], scale.unit = TRUE, ncp = 3)
   
-  df <- data.frame(  pca$ind$coord[, c(1,2)], specie = bd$Y)
-  plt <- ggplot(data = df, aes(x = Dim.1, y = Dim.2, color = factor(Y))) +
+  df_pca <- data.frame(  pca$ind$coord[, c(1,2)], specie = bd$Y)
+  plt <- ggplot(data = df_pca, aes(x = Dim.1, y = Dim.2, color = factor(specie))) +
     geom_point()+
     xlab(paste("PC_1:", round(pca$eig[1,2],1),  "%") )+
     ylab(paste("PC_2:", round(pca$eig[2,2],1), "%"))+

@@ -21,15 +21,15 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
   #in case of col_number empty request a value from the user
   if(is.null(col_number)){
     warning("please enter the column number of response variable", immediate. = TRUE, noBreaks. = T)
-    col_number <- readline(prompt="Enter an integer: ") 
+    col_number <- readline(prompt="Enter column number of response variable: ") 
   }
   #check if the number enter by de user has the correct format(only a number)
   if(!grepl("^[0-9]+$", col_number)){
     warning("Only numbers are allowed", immediate. = TRUE, noBreaks. = T)
-    col_number <- readline(prompt="Enter an integer: ")
+    col_number <- readline(prompt="Enter column number of response variable: ")
   }
   
-  if(grepl("status", names(data))){
+  if("status" %in% names(data)){
     status <- data %>% dplyr::select(., matches("status", ignore.case = T))  
   }else(status <- NULL)
    
@@ -58,11 +58,11 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
   rep <- which(duplicated( raster::extract(msk, data[, c("Longitude", "Latitude")], cellnumbers = TRUE)  ))
   data  <- data[-rep, ]
   
-  rows_id <- row.names(data)
   #loading all input rasters
   generic_rasts <- list.files(paste0(baseDir, "/input_data/generic_rasters/", region), pattern = ".tif$", full.names = TRUE)
   sp_rasts      <- list.files(paste0(baseDir, "/input_data/by_crop/", crop, "/raster/", region), pattern = ".tif$", full.names = TRUE)
   
+  cat("Extracting values from rasters \n")
   #climate extraction
   current_clim_layer_generic <- lapply(generic_rasts, raster)
   current_clim_layer_sp      <- lapply(sp_rasts, raster)
@@ -74,6 +74,9 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
   full_data <- data.frame(data, clim_table) 
   full_data <- full_data[complete.cases(full_data[, c(-1, -2, -3)]), ]
   full_data <- droplevels(full_data)
+  
+  rows_id <- as.numeric(row.names(full_data))
+  
   
   if(do.ensemble.models){
     cat("fitting an ensemble model using selected varaibles \n")
@@ -106,15 +109,15 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
       
       #add status column if it exists
       if(!is.null(status)){
-        full_data$status <- status[rows_id]
+        full_data$status <- status[rows_id, ]
       }
       
       #saving results
       saveRDS(clas_res, file = paste0(classResults, "/", crop, "_descriptive_results.rds") )
       saveRDS(clas_res, file = paste0(input_data_aux_dir, "/", crop, "_descriptive_results.rds") )
       
-      write.csv(full_data, paste0(classResults, "/", crop, "_", level, "_bd.csv"))
-      write.csv(full_data, paste0(input_data_aux_dir, "/", crop, "_", level, "_bd.csv"))
+      write.csv(full_data, paste0(classResults, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
+      write.csv(full_data, paste0(input_data_aux_dir, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
       
     }else{
       #execute classification function without predict occurrences
@@ -129,18 +132,28 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
       saveRDS(clas_res, file = paste0(classResults, "/", crop, "_descriptive_results.rds") )
       saveRDS(clas_res, file = paste0(input_data_aux_dir, "/", crop, "_descriptive_results.rds") )
       
+      #add status column if it exists
+      if(!is.null(status)){
+        full_data$status <- status[rows_id]
+      }
+      
+      write.csv(full_data, paste0(classResults, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
+      write.csv(full_data, paste0(input_data_aux_dir, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
+      
       
     }
     
     
   }else{
     
+    #add status column if it exists
+    
     if(!is.null(status)){
       full_data$status <- status[rows_id]
     }
     
-    write.csv(full_data, paste0(classResults, "/", crop, "_", level, "_bd.csv"))
-    write.csv(full_data, paste0(input_data_aux_dir, "/", crop, "_", level, "_bd.csv"))
+    write.csv(full_data, paste0(classResults, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
+    write.csv(full_data, paste0(input_data_aux_dir, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
     
   }
  

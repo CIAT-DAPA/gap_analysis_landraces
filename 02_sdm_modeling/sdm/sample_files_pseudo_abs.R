@@ -125,7 +125,7 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
     spData            <- spData[which(spData[,clsModel] == occName),]
     
     #remove H accessions
-    if(grepl("status", names(spData))){
+    if("status" %in% names(data)){
       spData <- spData[which(spData$status != "H"), ]
       spData$status <- NULL
     }
