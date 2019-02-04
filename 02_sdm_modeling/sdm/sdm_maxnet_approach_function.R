@@ -31,7 +31,8 @@ sdm_maxnet_approach_function <- function(occName      = occName,
                                   beta         = beta,
                                   feat         = feat,
                                   doSDraster   = TRUE,
-                                  varImp       = FALSE){
+                                  varImp       = FALSE,
+                                  validation   = FALSE){
   
   
   cat(
@@ -217,8 +218,10 @@ sdm_maxnet_approach_function <- function(occName      = occName,
                                                 cat(">>> Proyecting MAXNET model", .y,"to a raster object \n")
                                                 r <- raster::predict(clim_layer, .x, type = "cloglog", progress='text')
                                                 writeRaster(r, paste0(model_outDir,"/replicates/",occName,"_prj_rep-", .y,".tif"), format="GTiff", overwrite = TRUE)
-                                                #thresholding raster
-                                                r[which(r[] < .z$threshold)] <- NA
+                                                #thresholding raster 
+                                                if(!validation){
+                                                  r[which(r[] < .z$threshold)] <- NA 
+                                                }
                                                 writeRaster(r, paste(model_outDir,"/replicates/",occName,"_prj_th_rep-", .y,".tif",sep=""), format="GTiff", overwrite = TRUE)
                                                 return(r)
                                               })
