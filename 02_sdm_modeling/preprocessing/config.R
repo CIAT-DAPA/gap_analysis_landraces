@@ -72,7 +72,7 @@ swdDir       <- paste0(sp_Dir_input, "/swd"); if (!file.exists(swdDir)) {dir.cre
 clim_spDir   <- paste0(input_data_dir, "/by_crop/", crop, "/raster"); if (!file.exists(clim_spDir)) {dir.create(clim_spDir, recursive = TRUE)}
 clim_spReg   <- paste0(clim_spDir, "/", region);if (!file.exists(clim_spReg)) {dir.create(clim_spReg, recursive = TRUE)}
 clim_spWorld <- paste0(clim_spDir, "/world");if (!file.exists(clim_spWorld)) {dir.create(clim_spWorld, recursive = TRUE)}
-
+native_area_dir <- paste0(input_data_dir, "/by_crop/", crop, "/native_area") ;if (!file.exists(native_area_dir)) {dir.create(native_area_dir, recursive = TRUE)}
 # Species model output directories
 
 cat("Loading species model output directories","\n")
