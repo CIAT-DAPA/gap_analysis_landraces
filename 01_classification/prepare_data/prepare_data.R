@@ -37,7 +37,7 @@ levels(base$Y)[c(3,5,6,8,9,10,11,13,14,15)]<- NA  #remove the races with 0 ocurr
 base_1<-base %>% drop_na()  #remove NAs for all dataframe
 
 base_1$Y <- base_1$Y %>% as.character() %>% as.factor(); base_1<-base_1[complete.cases(base_1),]
-base_2<-base[is.na(base$Y),];base_2<-base_2[,-1] ;base_2<-base_2[complete.cases(base_2),] #Only if you want to predict NAs races, because it has NAs for races. It is in external_df parameter into the function (external_df=base_2)
+base_2<-base[is.na(base$Y),]; base_2<-base_2[complete.cases(base_2[,-1]),] #Only if you want to predict NAs races, because it has NAs for races. It is in external_df parameter into the function (external_df=base_2)
 
 
 #####################################################################

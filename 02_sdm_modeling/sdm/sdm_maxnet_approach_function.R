@@ -154,7 +154,7 @@ sdm_maxnet_approach_function <- function(occName      = occName,
                                               se <- a/(a+c)
                                               es <- d/(b+d)
                                               #Matthews correlation coefficient
-                                              den <- sqrt((a+b)*(a+c)*(d+b)*(d+c))
+                                              den <- sqrt(a+b)*sqrt(a+c)*sqrt(d+b)*sqrt(d+c)
                                               den <- ifelse(den  != 0 ,den, 1 )
                                               mcc <- (a*d - b*c)/den
                                               #Likelyhood Ratio +

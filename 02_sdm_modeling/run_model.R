@@ -19,10 +19,10 @@ region <- "americas"                           # Region: "americas", "world"
 source(paste0(srcDir, "/02_sdm_modeling/preprocessing/config_crop.R")) # Configuring crop directories
 
 # Define crop, analysis level and creating needed directories
-crop <- "potato"
-level_1 <-  c("ajanhuiri") # level 1: genepool
+crop <- "common_bean"
+level_1 <-  c("andean", "mesoamerican") # level 1: genepool
 level   <- "lvl_1"
-occName <- "ajanhuiri" # Level 1: "andean", "mesoamerican"
+occName <- "andean" # Level 1: "andean", "mesoamerican"
 source(paste(srcDir, "/02_sdm_modeling/preprocessing/config.R", sep = ""))
 # config_crop_dirs(baseDir, crop, level_1, level_2, level_3)
 
@@ -36,13 +36,14 @@ prepare_input_data(data_path = choose.files( caption = "Select a valid .csv file
                    do.ensemble.models = TRUE,
                    add.latitude = FALSE,
                    add.longitude = FALSE,
-                   do.predictions = FALSE,
+                   do.predictions = TRUE,
                    sampling_mthd = "none",
                    mask = mask)
 
 #prepare the input file and convert it to a Spatial valid format
 create_occ_shp(file_path   = paste0(classResults, "/", crop, "_lvl_1_bd.csv"),
-                   file_output = paste0(occDir,"/Occ.shp"))
+               file_output = paste0(occDir,"/Occ.shp"),
+               validation  = FALSE)
 
 # Cost distance process according with the level of analysis
 cost_dist_function(

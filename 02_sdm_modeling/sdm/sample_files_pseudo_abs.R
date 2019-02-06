@@ -102,7 +102,7 @@ pseudoAbsences2 <- function(xy, background, exclusion.buffer = 0.0166, tms = 10,
 # "ntv_area_ecoreg": Native Area cropped by EcoRegion
 # "ecoreg": EcoRegion
 # "all_area": Full extent of mask
-samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, climDir, clim_spDir, extension_r, var_names_generic, var_names_sp, overwrite = F, correlation = 0, pa_method = "ntv_area_ecoreg"){
+samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, climDir, clim_spDir, clsModel,extension_r, var_names_generic, var_names_sp, overwrite = F, correlation = 0, pa_method = "ntv_area_ecoreg"){
   
   cat("Loading raster files","\n")
   current_clim_layer_generic <- lapply(paste0(climDir, "/", var_names_generic, extension_r), raster)
@@ -125,7 +125,7 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
     spData            <- spData[which(spData[,clsModel] == occName),]
     
     #remove H accessions
-    if("status" %in% names(data)){
+    if("status" %in% names(spData)){
       spData <- spData[which(spData$status != "H"), ]
       spData$status <- NULL
     }
@@ -135,10 +135,10 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
     #spData <- spData[-rep, ]
     
     spData$cellID <-NA
-    spData$cellID <-raster::extract(msk,SpatialPoints(cbind(spData$Longitude, spData$Latitude)),cellnumbers=TRUE) 
+    spData$cellID <-raster::extract(mask,SpatialPoints(cbind(spData$Longitude, spData$Latitude)),cellnumbers=TRUE) 
     spData <-spData[!duplicated(spData$cellID),- which(names(spData) %in% c("cellID"))]
     
-    cat("Creating random Pseudo-absences points\n")
+    cat("Creating random Pseudo-absences points using: ", pa_method, "method \n")
     
     if(pa_method == "ntv_area_ecoreg"){
       
@@ -214,7 +214,7 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
     }
     
     # Extract variable data
-    ex_raster_env <- as.data.frame(raster::extract(climLayers, xranSample))
+    ex_raster_env <- as.data.frame(raster::extract(current_clim_layer, xranSample))
     z             <- cbind(id = 1:nrow(xranSample), species = occName, status = 0, xranSample, ex_raster_env)
     z             <- z[complete.cases(z),]
     cat(nrow(z), "pseudo-absences ready to use\n")
@@ -223,7 +223,7 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
     # Preparing samples
     occSample        <- unique(spData[,c("Longitude", "Latitude")])
     names(occSample) <- c("lon", "lat")
-    occ_env_data     <- as.data.frame(raster::extract(climLayers, occSample))
+    occ_env_data     <- as.data.frame(raster::extract(current_clim_layer, occSample))
     occSample        <- cbind(id = 1:nrow(occSample), species = occName, status = 1, occSample, occ_env_data)
     occSample        <- occSample[complete.cases(occSample),]
     

@@ -3,20 +3,22 @@
 ###############################################
 
 
-create_occ_shp <- function(file_path, file_output ){
+create_occ_shp <- function(file_path, file_output, validation ){
   
   cat("Importing data base \n")
   msk <- raster(mask)
   
   Occ <- read.csv(file_path, header  = TRUE)
 
-  Occ <- Occ  %>% dplyr::select(., "Longitude", "Latitude", one_of(c("y", "ensemble")))
+  Occ <- Occ  %>% dplyr::select(., "Longitude", "Latitude", one_of(c("Y", "ensemble")))
   
   cat("Removing duplicated coordinates \n")
   
   #remove repeated coordinates
   rep <- which(duplicated( raster::extract(msk, Occ[, c("Longitude", "Latitude")], cellnumbers = TRUE)  ))
-  Occ  <- Occ[-rep, ]
+  if(length(rep) != 0){
+    Occ  <- Occ[-rep, ]
+  }
   
   
   names(Occ) <- c("Longitude", "Latitude", "ensemble")
@@ -26,14 +28,19 @@ create_occ_shp <- function(file_path, file_output ){
   cat("Removing coordiantes on the ocean/sea \n")
   Occ <- Occ[which(!is.na(raster::extract(x = msk, y = Occ[,c("Longitude", "Latitude")]))),]
   #save occurrences in csv format
-  write.csv(Occ, paste0(r))
+  write.csv(Occ, paste0(occDir, "/Occ.csv"), row.names = FALSE)
+  write.csv(Occ, paste0(input_data_aux_dir, "/Occ.csv"), row.names = FALSE)
+  
   coordinates(Occ) <- ~Longitude+Latitude
   crs(Occ)  <- crs(msk)
   #Occ@bbox <- matrix(raster::extent(msk), ncol = 2, byrow = T)
   cat("Saving occurrences \n")
   shapefile(Occ, file_output, overwrite = TRUE)
   #save the same file but into the results folder
-  shapefile(Occ, paste0(input_data_aux_dir, "/Occ.shp"), overwrite = TRUE)
+  if(!validation){
+    shapefile(Occ, paste0(input_data_aux_dir, "/Occ.shp"), overwrite = TRUE)
+    
+  }
   
   
   #writeOGR(Occ, paste0(occDir,"/Occ.shp"), "Occ", driver="ESRI Shapefile", overwrite_layer=TRUE)

@@ -56,7 +56,9 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
   
   cat("Removing duplicated coordinates \n")
   rep <- which(duplicated( raster::extract(msk, data[, c("Longitude", "Latitude")], cellnumbers = TRUE)  ))
-  data  <- data[-rep, ]
+  if(length(rep) != 0){
+    Occ  <- Occ[-rep, ]
+  }
   
   #loading all input rasters
   generic_rasts <- list.files(paste0(baseDir, "/input_data/generic_rasters/", region), pattern = ".tif$", full.names = TRUE)
@@ -106,7 +108,7 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
       
       #fill NA cells using ensemble model predictions
       full_data[which(is.na(full_data$Y)), "Y"] <- clas_res$External_data_predictions %>% dplyr::select(., ensemble)
-      
+      names(full_data)[1] <- "ensemble"
       #add status column if it exists
       if(!is.null(status)){
         full_data$status <- status[rows_id, ]
@@ -136,6 +138,7 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
       if(!is.null(status)){
         full_data$status <- status[rows_id]
       }
+      names(full_data)[1] <- "ensemble"
       
       write.csv(full_data, paste0(classResults, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
       write.csv(full_data, paste0(input_data_aux_dir, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
@@ -151,6 +154,7 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
     if(!is.null(status)){
       full_data$status <- status[rows_id]
     }
+    names(full_data)[1] <- "ensemble"
     
     write.csv(full_data, paste0(classResults, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
     write.csv(full_data, paste0(input_data_aux_dir, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)

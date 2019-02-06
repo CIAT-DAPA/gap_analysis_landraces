@@ -3,7 +3,6 @@
 ###############################################################################################
 
 CreateMXArgs <- function(calibration, use.maxnet = TRUE){
-  
   mxnt.args <- c("linear")
 if(use.maxnet){
   
@@ -119,9 +118,12 @@ Calibration_function <- function(spData, save, sp_Dir, ommit, use.maxnet = TRUE)
     # Calibration using MaxEnt instead of Maxnet R package.
     
     tryCatch(expr = {
+
       if(use.maxnet){
         #use maxnet
         cat("Calculating best parameters for maxNet \n")
+        cat("This process will take several minutes, please be patient. \n")
+        
         calibration <- enmSdm::trainMaxNet(data = spData[,c(1,4:ncol(spData))], regMult = seq(0.5, 6, 0.5), out = 'tuning', verbose = FALSE)
         
       }else{
