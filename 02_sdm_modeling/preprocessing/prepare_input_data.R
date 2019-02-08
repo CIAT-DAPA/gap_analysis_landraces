@@ -31,7 +31,7 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
   
   if("status" %in% names(data)){
     status <- data %>% dplyr::select(., matches("status", ignore.case = T))  
-  }else(status <- NULL)
+  }else{status <- NULL}
    
   #select only the response variable and lat / long
   data <- data %>% dplyr::select(., as.integer(col_number), 
