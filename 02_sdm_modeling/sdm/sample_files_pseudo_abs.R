@@ -121,7 +121,7 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
     
     cat("Processing:", paste(occName), "\n")
     spData            <- read.csv(occFile, header = T)
-    #spData[,clsModel] <- tolower(spData[,clsModel])
+    spData[,clsModel] <- tolower(spData[,clsModel])
     spData            <- spData[which(spData[,clsModel] == occName),]
     
     #remove H accessions
@@ -185,7 +185,7 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
       
       bg_spPoints  <- SpatialPoints(coords = random_bg[random_bg$Status == 0, c("Longitude", "Latitude")])
       proj4string(bg_spPoints)<- crs(mask)
-      raster::shapefile(bg_spPoints, paste0(input_data_dir, "/by_crop/", crop, "/lvl_1/", occName, "/",region,"/background/background_", occName, ".shp"))
+      raster::shapefile(bg_spPoints, paste0(input_data_dir, "/by_crop/", crop, "/lvl_1/", occName, "/",region,"/background/background_", occName, ".shp"), overwrite = TRUE)
       
       nSamples <- nrow(random_bg[random_bg$Status == 0, c("Longitude", "Latitude")])
       cat(nSamples, "pseudo-absences generated for n =", nrow(unique(spData[,c("Longitude","Latitude")])), "presences\n")
@@ -204,7 +204,7 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
       
       bg_spPoints  <- SpatialPoints(coords = random_bg[random_bg$Status == 0, c("Longitude", "Latitude")])
       proj4string(bg_spPoints)<- crs(mask)
-      raster::shapefile(bg_spPoints, paste0(input_data_dir, "/by_crop/", crop, "/lvl_1/", occName,"/",region, "/background/background_", occName, ".shp"))
+      raster::shapefile(bg_spPoints, paste0(input_data_dir, "/by_crop/", crop, "/lvl_1/", occName,"/",region, "/background/background_", occName, ".shp"), overwrite = TRUE)
       
       nSamples <- nrow(random_bg[random_bg$Status == 0, c("Longitude", "Latitude")])
       cat(nSamples, "pseudo-absences generated for n =", nrow(unique(spData[,c("Longitude","Latitude")])), "presences\n")
