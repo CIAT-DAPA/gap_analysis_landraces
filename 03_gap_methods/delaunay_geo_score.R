@@ -72,8 +72,20 @@ calc_delaunay_score <- function(baseDir, area, group, crop, lvl, ncores = NULL, 
   
   SDM[!is.na(SDM[])] <- 1
   
+  delanuay <- shapefile(paste0(delaDir, "/delaunay/raw_delaunay.shp"))
+  
+  SDM <- raster::crop(SDM, extent(delanuay))
+  
   cat("Coverting SDM raster to Polygons \n \n ")
-  sdm_pol <- raster::rasterToPolygons(SDM, n = 4, na.rm = T, dissolve = T)
+  tryCatch({
+    
+    sdm_pol <- raster::rasterToPolygons(SDM, n = 4, na.rm = T, dissolve = T)
+    
+  }, error = function(e){
+    sdm_pol <- raster::rasterToPolygons(SDM, n = 4, na.rm = T, dissolve = F)
+    sdm_pol@data$ID <- rep(1, nrow(sdm_pol@data))
+    sdm_pol <- rgeos::gUnaryUnion(sdm_pol, id = sdm_pol@data$ID)
+  })
   
   ext_sdm <- extent(SDM)
   res_sdm <- res(SDM)
@@ -84,7 +96,6 @@ calc_delaunay_score <- function(baseDir, area, group, crop, lvl, ncores = NULL, 
   sdm_pol_sf <- rmapshaper::ms_simplify(sdm_pol)
   rm(sdm_pol)
   
-  delanuay <- shapefile(paste0(delaDir, "/delaunay/raw_delaunay.shp"))
   # Change path after
   delanuay@bbox <- as.matrix(ext_sdm)
   
@@ -141,7 +152,7 @@ calc_delaunay_score <- function(baseDir, area, group, crop, lvl, ncores = NULL, 
             delete_dsn = TRUE)
   
   #i_shp <- as(i_n, "Spatial")
-  rm(i_n); g <- gc(); rm(g)
+ 
   
   cat("Calculating Max area \n \n ")
   i_shp <- shapefile(paste0(tempdir(), "/intersection.shp"))
