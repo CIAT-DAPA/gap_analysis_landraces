@@ -153,23 +153,26 @@ validation_process <- function(occName         = occName,
     clim_layer <- lapply(paste0(climDir, "/", var_names[clim_vars], ".tif"), raster)
     generic_layer <- lapply(paste0(clim_spReg,"/", var_names[generic_vars],".tif"), raster)
     clim_layer <- raster::stack(c(clim_layer, generic_layer))
+    
     if(use.maxnet){
       
       cat("Running sdm modelling approach using Maxnet \n")
       cat("      This process can take several minutes...... Be patient \n \n ")
-      
-      .GlobalEnv$sdm_maxnet_approach_function(occName      = occName,
-                                              spData       = occSDM_upt,
-                                              var_names    = vars,
-                                              model_outDir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models"),
-                                              sp_Dir       = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models"),
-                                              clim_layer   = clim_layer,
-                                              nFolds       = 5,
-                                              beta         = beta,
-                                              feat         = feat,
-                                              doSDraster   = FALSE,
-                                              varImp       = FALSE,
-                                              validation   = TRUE)
+      if(!file.exists(paste0(paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models/",occName,"_prj_median.tif")))){
+        .GlobalEnv$sdm_maxnet_approach_function(occName      = occName,
+                                                spData       = occSDM_upt,
+                                                var_names    = vars,
+                                                model_outDir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models"),
+                                                sp_Dir       = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models"),
+                                                clim_layer   = clim_layer,
+                                                nFolds       = 5,
+                                                beta         = beta,
+                                                feat         = feat,
+                                                doSDraster   = FALSE,
+                                                varImp       = FALSE,
+                                                validation   = TRUE)
+  
+      }
       
     }else{
       
@@ -269,7 +272,8 @@ validation_process <- function(occName         = occName,
                           lvl        = level,
                           ncores     = NULL,
                           validation = TRUE,
-                          pnt        = paste0("pnt", i))
+                          pnt        = paste0("pnt", i),
+                          dens.level = "high_density")
     } else {
       cat("Delanuay triangulation score has already been created ... \n")
     }
