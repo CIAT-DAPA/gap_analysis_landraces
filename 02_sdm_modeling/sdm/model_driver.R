@@ -29,9 +29,9 @@ model_driver <- function(sp_Dir, mask, occName, extension_r, all, overwrite, cls
     
     # create occurrences, background, and swd (occ+bg)
     if(overwrite == T){
-      swd <- samples_create(occFile, occName, backDir, occDir, swdDir, mask, climDir, clim_spDir, clsModel, extension_r, var_names_generic, var_names_sp, overwrite = T, correlation = correlation, pa_method = "ntv_area_ecoreg"); gc()
+      swd <- samples_create(occFile, occName, backDir, occDir, swdDir, mask, climDir, clim_spDir, clsModel, extension_r, var_names_generic, var_names_sp, overwrite = T, correlation = correlation, pa_method = "ecoreg"); gc()
     } else {
-      swd <- samples_create(occFile, occName, backDir, occDir, swdDir, mask, climDir, clim_spDir, clsModel, extension_r, var_names_generic, var_names_sp, overwrite = F, correlation = correlation, pa_method = "ntv_area_ecoreg"); gc()
+      swd <- samples_create(occFile, occName, backDir, occDir, swdDir, mask, climDir, clim_spDir, clsModel, extension_r, var_names_generic, var_names_sp, overwrite = F, correlation = correlation, pa_method = "ecoreg"); gc()
     }
     
     # Getting variables to use in the SDM
