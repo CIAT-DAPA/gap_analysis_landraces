@@ -22,7 +22,7 @@ create_occ_shp <- function(file_path, file_output, validation ){
   
   
   names(Occ) <- c("Longitude", "Latitude", "ensemble")
-  #Occ$ensemble <- tolower(Occ$ensemble)
+  Occ$ensemble <- tolower(Occ$ensemble)
   Occ <- Occ[which(Occ$ensemble == occName),]
   
   cat("Removing coordiantes on the ocean/sea \n")
