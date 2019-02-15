@@ -93,7 +93,8 @@ calc_env_score <- function(lv_name, clus_method = "hclust_mahalanobis", sdm_dir,
         td_matrix <- distances::distance_columns(td_dist, c((nrow(xy_clus)+1):nrow(td_all)),
                                       c(1:nrow(xy_clus)))
         colnames(td_matrix) <- 1:nrow(euc_occ)
-        dist_vals <- rowMins(td_matrix)
+        #dist_vals <- matrixStats::rowMins(td_matrix)
+        dist_vals <- apply(td_matrix, 1, min)
       } else {
         #control list
         occ_exist <- c(occ_exist,F)

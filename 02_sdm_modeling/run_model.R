@@ -22,7 +22,7 @@ source(paste0(srcDir, "/02_sdm_modeling/preprocessing/config_crop.R")) # Configu
 crop <- "common_bean"
 level_1 <-  c("andean", "mesoamerican") # level 1: genepool
 level   <- "lvl_1"
-occName <- "andean" # Level 1: "andean", "mesoamerican"
+occName <- "mesoamerican" # Level 1: "andean", "mesoamerican"
 source(paste(srcDir, "/02_sdm_modeling/preprocessing/config.R", sep = ""))
 # config_crop_dirs(baseDir, crop, level_1, level_2, level_3)
 
@@ -210,7 +210,7 @@ calc_delaunay_score(baseDir    = baseDir,
                     group      = occName,
                     crop       = crop,
                     lvl        = level,
-                    ncores     = 15,
+                    ncores     = NULL,
                     validation = FALSE,
                     dens.level = "high_density",
                     pnt        = NULL)
@@ -234,9 +234,9 @@ validation_process(occName = occName,
                    buffer_radius = 1, # Radius of 100 km for excluding occurrences
                    density_pattern = 3, # Density pattern (1: low density, 2: medium density, 3: high density)
                    geo_score = c("cost_dist", "delaunay"),
-                   use.Arcgis = TRUE,
+                   use.Arcgis = FALSE,
                    n.points = 5,
-                   doPar    = FALSE,# whether or not parallelize
+                   doPar    = TRUE,# whether or not parallelize
                    use.maxnet = use.maxnet)
 
 #summarize all validation results
@@ -249,7 +249,7 @@ summary_function(area =region,
                  radius = seq(55,85, 1), #number of radius size to evaluate
                  baseDir = baseDir,
                  dens.level = "high_density",
-                 ncores = 15 #(detectCores()-8)
+                 ncores = 1 #(detectCores()-8)
 )
 
 

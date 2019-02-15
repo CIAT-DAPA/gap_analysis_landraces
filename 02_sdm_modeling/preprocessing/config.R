@@ -1,8 +1,8 @@
 # Load libraries
 cat("Loading R packages\n")
 suppressMessages(if(!require(pacman)){install.packages("pacman");library(pacman)}else{library(pacman)})
-pacman::p_load(tcltk, adehabitatHR, spatstat, data.table, 
-               KernSmooth ,raster, rgdal, doSNOW, sdm,
+pacman::p_load(tcltk, adehabitatHR, data.table, 
+               raster, rgdal, doSNOW, sdm,
                dismo, rJava, rgeos, distances, matrixStats,  sp, 
                tidyverse, rlang, sf , wordspace , gdistance, caret, earth, 
                fastcluster, xlsx, rmapshaper, FactoMineR,
@@ -11,7 +11,8 @@ pacman::p_load(tcltk, adehabitatHR, spatstat, data.table,
 
 #, SDMTools
 #, usdm
-
+#,KernSmooth
+#, spatstat
 #, plsdepot
 #, GISTools
 #, psych
@@ -86,7 +87,7 @@ gap_valDir       <- paste0(sp_Dir, "/gap_validation"); if(!file.exists(gap_valDi
 gap_del_outDir   <- paste0(gap_outDir, "/delaunay"); if(!file.exists(gap_del_outDir)){dir.create(gap_del_outDir, recursive = TRUE)}
 grph_dir         <- paste0(results_dir, "/", crop, "/lvl_1/", occName, "/", region, "/graphics");if(!dir.exists(grph_dir)){ dir.create(grph_dir, recursive = T) }
 input_data_aux_dir <- paste0(results_dir, "/", crop, "/lvl_1/", occName, "/", region, "/input_data");if(!dir.exists(input_data_aux_dir)){ dir.create(input_data_aux_dir, recursive = T) }
-
+  
 cat("Loading dirs for validation process")
 
 if(!file.exists(paste0(gap_valDir, "/buffer_100km")) ){dir.create(paste0(gap_valDir, "/buffer_100km"))}

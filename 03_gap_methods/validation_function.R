@@ -70,9 +70,11 @@ validation_process <- function(occName         = occName,
   allglobal()
   
   if(doPar){
+    cat("Doing process in multiple cores... \n")
+    use.Arcgis <- FALSE
     cl <- makeSOCKcluster(n.points)
     registerDoSNOW(cl)
-    on.exit(stopCluster(cl))
+    #on.exit(stopCluster(cl))
     pb <- tkProgressBar( max = n.points, label = "Creating needed files for validation, pls be patient...")
     progress <- function(n) setTkProgressBar(pb, n)
     opts <- list(progress=progress)
@@ -82,8 +84,8 @@ validation_process <- function(occName         = occName,
              .options.snow=opts,  
              .export = ls(globalenv())) %dopar% {
                
-              source(paste0(srcDir, "/03_gap_methods/validation_helpers.R"))  
-               
+              source(paste0(srcDir, "/03_gap_methods/validation_helpers.R"), local = TRUE)  
+              
              }
     
     stopCluster(cl)
@@ -93,7 +95,8 @@ validation_process <- function(occName         = occName,
     for(i in 1:n.points){
       cat(paste0(">>> Processing point: ", i, " <<<\n"))
       
-      source(paste0(srcDir, "/03_gap_methods/validation_helpers.R"))  
+      source(paste0(srcDir, "/03_gap_methods/validation_helpers.R"), local = TRUE)  
+       
       
     }
     

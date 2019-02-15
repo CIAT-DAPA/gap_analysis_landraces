@@ -119,12 +119,23 @@ Calibration_function <- function(spData, save, sp_Dir, ommit, use.maxnet = TRUE)
     
     tryCatch(expr = {
 
-      if(use.maxnet){
+      if(use.maxnet){ 
         #use maxnet
         cat("Calculating best parameters for maxNet \n")
         cat("This process will take several minutes, please be patient. \n")
         
-        calibration <- enmSdm::trainMaxNet(data = spData[,c(1,4:ncol(spData))], regMult = seq(0.5, 6, 0.5), out = 'tuning', verbose = FALSE)
+        data_train <- spData
+        
+        #adding all presence points to background
+        pres_to_bg <- data_train[which(data_train[, 1] == 1), ]
+        pres_to_bg[,1] <- rep(0, length(pres_to_bg [, 1]))
+        
+        p <- c(data_train[, 1], pres_to_bg[,1])#adding all presence points to background
+        data <- rbind(data_train[, -c(1,2,3)], pres_to_bg[, -c(1,2,3)])#adding all presence points to background
+        
+        data <- data.frame(occName = p, data)
+        
+        calibration <- enmSdm::trainMaxNet(data = data, regMult = seq(0.5, 6, 0.5), out = 'tuning', verbose = FALSE)
         
       }else{
         #use maxent

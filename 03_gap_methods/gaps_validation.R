@@ -143,8 +143,9 @@ validation_metrics <- function(n.sample = 100, bf_rad = 50, baseDir, area, group
         ng <- data.frame( score = no_gap, observe = rep(0, length(no_gap) ))
         gap <- data.frame(score = scr, observe = rep(1, length(scr)))
         
+        #remove cero values
+        bd <- dplyr::bind_rows(ng, gap, .id = NULL) %>% dplyr::filter(., score != 0) %>% round(., 3)
         
-        bd <- dplyr::bind_rows(ng, gap, .id = NULL)
         rm(ng, gap)
         
         if(length(levels(factor(bd$observe))) > 1){

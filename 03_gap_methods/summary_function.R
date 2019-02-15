@@ -94,8 +94,8 @@ apply( expand.grid(pnt, 1:2), 1, function(x){
 
 #*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+ TRESHOLDING PROCESS *+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+**+*+*+*+*+*+
 currRow <- 2
-wb <- createWorkbook() #library(openxlsx)
-sheet <- createSheet(wb,"summary")
+wb <- xlsx::createWorkbook() #library(openxlsx)
+sheet <- xlsx::createSheet(wb,"summary")
 
 #import rds files with all radius metrics and merging them to one single file
 for(l in 1:2){
@@ -121,7 +121,7 @@ all_rs <-  km_metrics %>%
 
 score_mean <- function(x,li,ls, se, es){
 #x %>%  dplyr:: filter(., auc >= li & auc <= ls ) %>% dplyr::select(., score) %>% mean(., na.rm = TRUE)
-y <- mean(  x$score[which(x$auc >= li & x$auc <= ls)], na.rm = TRUE)
+y <- max(  x$score[which(x$auc >= li & x$auc <= ls)], na.rm = TRUE)
 z <- mean(  x$se[which(x$auc >= li & x$auc <= ls)], na.rm = TRUE)
 w <- mean(  x$es[which(x$auc >= li & x$auc <= ls)], na.rm = TRUE)
   return( c(y, z, w))
@@ -165,7 +165,7 @@ currRow <- currRow + nrow(summary_gap) + 4
  
 
 }#END lapply
-saveWorkbook(wb,file = paste0(baseDir, "/results/", crop,"/", lvl, "/", group ,"/", area, "/gap_validation/buffer_100km/validation_results.xlsx"))
+xlsx::saveWorkbook(wb,file = paste0(baseDir, "/results/", crop,"/", lvl, "/", group ,"/", area, "/gap_validation/buffer_100km/validation_results.xlsx"))
 
 cat( "PROCESS DONE \n")
 }#END SUMMARY FUNCTION

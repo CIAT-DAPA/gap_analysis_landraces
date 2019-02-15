@@ -47,7 +47,7 @@ ecogeo_clustering <- function(n.sample = 10000, var_names,k.clust = 11){
   # "Irrigation"          ,    "minTempWarmest"        ,   "monthCountByTemp10"     ,  "PETDriestQuarter" ,       
   # "PETWarmestQuarter"      ,  "PETWettestQuarter"     ,   "Physical.area")
   
-  pos <- which(list.files(path = climDir ) %in% var_names)
+  pos <- which(list.files(path = climDir ) %in% paste0(var_names, ".tif"))
   
   path <- list.files(path = climDir, full.names=TRUE)[pos]
   cat( "Importing WorldClim and Envirem rasters \n   \n  \n"  )

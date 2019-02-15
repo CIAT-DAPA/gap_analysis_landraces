@@ -10,7 +10,13 @@ create_occ_shp <- function(file_path, file_output, validation ){
   
   Occ <- read.csv(file_path, header  = TRUE)
 
-  Occ <- Occ  %>% dplyr::select(., "Longitude", "Latitude", one_of(c("Y", "ensemble")))
+  if("status" %in% names(Occ)){
+    Occ <- Occ %>% dplyr::filter(., status == "G") %>% dplyr::select(., "Longitude", "Latitude", one_of(c("Y", "ensemble")))  
+  } else{
+    Occ <- Occ  %>% dplyr::select(., "Longitude", "Latitude", one_of(c("Y", "ensemble")))
+  }
+  
+  
   
   cat("Removing duplicated coordinates \n")
   

@@ -29,17 +29,20 @@ create_png_maps <- function(summ_filepath     ,
   if(!file.exists(paste0(rast_dirPath, "/gap_class_cost_dist.tif"))){
     cost_dist_rast[which(cost_dist_rast[] >= thresh_cost_dist )] <- 1
     cost_dist_rast[which(cost_dist_rast[] != 1)] <- 0
+    names(cost_dist_rast) <- "gap_class_cost_dist"
     writeRaster(cost_dist_rast, paste0(rast_dirPath, "/gap_class_cost_dist.tif"), overwrite = TRUE)
   }else{cost_dist_rast <- raster(paste0(rast_dirPath, "/gap_class_cost_dist.tif"))}
   
  if(!file.exists( paste0(rast_dirPath, "/gap_class_delaunay.tif"))){
    dela_rast[which(dela_rast[] >= thresh_delaunay)] <- 1
    dela_rast[which(dela_rast[] != 1)] <- 0
+   names(dela_rast)<- "gap_class_delaunay"
    writeRaster(dela_rast, paste0(rast_dirPath, "/gap_class_delaunay.tif"), overwrite = TRUE)
  }else{dela_rast <- raster(paste0(rast_dirPath, "/gap_class_delaunay.tif"))}
   
  if(!file.exists(paste0(rast_dirPath, "/gap_class_final.tif"))){
    final_gap_rast <- dela_rast + cost_dist_rast
+   names(final_gap_rast) <- "gap_class_final"
    writeRaster(final_gap_rast, paste0(rast_dirPath, "/gap_class_final.tif"), overwrite = TRUE)
  }else{final_gap_rast <- raster(paste0(rast_dirPath, "/gap_class_final.tif"))}
   

@@ -1,6 +1,6 @@
 
 filepath <- paste0(results_dir, "/", crop, "/lvl_1/final_results_report")
-generate_report <- function(filepath, class_name = "rice_afican_dartseq_kclust.rds", level_1, region, is.everything.finished = FALSE, disk = "Z:"){
+generate_report <- function(filepath, class_name = "common_bean_descriptive_results.rds", level_1, region, is.everything.finished = FALSE, disk = "Z:"){
   
   if(is.everything.finished){
     pacman::p_load(rmarkdown, knitr, kableExtra, xlsx)
@@ -42,10 +42,16 @@ cat("\n")
 cat("#' *
 #'     + #### Main performance measures: 
 #+      echo = FALSE 
-rn <- rownames(class_res$Testing_CM$ensemble$byClass[,c(1,2,5,7,11)]) 
-kable(data.frame(class = rn, round(as_tibble(class_res$Testing_CM$ensemble$byClass[,c(1,2,5,7,11)]), 3)) )  %>%  
-kable_styling(c(\"striped\", \"bordered\"), full_width = F) " 
-    )
+results <- class_res$Testing_CM$ensemble$byClass
+if(is.null(nrow(results))){
+kable(data.frame(round(as_tibble(results[c(1,2,5,7,11)]), 3)) )  %>%  
+kable_styling(c(\"striped\", \"bordered\"), full_width = F)
+}else{
+rn <- rownames(results[,c(1,2,5,7,11)]) 
+kable(data.frame(class = rn, round(as_tibble(results[,c(1,2,5,7,11)]), 3)) )  %>%  
+kable_styling(c(\"striped\", \"bordered\"), full_width = F)
+}
+ ")
 cat("\n")
   
 cat("#' * 
@@ -57,15 +63,16 @@ cat("\n")
 cat(
 "#'  * ## Principal Component Analysis (PCA)
 #+  echo = FALSE 
-knitr::include_graphics(paste0(baseDir, \"/input_data/by_crop/\",crop, \"/lvl_1/classification/pca_plot.jpeg\")) 
+plot(class_res$PCA_plot)
 " 
 )
 cat("\n")
 cat("
 #' * 
 #'     + #### Variable contributions 
-#+ 
-# poner una tabla con la contribucion de cada variable \n"
+#+ echo = FALSE
+kable(class_res$PCA$var$contrib) %>% kable_styling(c(\"striped\", \"bordered\"), full_width = F)
+"
 )
 cat("\n")
 cat("
@@ -108,6 +115,10 @@ cat("rast_area <- raster::area(wmask) * wmask \n")
 for(i in level_1){
 cat(paste("\n#' #  Results for:", i, "\n" ) 
       )
+  cat("\n")
+  cat(paste("#' * ### Specie distribution model: \n"))
+  cat(paste("#+ echo = FALSE \n "))
+  cat(paste('include_graphics(paste0(baseDir, "/results/", crop, "/lvl_1/","', i,'", "/","', region, '","/graphics/', i, "_",i,'_prj_median.png" ))' , sep = ""), "\n")
   cat("\n")
   cat(paste("#' * ### Cost distance gap score: \n"))
   cat(paste("#+ echo = FALSE \n "))
@@ -171,7 +182,15 @@ cat(paste("\n#' #  Results for:", i, "\n" )
 cat("#' #  Summary table \n")
 cat("#' This table contains a summary of... \n")
 cat("#+ echo = FALSE \n")
-cat("avg_acc <- class_res$Testing_CM$ensemble$byClass[, 11]
+cat("
+    res <- class_res$Testing_CM$ensemble$byClass
+    if(is.null(nrow(res))){
+    avg_acc <- data.frame('acc'= res[c(1, 2)] )
+    row.names(avg_acc) <- level_1
+    }else{
+    avg_acc <- res[, 11]
+    }
+    
     summary_table <- data.frame('average accuracy' = avg_acc, 'High coverage area' =  high_conf_percent, 'Low coverage area' = low_conf_percent, 'Gap model performance' = auc_avg )
     kable(summary_table) %>% kable_styling(c(\"striped\", \"bordered\"), full_width = F)
     ")

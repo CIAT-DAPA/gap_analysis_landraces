@@ -6,7 +6,8 @@ cost_dist_function <-  function( outDir, friction, mask, occDir, arcgis = FALSE,
   if(!file.exists(paste0(outDir, "/cost_dist.tif"))){
    
      msk <- raster(mask)
-    
+     Occ <- shapefile(paste0(occDir, "/Occ.shp"))
+     
     
   if(arcgis){
     
@@ -35,7 +36,7 @@ cost_dist_function <-  function( outDir, friction, mask, occDir, arcgis = FALSE,
   
     cat("Calculating cost distance raster \n")
     #p <- shapefile(paste0(occDir, "/Occ.shp"))
-    r <- raster(friction ) %>% raster::crop( x =., y = extent(Occ)  )
+    r <- raster(friction ) %>% raster::crop( x =., y = extent(msk)  )
     t <- transition(r, function(x) 1/mean(x), 8) 
     t <- geoCorrection(t) 
     

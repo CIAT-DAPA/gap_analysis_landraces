@@ -226,6 +226,8 @@ lapply(geo_score, function(x){
   
 })
 
+
+
 # cat(">>> Calculating percentage of correctly classified occurrences ...\n")
 # library(tidyverse)
 # gap_values <- raster::extract(x = gap_score, y = pnt_excl[,c("lon", "lat")])
