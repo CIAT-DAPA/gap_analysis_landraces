@@ -49,15 +49,27 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
   
   cat("Cleaning zero lat/lon \n")
   
-  data <- data %>% dplyr::filter(., Latitude != 0 | Longitude != 0)
+  data <- data %>% dplyr::filter(., Latitude != 0 | Longitude != 0) %>% 
+    dplyr::filter(., !is.na(Latitude) | !is.na(Longitude))
   
   cat("Removing coordinates on Oceans/Seas \n")
   data <- data[which(!is.na(raster::extract(x = msk, y = data[,c("Longitude", "Latitude")]))),]
   
+  #Assign repeated coordinates to majority class
+  unq <- unique(data[, 2:3])
+  apply(unq, 1, function(i){
+    i <- as.numeric(i)
+    counts <- data %>% dplyr::filter(., !is.na(Y) &  Latitude == i[1] & Longitude == i[2] ) %>% dplyr::select(., Y) %>% table()
+    if(sum(counts) > 1){
+     lab <-   names(which.max(counts))
+     data[which(data$Latitude == i[1] & data$Longitude == i[2]), "Y"] <<- lab
+    }
+  })
+  
   cat("Removing duplicated coordinates \n")
   rep <- which(duplicated( raster::extract(msk, data[, c("Longitude", "Latitude")], cellnumbers = TRUE)  ))
   if(length(rep) != 0){
-    Occ  <- Occ[-rep, ]
+    data  <- data[-rep, ]
   }
   
   #loading all input rasters
