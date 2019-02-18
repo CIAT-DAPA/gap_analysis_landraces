@@ -93,7 +93,7 @@ calc_delaunay_score <- function(baseDir, area, group, crop, lvl, ncores = NULL, 
   rm(SDM); g <- gc(); rm(g)
   
   cat("Simplifying SDM Polygon \n \n ")
-  sdm_pol_sf <- rmapshaper::ms_simplify(sdm_pol)
+  sdm_pol_sf <- rgeos::gSimplify(sdm_pol, tol = 0.05, topologyPreserve = TRUE)
   rm(sdm_pol)
   
   # Change path after
