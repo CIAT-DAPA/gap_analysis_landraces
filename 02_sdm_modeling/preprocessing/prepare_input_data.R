@@ -55,21 +55,24 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
   cat("Removing coordinates on Oceans/Seas \n")
   data <- data[which(!is.na(raster::extract(x = msk, y = data[,c("Longitude", "Latitude")]))),]
   
+  original_data <- data
   #Assign repeated coordinates to majority class
   unq <- unique(data[, 2:3])
   apply(unq, 1, function(i){
     i <- as.numeric(i)
-    counts <- data %>% dplyr::filter(., !is.na(Y) &  Latitude == i[1] & Longitude == i[2] ) %>% dplyr::select(., Y) %>% table()
+    counts <- data%>% dplyr::filter(., !is.na(Y)) %>% dplyr::filter(., Latitude == i[1] & Longitude == i[2] ) %>% dplyr::select(., Y) %>% table()
     if(sum(counts) > 1){
      lab <-   names(which.max(counts))
-     data[which(data$Latitude == i[1] & data$Longitude == i[2]), "Y"] <<- lab
+     data[which(!is.na(data$Y) & data$Latitude == i[1] & data$Longitude == i[2]), "Y"] <<- lab
     }
   })
   
   cat("Removing duplicated coordinates \n")
-  rep <- which(duplicated( raster::extract(msk, data[, c("Longitude", "Latitude")], cellnumbers = TRUE)  ))
+  rep <- which(duplicated( raster::extract(msk, data[ , c("Longitude", "Latitude")], cellnumbers = TRUE)  ))
+  nas <- which(is.na(data$Y))
+  pos <- setdiff(rep, nas)
   if(length(rep) != 0){
-    data  <- data[-rep, ]
+    data  <- data[-pos, ]
   }
   
   #loading all input rasters
@@ -82,14 +85,22 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
   current_clim_layer_sp      <- lapply(sp_rasts, raster)
   current_clim_layer         <- stack(c(current_clim_layer_generic, current_clim_layer_sp))
   
-  sp_data <- SpatialPoints(data[, c("Longitude", "Latitude")], crs(raster(msk)))
+  sp_data <- SpatialPoints(data[, c("Longitude", "Latitude")], crs(msk))
   clim_table <- raster::extract(current_clim_layer, sp_data)
   
   full_data <- data.frame(data, clim_table) 
   full_data <- full_data[complete.cases(full_data[, c(-1, -2, -3)]), ]
   full_data <- droplevels(full_data)
   
-  rows_id <- as.numeric(row.names(full_data))
+  
+  sp_data2 <- SpatialPoints(original_data[, c("Longitude", "Latitude")], crs(msk))
+  clim_table2 <- raster::extract(current_clim_layer, sp_data2)
+  
+  full_data2 <- data.frame(original_data, clim_table2) 
+  full_data2 <- full_data2[complete.cases(full_data2[, c(-1, -2, -3)]), ]
+  full_data2 <- droplevels(full_data2)
+  
+  rows_id <- as.numeric(row.names(full_data2))
   
   
   if(do.ensemble.models){
@@ -101,7 +112,8 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
         if(!add.latitude){
           to_train <- to_train %>% dplyr::select(., -Latitude)
 
-      }else if(!add.longitude){
+      } 
+    if(!add.longitude){
         to_train <- to_train %>% dplyr::select(., -Longitude)
         }
     
@@ -119,19 +131,21 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
                                      external_df = to_predict)
       
       #fill NA cells using ensemble model predictions
-      full_data[which(is.na(full_data$Y)), "Y"] <- clas_res$External_data_predictions %>% dplyr::select(., ensemble)
+      
+      full_data2[which(is.na(full_data2$Y)), "Y"] <- clas_res$External_data_predictions %>% dplyr::select(., ensemble)
       names(full_data)[1] <- "ensemble"
+      names(full_data2)[1] <- "ensemble"
       #add status column if it exists
       if(!is.null(status)){
-        full_data$status <- status[rows_id, ]
+        full_data2$status <- status[rows_id, ]
       }
       
       #saving results
       saveRDS(clas_res, file = paste0(classResults, "/", crop, "_descriptive_results.rds") )
       saveRDS(clas_res, file = paste0(input_data_aux_dir, "/", crop, "_descriptive_results.rds") )
       
-      write.csv(full_data, paste0(classResults, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
-      write.csv(full_data, paste0(input_data_aux_dir, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
+      write.csv(full_data2, paste0(classResults, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
+      write.csv(full_data2, paste0(input_data_aux_dir, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
       
     }else{
       #execute classification function without predict occurrences
@@ -148,12 +162,12 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
       
       #add status column if it exists
       if(!is.null(status)){
-        full_data$status <- status[rows_id]
+        full_data2$status <- status[rows_id, ]
       }
-      names(full_data)[1] <- "ensemble"
+      names(full_data2)[1] <- "ensemble"
       
-      write.csv(full_data, paste0(classResults, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
-      write.csv(full_data, paste0(input_data_aux_dir, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
+      write.csv(full_data2, paste0(classResults, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
+      write.csv(full_data2, paste0(input_data_aux_dir, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
       
       
     }
@@ -164,12 +178,12 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
     #add status column if it exists
     
     if(!is.null(status)){
-      full_data$status <- status[rows_id]
+      full_data2$status <- status[rows_id, ]
     }
-    names(full_data)[1] <- "ensemble"
+    names(full_data2)[1] <- "ensemble"
     
-    write.csv(full_data, paste0(classResults, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
-    write.csv(full_data, paste0(input_data_aux_dir, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
+    write.csv(full_data2, paste0(classResults, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
+    write.csv(full_data2, paste0(input_data_aux_dir, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
     
   }
  

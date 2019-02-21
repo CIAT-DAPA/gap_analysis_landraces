@@ -46,7 +46,7 @@ cost_dist_function <-  function( outDir, friction, mask, occDir, arcgis = FALSE,
     
   }
     
-    raster::writeRaster(cost_dist, filename = paste0(outDir, "/cost_dist.tif"), overwrite= T)
+  raster::writeRaster(cost_dist, filename = paste0(outDir, "/cost_dist.tif"), overwrite= T)
 
     
   } else {

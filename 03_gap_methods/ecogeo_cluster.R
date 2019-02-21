@@ -40,7 +40,8 @@ ecogeo_clustering <- function(n.sample = 10000, var_names,k.clust = 11){
   # sdm_obj <- read.sdm(paste(sp_Dir,"/sdm.sdm",sep=""))
   # var_names <- names(sdm_obj@data@features)[2:ncol(sdm_obj@data@features)]
   # 
-  var_names <- paste0(var_names,".tif")
+  #var_names <- paste0(var_names,".tif")
+
   # vars <- c("Accessibility"        ,    "Altitude"       ,          "aridityIndexThornthwaite" ,"bio_14"  ,                
   #  "bio_15"  ,                "bio_18"    ,               "bio_19"    ,               "bio_2"   ,                
   # "climaticMoistureIndex" ,   "continentality"     ,      "dist_rivers"         ,     "embergerQ" ,              

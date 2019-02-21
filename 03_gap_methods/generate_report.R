@@ -169,7 +169,8 @@ cat(paste("\n#' #  Results for:", i, "\n" )
        
   
         low_conf <- final_gap_rast
-        low_conf[which(low_conf[] != 1)] <- NA
+        low_conf[which(low_conf[] == 0)] <- NA
+        low_conf[!is.na(low_conf[])] <- 1
         low_conf <- low_conf * rast_area
         total_lw_conf <- sum(low_conf[], na.rm = TRUE)
         

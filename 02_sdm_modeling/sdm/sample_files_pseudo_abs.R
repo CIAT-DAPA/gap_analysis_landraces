@@ -121,8 +121,8 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
     
     cat("Processing:", paste(occName), "\n")
     spData            <- read.csv(occFile, header = T)
-    spData[,clsModel] <- tolower(spData[,clsModel])
-    spData            <- spData[which(spData[,clsModel] == occName),]
+    #spData[,clsModel] <- tolower(spData[,clsModel])
+    spData            <- spData[which(tolower(spData[,clsModel])== occName),]
     
     #remove H accessions
     if("status" %in% names(spData)){
@@ -213,7 +213,7 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
     }
     
     # Extract variable data
-    ex_raster_env <- as.data.frame(raster::extract(current_clim_layer, xranSample))
+    ex_raster_env <- as.data.frame(raster::extract(climLayers, xranSample))
     z             <- cbind(id = 1:nrow(xranSample), species = occName, status = 0, xranSample, ex_raster_env)
     z             <- z[complete.cases(z),]
     cat(nrow(z), "pseudo-absences ready to use\n")
@@ -222,7 +222,7 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
     # Preparing samples
     occSample        <- unique(spData[,c("Longitude", "Latitude")])
     names(occSample) <- c("lon", "lat")
-    occ_env_data     <- as.data.frame(raster::extract(current_clim_layer, occSample))
+    occ_env_data     <- as.data.frame(raster::extract(climLayers, occSample))
     occSample        <- cbind(id = 1:nrow(occSample), species = occName, status = 1, occSample, occ_env_data)
     occSample        <- occSample[complete.cases(occSample),]
     

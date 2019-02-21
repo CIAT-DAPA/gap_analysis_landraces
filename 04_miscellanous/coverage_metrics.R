@@ -51,7 +51,9 @@ coverage_metrics<-function(crop, occName , level ,  region , mask_dir = mask){
     cat(paste0("Calculating Low Confidence coverage area for ", crop[i], " ", occName[i]), "\n")
     
     low_conf <- final_gap_rast
-    low_conf[which(low_conf[] != 1)] <- NA
+    low_conf[which(low_conf[] == 0)] <- NA
+    low_conf[!is.na(low_conf[])] <- 1
+    
     low_conf <- low_conf * rast_area
     total_lw_conf <- sum(low_conf[], na.rm = TRUE)
     
@@ -108,4 +110,4 @@ coverage_metrics<-function(crop, occName , level ,  region , mask_dir = mask){
 
 #### Test funcion ### 
 
-#coverage_metrics(crop = c("sorghum", "sorghum", "sorghum", "sorghum", "sorghum",  "banana"), occName = c("guinea","durra","kafir","caudatum","bicolor","all"), level = level, region = c("sgh_custom","sgh_custom","sgh_custom","sgh_custom","sgh_custom",  "banana_custom"), mask_dir = mask_dir)
+coverage_metrics(crop = c("sorghum", "sorghum", "sorghum", "sorghum", "sorghum",  "banana", "banana"), occName = c("guinea","kafir","caudatum","bicolor","all","all", "3"), level = level, region = c("sgh_custom","sgh_custom","sgh_custom","sgh_custom","sgh_custom",  "banana_custom", "banana_custom"), mask_dir = mask_dir)

@@ -2,8 +2,6 @@
 # Implemented by: H. Achicanoy
 # CIAT, 2018
 
-suppressMessages(library(pacman))
-suppressMessages(pacman::p_load(tidyverse, caret, randomForest, ISLR, nnet, caretEnsemble, ranger, ModelMetrics, rminer))
 
 #cat(">>>>>>>>>>>>>> For categorical predictors, please create dummy variables before running the function. <<<<<<<<<<<<\n")
 #cat(">>>>>>>>>>>>>> All the predictors this function receive are numerical. <<<<<<<<<<<<\n")
@@ -26,6 +24,8 @@ classification_fun <- function(df = all_data3,
                                external_df = NULL,
                                ...)
 {
+  suppressMessages(library(pacman))
+  suppressMessages(pacman::p_load(tidyverse, mltools, caret, ISLR, nnet, caretEnsemble, ranger, ModelMetrics, rminer))
   
   df_org <- df
   
@@ -157,8 +157,8 @@ classification_fun <- function(df = all_data3,
   colnames(impVar_list) <- names(model_list)
   results$Important_variables <- impVar_list
   
-  cat(">>> Predicting external data classes ...\n")
   if(!is.null(external_df)){
+    cat(">>> Predicting external data classes ...\n")
     external_df <- external_df[,colnames(training)[-1]]
     if(standardize_all == T){external_df <- external_df %>% base::scale(center = T, scale = T) %>% as.data.frame}
     external_preds <- predict(model_list, newdata = external_df) %>% data.frame
@@ -172,7 +172,7 @@ classification_fun <- function(df = all_data3,
   bd <- df %>% 
     dplyr::mutate(., Y = as.factor(Y)) 
   
-  pca <- FactoMineR::PCA(bd[, c(-1,-2)], scale.unit = TRUE, ncp = 3)
+  pca <- FactoMineR::PCA(bd[, c(-1,-2)], scale.unit = TRUE, ncp = 3, graph = FALSE)
   
   df_pca <- data.frame(  pca$ind$coord[, c(1,2)], specie = bd$Y)
   plt <- ggplot(data = df_pca, aes(x = Dim.1, y = Dim.2, color = factor(specie))) +
@@ -187,5 +187,5 @@ classification_fun <- function(df = all_data3,
   results$PCA_plot <- plt
   
   return(results)
-  
+  pacman::p_unload( mltools, ISLR,  caretEnsemble, ranger, ModelMetrics, rminer)  
 }

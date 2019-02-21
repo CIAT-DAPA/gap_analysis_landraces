@@ -18,21 +18,29 @@ create_occ_shp <- function(file_path, file_output, validation ){
   
   
   
-  cat("Removing duplicated coordinates \n")
-  
-  #remove repeated coordinates
-  rep <- which(duplicated( raster::extract(msk, Occ[, c("Longitude", "Latitude")], cellnumbers = TRUE)  ))
-  if(length(rep) != 0){
-    Occ  <- Occ[-rep, ]
-  }
-  
-  
   names(Occ) <- c("Longitude", "Latitude", "ensemble")
-  Occ$ensemble <- tolower(Occ$ensemble)
-  Occ <- Occ[which(Occ$ensemble == occName),]
+  #Occ$ensemble <- tolower(Occ$ensemble)
+  Occ <- Occ[which(tolower(Occ$ensemble) == occName),]
   
   cat("Removing coordiantes on the ocean/sea \n")
   Occ <- Occ[which(!is.na(raster::extract(x = msk, y = Occ[,c("Longitude", "Latitude")]))),]
+  
+  cat("Removing duplicated coordinates \n")
+  
+  #remove repeated coordinates
+  #rep <- which(duplicated( raster::extract(msk, Occ[, c("Longitude", "Latitude")], cellnumbers = TRUE)  ))
+  #if(length(rep) != 0){
+   # Occ  <- Occ[-rep, ]
+  #}
+  
+  #spData <- spData[-rep, ]
+  
+  Occ$cellID <-NA
+  Occ$cellID <-raster::extract(msk,SpatialPoints(cbind(Occ$Longitude, Occ$Latitude)),cellnumbers=TRUE) 
+  Occ <-Occ[!duplicated(Occ$cellID),- which(names(Occ) %in% c("cellID"))]
+  
+  
+  
   #save occurrences in csv format
   write.csv(Occ, paste0(occDir, "/Occ.csv"), row.names = FALSE)
   write.csv(Occ, paste0(input_data_aux_dir, "/Occ.csv"), row.names = FALSE)

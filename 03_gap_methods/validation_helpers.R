@@ -50,6 +50,7 @@ create_occ_shp(file_path   = paste0(gap_valDir, "/buffer_100km/", densities[dens
                           file_output = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/01_selected_points","/Occ.shp"),
                           validation  = TRUE)
 
+if(!file.exists(paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/03_gap_models/cost_dist.tif"))){
 cat(">>> Creating cost distance raster ... \n")
 cost_dist_function(
   outDir       = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"),
@@ -59,6 +60,7 @@ cost_dist_function(
   arcgis       = use.Arcgis,
   code         = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/01_selected_points/cost_dist.py")
 )
+}
 
 cat(">>> Load same variables for SDM ... \n")
 vars <- read.csv(paste0(sp_Dir, "/sdm_variables_selected.csv"))
@@ -66,7 +68,7 @@ vars <- as.character(vars$x)
 
 cat(">>> Load calibrated feature parameters for SDM ... \n")
 calibration <- read.csv(paste0(sp_Dir, "/calibration.csv"))
-feat <- CreateMXArgs(calibration)
+feat <- CreateMXArgs(calibration,  use.maxnet = FALSE)
 beta <- feat[(grepl("betamultiplier=", feat))]; beta <- as.numeric(gsub("betamultiplier=", "", beta))
 feat <- feat[(!grepl("betamultiplier=", feat))]
 rm(calibration)

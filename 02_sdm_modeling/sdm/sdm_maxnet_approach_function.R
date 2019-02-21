@@ -236,12 +236,12 @@ sdm_maxnet_approach_function <- function(occName      = occName,
 #calculate  mean, median and sd raster from replicates 
   prj_stk <- sdm_results %>% dplyr::select(., do.projections) %>% unlist() %>% raster::stack() 
 cat("Calculating mean, median and sd for replicates \n")
-mean(prj_stk, na.rm = TRUE) %>% writeRaster(., paste0(model_outDir,"/", occName, "_prj_mean.tif" ), overwrite = TRUE)
+mean(prj_stk) %>% writeRaster(., paste0(model_outDir,"/", occName, "_prj_mean.tif" ), overwrite = TRUE)
 cat("Mean raster calculated \n")
-raster::calc(prj_stk, fun = function(x) {median(x, na.rm = T)}) %>% writeRaster(., paste0(model_outDir,"/", occName, "_prj_median.tif" ), overwrite = TRUE)
+raster::calc(prj_stk, fun = function(x) {median(x)}) %>% writeRaster(., paste0(model_outDir,"/", occName, "_prj_median.tif" ), overwrite = TRUE)
 cat("Median raster calculated \n")
 if(doSDraster){
-  raster::calc(prj_stk, fun = function(x) {sd(x, na.rm = T)}) %>% writeRaster(., paste0(model_outDir,"/", occName, "_prj_std.tif" ), overwrite = TRUE)
+  raster::calc(prj_stk, fun = function(x) {sd(x)}) %>% writeRaster(., paste0(model_outDir,"/", occName, "_prj_std.tif" ), overwrite = TRUE)
   cat("Sd raster calculated \n")
 }
 

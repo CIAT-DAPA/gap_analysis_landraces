@@ -40,7 +40,7 @@ calc_env_score <- function(lv_name, clus_method = "hclust_mahalanobis", sdm_dir,
     }
     
     #load environmental layers
-    env_names <- var_names[ paste0(var_names, ".tif") %in% list.files(env_dir)]
+    env_names <- var_names[paste0(var_names,".tif") %in% list.files(env_dir)]
       #names(sdm_obj@data@features)[2:ncol(sdm_obj@data@features)]
     if ("monthCountByTemp10" %in% env_names) env_names <- env_names[-which(env_names=="monthCountByTemp10")]
 
@@ -112,8 +112,8 @@ calc_env_score <- function(lv_name, clus_method = "hclust_mahalanobis", sdm_dir,
     rs_euc_norm <- rs_euc / max(rs_euc[],na.rm=T)
     
     #write output
-    writeRaster(rs_euc, paste(out_dir,"/euclidean_dist_",clus_method,".tif",sep=""),format="GTiff")
-    writeRaster(rs_euc_norm, paste(out_dir,"/env_score_",clus_method,".tif",sep=""),format="GTiff")
+    writeRaster(rs_euc, paste(out_dir,"/euclidean_dist_",clus_method,".tif",sep=""),format="GTiff", overwrite = TRUE)
+    writeRaster(rs_euc_norm, paste(out_dir,"/env_score_",clus_method,".tif",sep=""),format="GTiff", overwrite = TRUE)
     #return rasters
     #return(rs_euc_norm)
     
