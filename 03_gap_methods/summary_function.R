@@ -45,7 +45,7 @@ l <- as.numeric(x[2])
                                  .options.snow=opts,  
                                  .export = c("validation_metrics", "area", "group", "crop", "lvl", "pnt", "filename", "radius","baseDir", "dens.level")) %dopar% {
     
-    validation_metrics(n.sample = 200, 
+    validation_metrics(n.sample = 100, 
                        bf_rad = radius[i], 
                        baseDir = baseDir,
                        area = area, 
