@@ -124,7 +124,7 @@ Calibration_function <- function(spData, save, sp_Dir, ommit, use.maxnet = TRUE)
         cat("Calculating best parameters for maxNet \n")
         cat("This process will take several minutes, please be patient. \n")
         
-        data_train <- spData
+        data_train <- as.matrix(spData)
         
         #adding all presence points to background
         pres_to_bg <- data_train[which(data_train[, 1] == 1), ]

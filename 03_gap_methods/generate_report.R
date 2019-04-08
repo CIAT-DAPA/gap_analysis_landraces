@@ -1,6 +1,6 @@
 
 filepath <- paste0(results_dir, "/", crop, "/lvl_1/final_results_report")
-generate_report <- function(filepath, class_name = "common_bean_descriptive_results.rds", level_1, region, is.everything.finished = FALSE, disk = "Z:"){
+generate_report <- function(filepath, class_name = "potato_descriptive_results.rds", level_1, region, is.everything.finished = FALSE, disk = "Z:"){
   
   if(is.everything.finished){
     pacman::p_load(rmarkdown, knitr, kableExtra, xlsx)
@@ -30,32 +30,56 @@ if(!is.null(disk)){
 #' as well as  PCA(Principal Components Analysis). 
 #' 
 #' * ## Accessions classification 
-#'     + #### Confusion Matrix: 
+#'     + #### Testing Confusion Matrix: 
 #' \n" )
 
 cat("#+   cache=FALSE, echo = FALSE
-class_res <- readRDS(paste0(input_data_dir, \"/by_crop/\", crop, \"/lvl_1/classification/\", class_name )) 
-\n
-kable(class_res$Testing_CM$ensemble$table) %>% kable_styling(c(\"striped\", \"bordered\"), full_width = F) %>% add_header_above(c(\" \" = 1, 'Observed' = length(level_1)), bold= TRUE ) %>% group_rows(\"Predicted\",1, length(level_1))" 
+class_res <- readRDS(paste0(input_data_dir, \"/by_crop/\", crop, \"/lvl_1/classification/\", class_name ))
+kable(class_res$Testing_CM$ensemble$table) %>% kable_styling(c(\"striped\", \"bordered\"), full_width = F) %>% add_header_above(c(\" \" = 1, 'Observed' = ncol(class_res$Testing_CM$ensemble$table)), bold= TRUE ) %>% group_rows(\"Predicted\",1, length(level_1))" 
     )
 cat("\n")
 cat("#' *
-#'     + #### Main performance measures: 
+#'    + #### Main performance measures: 
 #+      echo = FALSE 
 results <- class_res$Testing_CM$ensemble$byClass
+n <- as.matrix(table(class_res$PCA_plot$data$specie))
 if(is.null(nrow(results))){
-kable(data.frame(round(as_tibble(results[c(1,2,5,7,11)]), 3)) )  %>%  
-kable_styling(c(\"striped\", \"bordered\"), full_width = F)
+lst1 <- lapply(class_res$Testing_CM, function(x){
+x$byClass[c(1, 2)]
+  })
+sensi <- t(do.call(rbind, lst1))
+row.names(sensi)<- level_1
+sensi <- data.frame('n'= n, sensi)
+kable(round(sensi, 3))  %>%  
+  kable_styling(c(\"striped\", \"bordered\"), full_width = F) %>%  
+    add_header_above(c(\" \" = 1, 'Sensitivity' = ncol(sensi)), bold= TRUE )
+
 }else{
 rn <- rownames(results[,c(1,2,5,7,11)]) 
-kable(data.frame(class = rn, round(as_tibble(results[,c(1,2,5,7,11)]), 3)) )  %>%  
-kable_styling(c(\"striped\", \"bordered\"), full_width = F)
+
+lst1 <- lapply(class_res$Testing_CM, function(x){
+x$byClass[, 1]
+})
+sensi <- t(do.call(rbind, lst1))
+
+sensi <- data.frame('n'= n, sensi)
+
+kable(round(sensi, 3) )  %>%  
+  kable_styling(c(\"striped\", \"bordered\"), full_width = F) %>% 
+    add_header_above(c(\" \" = 1, 'Sensitivity' = ncol(sensi)), bold= TRUE )
 }
+
+#'    + #### Matthews correlation coefficient  
+#+      echo = FALSE
+mcc <- class_res$Testing_MCC
+mcc <- data.frame('Model' = names(mcc), 'MCC' = mcc )
+row.names(mcc) <- NULL
+kable(mcc) %>% kable_styling(c(\"striped\", \"bordered\"), full_width = F) 
  ")
 cat("\n")
   
 cat("#' * 
-#'     + #### Five most important variables by model: 
+#'    + #### Five most important variables by model: 
 #+ echo = FALSE
 kable(class_res$Important_variables) %>% kable_styling(c(\"striped\", \"bordered\"), full_width = F)  " 
     )
@@ -69,7 +93,7 @@ plot(class_res$PCA_plot)
 cat("\n")
 cat("
 #' * 
-#'     + #### Variable contributions 
+#'    + #### Variable contributions 
 #+ echo = FALSE
 kable(class_res$PCA$var$contrib) %>% kable_styling(c(\"striped\", \"bordered\"), full_width = F)
 "
@@ -160,17 +184,18 @@ cat(paste("\n#' #  Results for:", i, "\n" )
         t_area[k] <- total_sdm_area
 
         high_conf <- final_gap_rast
-        high_conf[which(high_conf[] != 2)] <- NA
-        high_conf[which(high_conf[] == 2)] <- 1
+        high_conf[which(high_conf[] != 2)] <- 1
+        high_conf[which(high_conf[] == 2)] <- NA
         high_conf <- high_conf * rast_area
         total_hg_conf <- sum(high_conf[], na.rm = TRUE)
         high_conf_percent[k] <-  (total_hg_conf/total_sdm_area)*100
         
-       
-  
+
+      
+      
         low_conf <- final_gap_rast
-        low_conf[which(low_conf[] == 0)] <- NA
-        low_conf[!is.na(low_conf[])] <- 1
+        low_conf[which(low_conf[] != 0)] <- NA
+        low_conf[which(low_conf[] == 0)] <- 1
         low_conf <- low_conf * rast_area
         total_lw_conf <- sum(low_conf[], na.rm = TRUE)
         
@@ -186,13 +211,13 @@ cat("#+ echo = FALSE \n")
 cat("
     res <- class_res$Testing_CM$ensemble$byClass
     if(is.null(nrow(res))){
-    avg_acc <- data.frame('acc'= res[c(1, 2)] )
+    avg_acc <- data.frame('average accuracy'= res[c(1, 2)] )
     row.names(avg_acc) <- level_1
     }else{
     avg_acc <- res[, 11]
     }
     
-    summary_table <- data.frame('average accuracy' = avg_acc, 'High coverage area' =  high_conf_percent, 'Low coverage area' = low_conf_percent, 'Gap model performance' = auc_avg )
+    summary_table <- data.frame('region' = region,'average accuracy' = avg_acc, 'High coverage area' =  high_conf_percent, 'Low coverage area' = low_conf_percent, 'Gap model performance' = auc_avg )
     kable(summary_table) %>% kable_styling(c(\"striped\", \"bordered\"), full_width = F)
     ")
 sink()

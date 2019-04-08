@@ -122,7 +122,7 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
     cat("Processing:", paste(occName), "\n")
     spData            <- read.csv(occFile, header = T)
     #spData[,clsModel] <- tolower(spData[,clsModel])
-    spData            <- spData[which(tolower(spData[,clsModel])== occName),]
+    spData            <- spData[which(spData[,clsModel]== occName),]
     
     #remove H accessions
     if("status" %in% names(spData)){

@@ -14,13 +14,13 @@ baseDir   <- switch(OSys,
 rm(OSys)
 
 srcDir <- paste(baseDir, "/scripts", sep = "") # Software directory
-region <- "americas"                           # Region: "americas", "world"
+region <- "africa"                           # Region: "americas", "world"
 
 source(paste0(srcDir, "/02_sdm_modeling/preprocessing/config_crop.R")) # Configuring crop directories
 
 # Define crop, analysis level and creating needed directories
-crop <- "potato"
-level_1 <-  c("ajanhuiri", "chaucha", "phureja", "stenotomum", "tuberosum") # level 1: genepool
+crop <- "african_maize"
+level_1 <-  c("2", "3", "4")#c("ceusa", "cobra", "hiand", "himex", "lomam", "wemex") # level 1: genepool
 level   <- "lvl_1"
 occName <- level_1[1] # Level 1: "andean", "mesoamerican"
 source(paste(srcDir, "/02_sdm_modeling/preprocessing/config.R", sep = ""))
@@ -249,7 +249,7 @@ summary_function(area =region,
                  radius = seq(55,85, 1), #number of radius size to evaluate
                  baseDir = baseDir,
                  dens.level = "high_density",
-                 ncores = 55 #(detectCores()-8)
+                 ncores = 15 #(detectCores()-8)
 )
 
 

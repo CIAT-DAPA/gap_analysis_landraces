@@ -172,7 +172,7 @@ classification_fun <- function(df = all_data3,
   bd <- df %>% 
     dplyr::mutate(., Y = as.factor(Y)) 
   
-  pca <- FactoMineR::PCA(bd[, c(-1,-2)], scale.unit = TRUE, ncp = 3, graph = FALSE)
+  pca <- FactoMineR::PCA(bd[, -1], scale.unit = TRUE, ncp = 3, graph = FALSE)
   
   df_pca <- data.frame(  pca$ind$coord[, c(1,2)], specie = bd$Y)
   plt <- ggplot(data = df_pca, aes(x = Dim.1, y = Dim.2, color = factor(specie))) +

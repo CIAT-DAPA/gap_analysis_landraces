@@ -38,8 +38,8 @@ coverage_metrics<-function(crop, occName , level ,  region , mask_dir = mask){
     cat(paste0("Calculating High Confidence coverage area for ", crop[i], " ", occName[i]), "\n")
     
     high_conf <- final_gap_rast
-    high_conf[which(high_conf[] != 2)] <- NA
-    high_conf[which(high_conf[] == 2)] <- 1
+    high_conf[which(high_conf[] != 2)] <- 1
+    high_conf[which(high_conf[] == 2)] <- NA
     high_conf <- high_conf * rast_area
     total_hg_conf <- sum(high_conf[], na.rm = TRUE)
     
@@ -51,8 +51,12 @@ coverage_metrics<-function(crop, occName , level ,  region , mask_dir = mask){
     cat(paste0("Calculating Low Confidence coverage area for ", crop[i], " ", occName[i]), "\n")
     
     low_conf <- final_gap_rast
-    low_conf[which(low_conf[] == 0)] <- NA
-    low_conf[!is.na(low_conf[])] <- 1
+   # low_conf[which(low_conf[] == 0)] <- 1
+  #  low_conf[!is.na(low_conf[])] <- NA
+    
+     low_conf[which(low_conf[] != 0)] <- NA
+     low_conf[which(low_conf[] == 0)] <- 1
+    
     
     low_conf <- low_conf * rast_area
     total_lw_conf <- sum(low_conf[], na.rm = TRUE)
@@ -73,8 +77,9 @@ coverage_metrics<-function(crop, occName , level ,  region , mask_dir = mask){
  #   average_cost <- average_cost %>% subset(., average_cost$pnt %in% "Average" ) 
   #  average_cost <- average_cost[, -which(names(average_cost) %in% "pnt")]
     
-     average_cost <- validations_file[7, c(1:4)] 
-     average_cost <- average_cost[, -1]
+     cost <- validations_file[c(2:7), -1]; cost<-as.data.frame(cost) 
+     cost[,1]<-cost[,1] %>% as.character(); cost[,1]<-cost[,1] %>% as.numeric()
+     average_cost <- cost[6,1]
     
     
     
@@ -84,13 +89,18 @@ coverage_metrics<-function(crop, occName , level ,  region , mask_dir = mask){
   #  average_del <- average_del %>% subset(., average_del$pnt %in% "Average" ) 
   #  average_del <- average_del[, -which(names(average_del) %in% "pnt")]
     
-    average_del <- validations_file[15, c(1:4)] 
-    average_del <- average_del[, -1]
+     
+    
+    del <- validations_file[c(10:15), -1]; del<-as.data.frame(del) 
+    del[,1]<-del[,1] %>% as.character(); del[,1]<-del[,1] %>% as.numeric()
+    average_del <- del[6,1]
+    
+    GAP_AUC = (average_cost*0.4) + (average_del*0.6)
+    
     
     
     cat("Resuming metrics ", "\n")
-    
-    summary <- data.frame(Crop = crop[i], Level = "Genepool", Name = occName[i], Region = region[i], High_coverage_area = high_conf_percent,  low_coverage_area = low_conf_percent, Gap_model_AUC_cost = average_cost[1,1], Gap_model_AUC_del = average_del[1,1] )
+    summary <- data.frame(Crop = crop[i], Level = "Genepool", Name = occName[i], Region = region[i], High_coverage_area = high_conf_percent,  low_coverage_area = low_conf_percent, Gap_model_AUC_cost = average_cost, Gap_model_AUC_del = average_del, Gap_model_AUC = GAP_AUC)
     
    # final_table <- list(summary_metrics = summary, cost_metrics = average_cost, del_metrics = average_del)
     
@@ -110,4 +120,4 @@ coverage_metrics<-function(crop, occName , level ,  region , mask_dir = mask){
 
 #### Test funcion ### 
 
-coverage_metrics(crop = c("sorghum", "sorghum", "sorghum", "sorghum", "sorghum",  "banana", "banana"), occName = c("guinea","kafir","caudatum","bicolor","all","all", "3"), level = level, region = c("sgh_custom","sgh_custom","sgh_custom","sgh_custom","sgh_custom",  "banana_custom", "banana_custom"), mask_dir = mask_dir)
+coverage_metrics(crop = c("sorghum", "sorghum", "sorghum", "sorghum", "sorghum",  "banana", "banana", "banana"), occName = c("guinea","kafir","caudatum","bicolor","durra","all","2" ,"3"), level = level, region = c("sgh_custom","sgh_custom","sgh_custom","sgh_custom","sgh_custom",  "banana_custom", "banana_custom", "banana_custom"), mask_dir = mask_dir)
