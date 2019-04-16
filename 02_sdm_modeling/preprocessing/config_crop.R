@@ -11,6 +11,8 @@ layers_dir <- paste(input_data_dir, "/by_crop", sep = "")
 crop_dir <- paste(layers_dir, "/", crop, sep = "")
 # input dir for each crop
 crop_dir_results <- paste(results_dir, "/", crop, sep = "")
+# mask dir
+mask_dir       <- paste0(input_data_dir, "/mask");  if (!file.exists(mask_dir)) {dir.create(mask_dir, recursive = TRUE)}
 
 ##Level 1 directories
 if(length(level_1) > 0){
@@ -22,7 +24,7 @@ lapply(1:length(level_1), function(i){
   occDir <- paste(level_dir_i, "/occurrences", sep = ""); if (!file.exists(occDir)) {dir.create(occDir, recursive = TRUE)}
   backDir <- paste(level_dir_i, "/background", sep = ""); if (!file.exists(backDir)) {dir.create(backDir, recursive = TRUE)}
   swdDir <- paste(level_dir_i, "/swd", sep = ""); if (!file.exists(swdDir)) {dir.create(swdDir, recursive = TRUE)}
- 
+  
   # result directories for crop
   level_dir_r <- paste(crop_dir_results, "/lvl_1/", level_1[[i]], sep = ""); if (!file.exists(level_dir_r)) {dir.create(level_dir_r, recursive = TRUE)}
   })
