@@ -9,7 +9,7 @@ g <- gc(reset = T); rm(list = ls()); options(warn = -1); options(scipen = 999)
 OSys <- Sys.info()[1]
 baseDir   <- switch(OSys,
                    "Linux"   = "/mnt/workspace_cluster_9/gap_analysis_landraces/runs",
-                   "Windows" = "E:/Landrace Gap Analysis",
+                   "Windows" = "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs",
                    "Darwin"  = "~nfs/workspace_cluster_9/gap_analysis_landraces/runs")
 rm(OSys)
 

@@ -60,10 +60,10 @@ cat("Loading working directories\n")
 input_data_dir <- paste0(baseDir, "/input_data")
 results_dir    <- paste0(baseDir, "/results")
 aux_dir        <- paste0(input_data_dir, "/auxiliar_rasters")
-climDir        <- paste0(input_data_dir, "/generic_rasters/", region);if(!file.exists(climDir)){dir.create(climDir)}
+climDir        <- paste0(input_data_dir, "/generic_rasters/", region);if(!file.exists(climDir)){dir.create(climDir, recursive = TRUE)}
 shp_dir        <- paste0(input_data_dir, "/shapefiles")
 mask_dir       <- paste0(input_data_dir, "/mask")
-classResults   <- paste0(input_data_dir, "/by_crop/", crop, "/", level, "/classification");if(!file.exists(classResults)){dir.create(classResults)}
+classResults   <- paste0(input_data_dir, "/by_crop/", crop, "/", level, "/classification");if(!file.exists(classResults)){dir.create(classResults, recursive = TRUE)}
 # Defining species directory
 crop_result_dir  <- paste0(results_dir, "/", crop)
 level_result_dir <- paste0(crop_result_dir, "/", level)
