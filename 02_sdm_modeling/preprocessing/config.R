@@ -64,6 +64,7 @@ climDir        <- paste0(input_data_dir, "/generic_rasters/", region);if(!file.e
 shp_dir        <- paste0(input_data_dir, "/shapefiles")
 mask_dir       <- paste0(input_data_dir, "/mask")
 classResults   <- paste0(input_data_dir, "/by_crop/", crop, "/", level, "/classification");if(!file.exists(classResults)){dir.create(classResults, recursive = TRUE)}
+aux_dir        <- paste(input_data_dir,"/auxiliar_rasters",sep=""); if(!file.exists(aux_dir)){dir.create(aux_dir)}
 # Defining species directory
 crop_result_dir  <- paste0(results_dir, "/", crop)
 level_result_dir <- paste0(crop_result_dir, "/", level)
