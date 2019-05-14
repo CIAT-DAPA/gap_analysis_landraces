@@ -1,6 +1,6 @@
 
 filepath <- paste0(results_dir, "/", crop, "/lvl_1/final_results_report")
-generate_report <- function(filepath, class_name = "potato_descriptive_results.rds", level_1, region, is.everything.finished = FALSE, disk = "Z:"){
+generate_report <- function(filepath, class_name = "common_bean_descriptive_results.rds", level_1, region, is.everything.finished = FALSE, disk = "Z:"){
   
   if(is.everything.finished){
     pacman::p_load(rmarkdown, knitr, kableExtra, xlsx)

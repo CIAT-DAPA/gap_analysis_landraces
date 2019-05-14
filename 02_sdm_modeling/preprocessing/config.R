@@ -59,7 +59,6 @@ source(paste0(srcDir, "/03_gap_methods/create_png_maps.R"))
 cat("Loading working directories\n")
 input_data_dir <- paste0(baseDir, "/input_data")
 results_dir    <- paste0(baseDir, "/results")
-aux_dir        <- paste0(input_data_dir, "/auxiliar_rasters")
 worldDir       <- paste0(input_data_dir, "/generic_rasters/world");if(!file.exists(worldDir)){dir.create(worldDir, recursive = TRUE)}
 climDir        <- paste0(input_data_dir, "/generic_rasters/", region);if(!file.exists(climDir)){dir.create(climDir, recursive = TRUE)}
 shp_dir        <- paste0(input_data_dir, "/shapefiles")

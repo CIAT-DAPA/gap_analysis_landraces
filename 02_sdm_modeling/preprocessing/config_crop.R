@@ -13,6 +13,12 @@ crop_dir <- paste(layers_dir, "/", crop, sep = "")
 crop_dir_results <- paste(results_dir, "/", crop, sep = "")
 # mask dir
 mask_dir       <- paste0(input_data_dir, "/mask");  if (!file.exists(mask_dir)) {dir.create(mask_dir, recursive = TRUE)}
+# create folder of auxiliar rasters
+aux_dir        <- paste0(input_data_dir, "/auxiliar_rasters");  if (!file.exists(aux_dir)) {dir.create(aux_dir, recursive = TRUE)}
+
+#create ecosystems folder
+
+eco_dir <- paste0(input_data_dir, "/ecosystems");  if (!file.exists(eco_dir)) {dir.create(eco_dir, recursive = TRUE)}
 
 ##Level 1 directories
 if(length(level_1) > 0){

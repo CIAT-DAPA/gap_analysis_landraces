@@ -72,41 +72,27 @@ classification_fun <- function(df = all_data3,
   cat(">>> Creating data partitions ...\n")
   inTrain    <- createDataPartition(y = df[,1], p = 0.7, list = FALSE)
   training   <- df[inTrain,]
-  if(sampling_mthd == "down"){
-    
-    set.seed(1234)
-    training <- caret::downSample(x = training[,-1],
-                                  y = training[,1])
-    training <- data.frame(Y = training$Class, training[,-which(colnames(training) == "Class")])
-    
-  } else {
-    if(sampling_mthd == "up"){
-      
-      set.seed(1234)
-      training <- caret::upSample(x = training[,-1],
-                                  y = training[,1])
-      training <- data.frame(Y = training$Class, training[,-which(colnames(training) == "Class")])
-      
-    } else {
-      if(sampling_mthd == "none"){
-        
-        training <- training
-        
-      }
-    }
-  }
   testing    <- df[-inTrain,]
   
-#  training$Panicle.compactness.and.shape <- factor(training$Panicle.compactness.and.shape)
-#  testing$Panicle.compactness.and.shape <-  factor(testing$Panicle.compactness.and.shape)
-  
   cat(">>> Setting training parameters ...\n")
-  control_prmt <- trainControl(method          = "LGOCV",
-                               p               = 0.7,
-                               number          = 10,
-                               # index           = createResample(training$y, 10),
-                               savePredictions = "final",
-                               verboseIter     = T)
+  if(sampling_mthd %in% c("down","up")){
+    
+    control_prmt <- trainControl(method          = "LGOCV",
+                                 p               = 0.7,
+                                 number          = 10,
+                                 savePredictions = "final",
+                                 verboseIter     = T,
+                                 sampling        = sampling_mthd)
+    
+  } else {
+    
+    control_prmt <- trainControl(method          = "LGOCV",
+                                 p               = 0.7,
+                                 number          = 10,
+                                 savePredictions = "final",
+                                 verboseIter     = T)
+    
+  }
   
   cat(">>> Fitting 5 models: random forest, SVM, knn, FDA, avNNet ...\n")
   model_list <- caretEnsemble::caretList(
@@ -187,5 +173,6 @@ classification_fun <- function(df = all_data3,
   results$PCA_plot <- plt
   
   return(results)
-  pacman::p_unload( mltools, ISLR,  caretEnsemble, ranger, ModelMetrics, rminer)  
+  pacman::p_unload( mltools, ISLR,  caretEnsemble, ranger, ModelMetrics, rminer)
+  
 }
