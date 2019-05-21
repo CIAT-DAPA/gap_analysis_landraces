@@ -13,24 +13,7 @@ ecogeo_clustering <- function(n.sample = 10000, var_names,k.clust = 11){
   # Analysis region: "americas", "world"
   
   
-  cat(
-    "   oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo       
-    N`                                                                                  `N       
-    N`                                                                                  `N       
-    N`                                                                                  `N       
-    N`                 `..`               `.....`        `..`         `...              `N       
-    N`                 omMh-            -sdddmddd/      `oMNd/       .sNNd.             `N       
-    N`                /mooms.         `omh:`   .-.      `sNyhd:     `omsdm-             `N       
-    N`               -dy.`sN+`        /mh-              `sNo:dh-   `+mo-dm-             `N       
-    N`              `yd-  `hm:        +ms`              `sN+ /mh. `/ms`-dm-             `N       
-    N`              sNmddddmMh-       /my-              `sN+ `+Ns`:dy` -dm-             `N       
-    N`             /my:-----sNs.      `sNy:`   `-.      `sN+  .sNhdh.  -dm-             `N       
-    N`            -dd-      `yN+`      `/yddddddh/      `om+   .yMd-   .dd.             `N       
-    N`            `.`        `..          `.....`        `.`    `..     ..              `N       
-    N`                                                                                  `N       
-    N`                                                                                  `N       
-    N++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++N       
-    \n \n" )
+  
   cat("Importing SDM raster \n   \n \n")
 
   SDM <- raster(paste0(model_outDir, "/",occName,"_prj_median.tif ")) 

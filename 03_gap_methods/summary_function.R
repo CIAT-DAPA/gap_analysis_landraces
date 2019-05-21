@@ -6,24 +6,7 @@ summary_function <- function(area, group, crop, lvl, pnt, filename, radius,baseD
  
   cat("Importing packages...", "\n")
 
-  cat(
-    "        oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo       
-    N`                                                                                  `N       
-    N`                                                                                  `N       
-    N`                                                                                  `N       
-    N`                 `..`               `.....`        `..`         `...              `N       
-    N`                 omMh-            -sdddmddd/      `oMNd/       .sNNd.             `N       
-    N`                /mooms.         `omh:`   .-.      `sNyhd:     `omsdm-             `N       
-    N`               -dy.`sN+`        /mh-              `sNo:dh-   `+mo-dm-             `N       
-    N`              `yd-  `hm:        +ms`              `sN+ /mh. `/ms`-dm-             `N       
-    N`              sNmddddmMh-       /my-              `sN+ `+Ns`:dy` -dm-             `N       
-    N`             /my:-----sNs.      `sNy:`   `-.      `sN+  .sNhdh.  -dm-             `N       
-    N`            -dd-      `yN+`      `/yddddddh/      `om+   .yMd-   .dd.             `N       
-    N`            `.`        `..          `.....`        `.`    `..     ..              `N       
-    N`                                                                                  `N       
-    N`                                                                                  `N       
-    N++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++N       
-    \n \n")
+  
 
 #CALCULATE ALL METRICS FOR GAP_SCORES IN EACH PNT
 cat(">>>Calculating performance measure for all radius \n \n ")

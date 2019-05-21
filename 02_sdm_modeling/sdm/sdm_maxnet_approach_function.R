@@ -35,24 +35,7 @@ sdm_maxnet_approach_function <- function(occName      = occName,
                                   validation   = FALSE){
   
   
-  cat(
-    "   oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo       
-    N`                                                                                  `N       
-    N`                                                                                  `N       
-    N`                                                                                  `N       
-    N`                 `..`               `.....`        `..`         `...              `N       
-    N`                 omMh-            -sdddmddd/      `oMNd/       .sNNd.             `N       
-    N`                /mooms.         `omh:`   .-.      `sNyhd:     `omsdm-             `N       
-    N`               -dy.`sN+`        /mh-              `sNo:dh-   `+mo-dm-             `N       
-    N`              `yd-  `hm:        +ms`              `sN+ /mh. `/ms`-dm-             `N       
-    N`              sNmddddmMh-       /my-              `sN+ `+Ns`:dy` -dm-             `N       
-    N`             /my:-----sNs.      `sNy:`   `-.      `sN+  .sNhdh.  -dm-             `N       
-    N`            -dd-      `yN+`      `/yddddddh/      `om+   .yMd-   .dd.             `N       
-    N`            `.`        `..          `.....`        `.`    `..     ..              `N       
-    N`                                                                                  `N       
-    N`                                                                                  `N       
-    N++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++N       
-    \n \n" )
+  
   
   cat("Initializing MAXNET model fitting throught cross validation. \n ")
   

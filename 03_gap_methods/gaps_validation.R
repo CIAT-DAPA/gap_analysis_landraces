@@ -4,24 +4,7 @@
 
 validation_metrics <- function(n.sample = 100, bf_rad = 50, baseDir, area, group, crop, lvl, pnt = NULL, ncores = NULL, dens.level = "high_density" ,filename ){
   
-  cat(
-    "    oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo       
-    N`                                                                                  `N       
-    N`                                                                                  `N       
-    N`                                                                                  `N       
-    N`                 `..`               `.....`        `..`         `...              `N       
-    N`                 omMh-            -sdddmddd/      `oMNd/       .sNNd.             `N       
-    N`                /mooms.         `omh:`   .-.      `sNyhd:     `omsdm-             `N       
-    N`               -dy.`sN+`        /mh-              `sNo:dh-   `+mo-dm-             `N       
-    N`              `yd-  `hm:        +ms`              `sN+ /mh. `/ms`-dm-             `N       
-    N`              sNmddddmMh-       /my-              `sN+ `+Ns`:dy` -dm-             `N       
-    N`             /my:-----sNs.      `sNy:`   `-.      `sN+  .sNhdh.  -dm-             `N       
-    N`            -dd-      `yN+`      `/yddddddh/      `om+   .yMd-   .dd.             `N       
-    N`            `.`        `..          `.....`        `.`    `..     ..              `N       
-    N`                                                                                  `N       
-    N`                                                                                  `N       
-    N++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++N       
-    \n \n")
+  
   
   if(is.null(pnt)){stop("You should set a value for pnt. E.j ('pnt1' or 'pnt2'... )")}
   if(bf_rad >= 101){stop("Buffer radius must be less than 100 km")}
