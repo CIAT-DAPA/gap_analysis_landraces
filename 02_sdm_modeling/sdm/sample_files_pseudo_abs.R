@@ -89,7 +89,12 @@ pseudoAbsences2 <- function(xy, background, exclusion.buffer = 0.0166, tms = 10,
   a         <- sp::over(sp.coords, spol)
   abs.bg    <- coords[which(is.na(a)), 1:2]
   set.seed(1234)
-  aa <- abs.bg[sample(1:nrow(abs.bg), size = tms * nrow(xy)),]
+  if(nrow(abs.bg) >  tms * nrow(xy)){
+   aa <- abs.bg[sample(1:nrow(abs.bg), size = nrow(abs.bg)),]
+  }else{
+   aa <- abs.bg[sample(1:nrow(abs.bg), size = tms * nrow(xy)),]
+  }
+  
   colnames(aa) <- c("Longitude", "Latitude")
   aa$Status <- 0
   xy$Status <- 1
