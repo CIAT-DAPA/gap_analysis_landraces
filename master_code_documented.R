@@ -84,7 +84,8 @@ var_names   <- model_driver(sp_Dir      = sp_Dir,
                             all         = F,
                             overwrite   = T,
                             clsModel    = "ensemble",
-                            correlation = 3 # 1. Correlation, 2. VIF, 3. PCA + VIF
+                            correlation = 3, # 1. Correlation, 2. VIF, 3. PCA + VIF
+                            pa_method = "ecoreg"
                             )
 # Output file: ./results/african_maize/lvl_1/3/africa/sdm_variables_selected.csv (Selected variables to do SDM)
 # Output file: ./results/african_maize/lvl_1/3/africa/input_data/pseudo_abs_file_3.csv (Pseudo-absences created)
