@@ -6,10 +6,10 @@
 ##    Just to compare a traditional georreferenciation method and a new one.
 ## 3) Geocode: There are two packages which use geocode services based on Google Maps API: dismo and ggmap.
 ##    Dismo allows to calculate the incertainty of the results
-## NOTE: The most accurate and used is GEOLocate (https://www.geo-locate.org/web/default.html)
+## NOTE: The most accurate and used is GEOLocate (https://www.geo-locate.org/web/default.html) 
 #####################################################################################
 
-## By: María Victoria Diaz L.
+## By: MarÃ­a Victoria Diaz L.
 ## CIAT (2019)
 
 ################################################## GEOLocate #########################################################################
