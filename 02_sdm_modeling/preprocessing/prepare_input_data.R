@@ -33,10 +33,10 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
     status <- data %>% dplyr::select(., matches("status", ignore.case = T))  
   }else{status <- NULL}
    
-  #select only the response variable and lat / long
+  #select only the response variable and lat / long and create an ID column
   data <- data %>% dplyr::select(., as.integer(col_number), 
                              matches("declat|latitude", ignore.case = T), 
-                             matches("declon|longitude", ignore.case = T) ) 
+                             matches("declon|longitude", ignore.case = T) )
   if(ncol(data) > 3){
     stop("Data base has more than 1 lat/long variable")
   }
@@ -49,7 +49,9 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
   
   cat("Cleaning zero lat/lon \n")
   
-  data <- data %>% dplyr::filter(., Latitude != 0 | Longitude != 0) %>% 
+  data <- data %>% 
+    dplyr::mutate(ID = 1:nrow(.)) %>%
+    dplyr::filter(., Latitude != 0 | Longitude != 0) %>% 
     dplyr::filter(., !is.na(Latitude) | !is.na(Longitude))
   
   cat("Removing coordinates on Oceans/Seas \n")
@@ -60,7 +62,11 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
   unq <- unique(data[, 2:3])
   apply(unq, 1, function(i){
     i <- as.numeric(i)
-    counts <- data%>% dplyr::filter(., !is.na(Y)) %>% dplyr::filter(., Latitude == i[1] & Longitude == i[2] ) %>% dplyr::select(., Y) %>% table()
+    counts <- data %>% 
+      dplyr::filter(., !is.na(Y)) %>% 
+        dplyr::filter(., Latitude == i[1] & Longitude == i[2] ) %>% 
+          dplyr::select(., Y) %>% table()
+    
     if(sum(counts) > 1){
      lab <-   names(which.max(counts))
      data[which(!is.na(data$Y) & data$Latitude == i[1] & data$Longitude == i[2]), "Y"] <<- lab
@@ -85,23 +91,29 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
   current_clim_layer_sp      <- lapply(sp_rasts, raster)
   current_clim_layer         <- stack(c(current_clim_layer_generic, current_clim_layer_sp))
   
-  sp_data <- SpatialPoints(data[, c("Longitude", "Latitude")], crs(msk))
-  clim_table <- raster::extract(current_clim_layer, sp_data)
   
-  full_data <- data.frame(data, clim_table) 
+  clim_table <-  SpatialPoints(data[, c("Longitude", "Latitude")], crs(msk)) %>% 
+      raster::extract(current_clim_layer, .)
+  
+  full_data <- data %>% 
+      dplyr::select(-ID) %>% 
+        data.frame(., clim_table) 
+  
   full_data <- full_data[complete.cases(full_data[, c(-1, -2, -3)]), ]
   full_data <- droplevels(full_data)
   
   
-  sp_data2 <- SpatialPoints(original_data[, c("Longitude", "Latitude")], crs(msk))
-  clim_table2 <- raster::extract(current_clim_layer, sp_data2)
+  clim_table2 <- SpatialPoints(original_data[, c("Longitude", "Latitude")], crs(msk)) %>% 
+    raster::extract(current_clim_layer, .)
   
-  full_data2 <- data.frame(original_data, clim_table2) 
+  full_data2 <- original_data %>%
+        data.frame(., clim_table2) 
+  
   full_data2 <- full_data2[complete.cases(full_data2[, c(-1, -2, -3)]), ]
   full_data2 <- droplevels(full_data2)
   
-  rows_id <- as.numeric(row.names(full_data2))
-  
+  rows_id <- full_data2$ID
+  full_data2$ID <- NULL 
   
   if(do.ensemble.models){
     cat("fitting an ensemble model using selected varaibles \n")
