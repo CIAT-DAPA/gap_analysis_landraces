@@ -89,7 +89,12 @@ pseudoAbsences2 <- function(xy, background, exclusion.buffer = 0.0166, tms = 10,
   a         <- sp::over(sp.coords, spol)
   abs.bg    <- coords[which(is.na(a)), 1:2]
   set.seed(1234)
-  aa <- abs.bg[sample(1:nrow(abs.bg), size = tms * nrow(xy)),]
+  if(nrow(abs.bg) >  tms * nrow(xy)){
+   aa <- abs.bg[sample(1:nrow(abs.bg), size = tms * nrow(xy)),]
+  }else{
+   aa <- abs.bg
+  }
+  
   colnames(aa) <- c("Longitude", "Latitude")
   aa$Status <- 0
   xy$Status <- 1
@@ -177,7 +182,7 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
       climLayers <- raster::crop(current_clim_layer, elu)
       climLayers <- raster::mask(climLayers, elu)
       #Remove variables that are causing problems
-      climLayers <- climLayers[[ !grepl(paste0(tolower(c("Yield", "Production", "Harvested")), collapse = "|"), tolower(names(climLayers))) ]] 
+      climLayers <- climLayers[[ -grep(paste0(tolower(c("Yield", "Production", "Harvested")), collapse = "|"), tolower(names(climLayers))) ]] 
       
       unsuit_bg <- OCSVMprofiling2(xy = unique(spData[,c("Longitude","Latitude")]), varstack = climLayers)
       random_bg <- pseudoAbsences2(xy = unique(spData[,c("Longitude","Latitude")]), background = unsuit_bg$Absences, exclusion.buffer = 0.083*5, tms = 10, coord.sys = crs(current_clim_layer))
@@ -196,7 +201,7 @@ samples_create <- function(occFile, occName, backDir, occDir, swdDir, mask, clim
       
       climLayers <- current_clim_layer
       #Remove variables that are causing problems
-      climLayers <- climLayers[[ !grepl(paste0(tolower(c("Yield", "Production", "Harvested")), collapse = "|"), tolower(names(climLayers))) ]] 
+      climLayers <- climLayers[[ -grep(paste0(tolower(c("Yield", "Production", "Harvested")), collapse = "|"), tolower(names(climLayers))) ]] 
       
       unsuit_bg <- OCSVMprofiling2(xy = unique(spData[,c("Longitude","Latitude")]), varstack = climLayers)
       random_bg <- pseudoAbsences2(xy = unique(spData[,c("Longitude","Latitude")]), background = unsuit_bg$Absences, exclusion.buffer = 0.083*5, tms = 10, coord.sys = crs(current_clim_layer))
