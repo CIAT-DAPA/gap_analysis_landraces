@@ -73,13 +73,6 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
     }
   })
   
-  cat("Removing duplicated coordinates \n")
-  rep <- which(duplicated( raster::extract(msk, data[ , c("Longitude", "Latitude")], cellnumbers = TRUE)  ))
-  nas <- which(is.na(data$Y))
-  pos <- setdiff(rep, nas)
-  if(length(rep) != 0){
-    data  <- data[-pos, ]
-  }
   
   #loading all input rasters
   generic_rasts <- list.files(paste0(baseDir, "/input_data/generic_rasters/", region), pattern = ".tif$", full.names = TRUE)
@@ -119,6 +112,11 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
     cat("fitting an ensemble model using selected varaibles \n")
     to_train   <- full_data[which(!is.na(full_data$Y)),]
     
+    cat("Removing duplicated coordinates \n")
+    rep <- which(duplicated( raster::extract(msk, to_train[ , c("Longitude", "Latitude")], cellnumbers = TRUE)  ))
+    if(length(rep) != 0){
+      to_train  <- to_train[-rep, ]
+    }
     
     #control whether to use latitude or longitude to models training 
         if(!add.latitude){
