@@ -3,7 +3,18 @@
 # CIAT, March 2018
 
 # R options
+
 g <- gc(reset = T); rm(list = ls()); options(warn = -1); options(scipen = 999)
+
+#####################################
+##### LOADING PACKAGES ##############
+#####################################
+
+suppressMessages(if(!require(pacman)){install.packages("pacman");library(pacman)}else{library(pacman)})
+pacman::p_load(tcltk, adehabitatHR,   raster, rgdal, doSNOW, sdm, dismo,  rgeos, distances,   sp, 
+               tidyverse, rlang, sf, gdistance, caret, earth, fastcluster, xlsx,  FactoMineR, deldir,
+               parallelDist, bindrcpp, foreach, doParallel,  pROC, maxnet)
+
 
 # Base directory
 OSys <- Sys.info()[1]
@@ -16,14 +27,14 @@ rm(OSys)
 srcDir <- paste(baseDir, "/scripts", sep = "") # Software directory
 region <- "americas"                           # Region: "americas", "world"
 
-source(paste0(srcDir, "/02_sdm_modeling/preprocessing/config_crop.R")) # Configuring crop directories
+source(paste0(srcDir, "/00_config/config_crop.R")) # Configuring crop directories
 
 # Define crop, analysis level and creating needed directories
 crop <- "common_bean"
 level_1 <-  c("andean", "mesoamerican")#c("ceusa", "cobra", "hiand", "himex", "lomam", "wemex") # level 1: genepool
 level   <- "lvl_1"
 occName <- level_1[2] # Level 1: "andean", "mesoamerican"
-source(paste(srcDir, "/02_sdm_modeling/preprocessing/config.R", sep = ""))
+source(paste(srcDir, "00_config/config.R", sep = ""))
 # config_crop_dirs(baseDir, crop, level_1, level_2, level_3)
 
 #crop all raster using region mask extent (OPTIONAL)

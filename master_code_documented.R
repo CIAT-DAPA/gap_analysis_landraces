@@ -5,6 +5,17 @@
 # R options
 g <- gc(reset = T); rm(list = ls()); options(warn = -1); options(scipen = 999)
 
+#####################################
+##### LOADING PACKAGES ##############
+#####################################
+
+suppressMessages(if(!require(pacman)){install.packages("pacman");library(pacman)}else{library(pacman)})
+pacman::p_load(tcltk, adehabitatHR,   raster, rgdal, doSNOW, sdm, dismo,  rgeos, distances,   sp, 
+               tidyverse, rlang, sf, gdistance, caret, earth, fastcluster, xlsx,  FactoMineR, deldir,
+               parallelDist, bindrcpp, foreach, doParallel,  pROC, maxnet)
+
+
+
 # Define base directory, according with your operative system
 OSys <- Sys.info()[1]
 baseDir   <- switch(OSys,
@@ -19,7 +30,7 @@ srcDir <- paste(baseDir, "/scripts", sep = "")
 region <- "africa"
 
 # Configuring crop directories
-source(paste0(srcDir, "/02_sdm_modeling/preprocessing/config_crop.R"))
+source(paste0(srcDir, "/00_config/config_crop.R"))
 
 # Define crop
 crop <- "african_maize"
@@ -30,7 +41,7 @@ level   <- "lvl_1"
 occName <- level_1[1]
 
 # Load all packages and functions needed to develop the analysis
-source(paste(srcDir, "/02_sdm_modeling/preprocessing/config.R", sep = ""))
+source(paste(srcDir, "/00_config/config.R", sep = ""))
 # Loading the library to prepare the input data for the SDM
 library(usdm)
 

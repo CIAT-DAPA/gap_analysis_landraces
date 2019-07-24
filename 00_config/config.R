@@ -1,50 +1,23 @@
-# Load libraries
-cat("Loading R packages\n")
-suppressMessages(if(!require(pacman)){install.packages("pacman");library(pacman)}else{library(pacman)})
-pacman::p_load(tcltk, adehabitatHR,  
-               raster, rgdal, doSNOW, sdm,
-               dismo,  rgeos, distances,   sp, 
-               tidyverse, rlang, sf, gdistance, caret, earth, 
-               fastcluster, xlsx,  FactoMineR, deldir,
-               parallelDist, bindrcpp, foreach, doParallel,  pROC, maxnet)
-
-#, wordspace
-#matrixStats,
-#rmapshaper,
-# ff,
-# rJava,
-# data.table,
-#, SDMTools
-#, usdm
-#,KernSmooth
-#, spatstat
-#, plsdepot
-#, GISTools
-#, psych
-#, gtools
-#, tm
-#, mda
-# maptools,
 
 # Source functions
 cat("Loading R scripts\n")
 source(paste0(srcDir, "/01_classification/classification_function.R"))
-source(paste0(srcDir, "/02_sdm_modeling/preprocessing/crop_raster.R"))
-source(paste0(srcDir, "/02_sdm_modeling/preprocessing/cost_distance_function.R"))
-source(paste0(srcDir, "/02_sdm_modeling/preprocessing/create_occ_shp.R"))
-source(paste0(srcDir, "/02_sdm_modeling/preprocessing/prepare_input_data.R"))
-source(paste0(srcDir, "/02_sdm_modeling/sdm/sample_files_pseudo_abs.R"))
-source(paste0(srcDir, "/02_sdm_modeling/sdm/model_driver.R"))
-source(paste0(srcDir, "/02_sdm_modeling/sdm/null_model.R"))
-source(paste0(srcDir, "/02_sdm_modeling/sdm/calibration_function.R"))
-source(paste0(srcDir, "/02_sdm_modeling/sdm/evaluation_function.R"))
-source(paste0(srcDir, "/02_sdm_modeling/sdm/create_buffers.R"))
-source(paste0(srcDir, "/02_sdm_modeling/sdm/sdm_approach_function.R"))
-source(paste0(srcDir, "/02_sdm_modeling/sdm/sdm_maxnet_approach_function.R"))
-source(paste0(srcDir, "/02_sdm_modeling/sdm/do_projections.R"))
-source(paste0(srcDir, "/02_sdm_modeling/sdm/projecting_function.R"))
-source(paste0(srcDir, "/02_sdm_modeling/miscellanous/kernel_function.R"))
-source(paste0(srcDir, "/02_sdm_modeling/miscellanous/kernel_indicator.R"))
+source(paste0(srcDir, "/01_classification/crop_raster.R"))
+source(paste0(srcDir, "/01_classification/create_occ_shp.R"))
+source(paste0(srcDir, "/01_classification/prepare_input_data.R"))
+source(paste0(srcDir, "/02_sdm_modeling/sample_files_pseudo_abs.R"))
+source(paste0(srcDir, "/02_sdm_modeling/model_driver.R"))
+source(paste0(srcDir, "/02_sdm_modeling/null_model.R"))
+source(paste0(srcDir, "/02_sdm_modeling/calibration_function.R"))
+source(paste0(srcDir, "/02_sdm_modeling/evaluation_function.R"))
+source(paste0(srcDir, "/02_sdm_modeling/create_buffers.R"))
+source(paste0(srcDir, "/02_sdm_modeling/sdm_approach_function.R"))
+source(paste0(srcDir, "/02_sdm_modeling/sdm_maxnet_approach_function.R"))
+source(paste0(srcDir, "/02_sdm_modeling/do_projections.R"))
+source(paste0(srcDir, "/02_sdm_modeling/projecting_function.R"))
+#source(paste0(srcDir, "/02_sdm_modeling/miscellanous/kernel_indicator.R")) --- removed
+source(paste0(srcDir, "/03_gap_methods/kernel_function.R"))
+source(paste0(srcDir, "/03_gap_methods/cost_distance_function.R"))
 source(paste0(srcDir, "/03_gap_methods/ecogeo_cluster.R"))
 source(paste0(srcDir, "/03_gap_methods/env_distance.R"))
 source(paste0(srcDir, "/03_gap_methods/combine_score.R"))
