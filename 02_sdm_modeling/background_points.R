@@ -113,7 +113,7 @@ pseudoAbsences_generator <- function(file_path, clsModel, overwrite = F, correla
   
   cat("Loading raster files","\n")
   current_clim_layer_generic <- lapply(list.files(climDir, pattern =  ".tif$", full.names = T), raster)
-  current_clim_layer_sp      <- lapply(list.files(paste0(baseDir, "/input_data/by_crop/", crop, "/raster/", region), pattern = ".tif$", full.names = F), raster)
+  current_clim_layer_sp      <- lapply(list.files(paste0(baseDir, "/input_data/by_crop/", crop, "/raster/", region), pattern = ".tif$", full.names = T), raster)
   current_clim_layer         <- stack(c(current_clim_layer_generic, current_clim_layer_sp))
   
   # Background samples file name

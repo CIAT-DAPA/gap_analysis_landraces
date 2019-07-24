@@ -1,5 +1,5 @@
 # Maxent implementation using maxnet R package
-# H. Achicanoy
+# Andres Camilo Mendez and H. Achicanoy
 # CIAT, 2018
 
 # Old function
