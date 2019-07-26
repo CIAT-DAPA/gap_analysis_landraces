@@ -26,7 +26,6 @@ sdm_maxnet_approach_function <- function(occName      = occName,
                                   var_names    = var_names,
                                   model_outDir = model_outDir,
                                   sp_Dir        = spDir,
-                                  clim_layer   = clim_layer,
                                   nFolds       = 5,
                                   beta         = beta,
                                   feat         = feat,
@@ -35,7 +34,17 @@ sdm_maxnet_approach_function <- function(occName      = occName,
                                   validation   = FALSE){
   
   
-  
+  cat("Loading environmental raster files \n")
+  clim_vars     <- paste0(var_names, ".tif") %in% list.files(climDir, pattern = ".tif$") 
+  generic_vars  <- paste0(var_names, ".tif") %in% list.files(clim_spReg, pattern = ".tif$")
+  clim_layer    <- lapply(paste0(climDir, "/", var_names[clim_vars], ".tif"), raster)
+  if(any(generic_vars)){
+    generic_layer <- lapply(paste0(clim_spReg,"/", var_names[generic_vars],".tif"), raster)
+    clim_layer  <- raster::stack(c(clim_layer, generic_layer))
+  }else{
+    clim_layer  <- raster::stack(clim_layer)
+  }
+ 
   
   cat("Initializing MAXNET model fitting throught cross validation. \n ")
   

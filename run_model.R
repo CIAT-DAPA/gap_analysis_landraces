@@ -25,15 +25,15 @@ baseDir   <- switch(OSys,
 rm(OSys)
 
 srcDir <- paste(baseDir, "/scripts", sep = "") # Software directory
-region <- "americas"                           # Region: "americas", "world"
+region <- "rice_custom"                         # Region: "americas", "world"
 
 source(paste0(srcDir, "/00_config/config_crop.R")) # Configuring crop directories
 
 # Define crop, analysis level and creating needed directories
-crop <- "common_bean"
-level_1 <-  c("andean", "mesoamerican")#c("ceusa", "cobra", "hiand", "himex", "lomam", "wemex") # level 1: genepool
+crop <- "rice_asia"
+level_1 <-  c("japonica", "indica", "aus", "aromatic")#c("ceusa", "cobra", "hiand", "himex", "lomam", "wemex") # level 1: genepool
 level   <- "lvl_1"
-occName <- level_1[2] # Level 1: "andean", "mesoamerican"
+occName <- level_1[1] # Level 1: "andean", "mesoamerican"
 source(paste(srcDir, "00_config/config.R", sep = ""))
 # config_crop_dirs(baseDir, crop, level_1, level_2, level_3)
 

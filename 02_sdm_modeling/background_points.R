@@ -284,7 +284,7 @@ pseudoAbsences_generator <- function(file_path, clsModel, overwrite = F, correla
     write.csv(x = var_names, file = paste0(sp_Dir, "/sdm_variables_selected.csv"), row.names = F)
   } else {
     
-    cat("Already processed\n")
+    cat("PseudoAbsence file already created, importing it...\n")
     swdSample <- read.csv(outSWDName, header = T)
     
   }

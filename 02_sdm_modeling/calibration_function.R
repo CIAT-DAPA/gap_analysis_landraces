@@ -94,20 +94,22 @@ if(use.maxnet){
 ####Calibration function using wright et al., 2014 approach###
 ###############################################################################################
 
-Calibration_function <- function(spData, save, sp_Dir, ommit, use.maxnet = TRUE){
+Calibration_function <- function(spData, sp_Dir, ommit, use.maxnet = TRUE){
   cat("Initializing calibration step \n")
   #suppressMessages(if(!require(pacman)){install.packages("pacman");library(pacman)}else{library(pacman)})
   pacman::p_load(devtools, maxnet)
-  if(!require(enmSdm)){
-    devtools::install_github('adamlilith/omnibus')
-    devtools::install_github('adamlilith/enmSdm')
-    library(omnibus)
-    library(enmSdm)
-  } else {
-    library(omnibus)
-    library(enmSdm)
-    require(maxnet)
-  }
+  # if(!require(enmSdm)){
+  #   devtools::install_github('adamlilith/omnibus')
+  #   devtools::install_github('adamlilith/statisfactory')
+  #   devtools::install_github('adamlilith/enmSdm')
+  #   library(omnibus)
+  #   library(enmSdm)
+  # } else {
+  #   library(omnibus)
+  #   library(statisfactory)
+  #   library(enmSdm)
+  #   require(maxnet)
+  # }
   
   if(ommit == F){
     spData <- spData[complete.cases(spData),]
@@ -134,41 +136,55 @@ Calibration_function <- function(spData, save, sp_Dir, ommit, use.maxnet = TRUE)
         data <- rbind(data_train[, -c(1,2,3)], pres_to_bg[, -c(1,2,3)])#adding all presence points to background
         
         data <- data.frame(occName = p, data)
+        if(!file.exists(paste0(sp_Dir, "/calibration.csv"))){
+          calibration <- trainMaxNet(data = data, regMult = seq(0.5, 6, 0.5), out = 'tuning', verbose = FALSE)
+          write.csv(calibration, paste0(sp_Dir, "/calibration.csv"), quote = F, row.names = F)
+        }else{
+          cat("Calibration File already created, importing it \n")
+          calibration <- read.csv(paste0(sp_Dir, "/calibration.csv"))
+        }
         
-        calibration <- enmSdm::trainMaxNet(data = data, regMult = seq(0.5, 6, 0.5), out = 'tuning', verbose = FALSE)
+       
         
       }else{
         #use maxent
         cat("Calculating best parameters for maxent \n")
-        calibration <- enmSdm::trainMaxEnt(data = spData[,c(1,4:ncol(spData))], regMult = seq(0.5, 6, 0.5), out = 'tuning', verbose = FALSE, jackknife = F)
-        
+        if(!file.exists(paste0(sp_Dir, "/calibration.csv"))){
+        calibration <- trainMaxEnt(data = spData[,c(1,4:ncol(spData))], regMult = seq(0.5, 6, 0.5), out = 'tuning', verbose = FALSE, jackknife = F)
+        write.csv(calibration, paste0(sp_Dir, "/calibration.csv"), quote = F, row.names = F)
+        }else{
+          cat("Calibration File already created, importing it \n")
+          calibration <- read.csv(paste0(sp_Dir, "/calibration.csv"))
+        }
       }
       
       },
     error = function(e){
-      cat("Calibration process failed:","\n")
+      cat("Calibration process failed \n")
+      
       return("Done\n")  
     })
     
     # Testing if the calibration was made
     if(exists("calibration")){
       calibration <- calibration
+      feat <- CreateMXArgs(calibration, use.maxnet)
+      beta <- feat[(grepl("betamultiplier=", feat))]
+      beta <- as.numeric(gsub("betamultiplier=", "", beta))
+      feat <- feat[(!grepl("betamultiplier=", feat))]
     }else{
-      cat("The calibration was not successful. Using default parametr using Default options","\n")
-      calibration <- NULL
+      cat("The calibration process was unsuccessful. Setting default parameters","\n")
+      beta <- 1
+      feat <- c("linear", "quadratic", "hinge", "product")
     }
     
-    if(save == T){
-      # Saving the calibration file
-      write.csv(calibration, paste0(sp_Dir, "/calibration.csv"), quote = F, row.names = F)
-    } else {
-      cat("Not file to save","\n")
-    }
   } else {
     cat("Ommiting calibration step\n")
     calibration <- NULL
   }
-  args <- CreateMXArgs(calibration, use.maxnet)
-  return(args)
+  
+  
+  
+  return(list(features = feat, beta = beta))
   cat("Process done... \n")
 }
