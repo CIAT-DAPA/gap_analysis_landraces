@@ -111,8 +111,17 @@ calc_env_score <- function(lv_name, clus_method = "hclust_mahalanobis", sdm_dir,
     #1 is more likely there is a gap, 0 is less likely there is a gap
     rs_euc_norm <- rs_euc / max(rs_euc[],na.rm=T)
     
+    SDM <- raster(paste(sdm_dir,"/prj_models/",lv_name,"_prj_median.tif",sep="")) 
+    
+    rs_euc_norm <- raster::mask(rs_euc_norm, SDM)
+    #idenfy outliers using IQR 
+    qls <- raster::quantile(rs_euc_norm, na.rm = T)
+    up_limit <- qls[4] + (1.5* (qls[4] - qls[2]))
+    rs_euc_norm <- rs_euc_norm/up_limit
+    rs_euc_norm[which(rs_euc_norm[] > 1 )] <- 1
+    
     #write output
-    writeRaster(rs_euc, paste(out_dir,"/euclidean_dist_",clus_method,".tif",sep=""),format="GTiff", overwrite = TRUE)
+    #writeRaster(rs_euc, paste(out_dir,"/euclidean_dist_",clus_method,".tif",sep=""),format="GTiff", overwrite = TRUE)
     writeRaster(rs_euc_norm, paste(out_dir,"/env_score_",clus_method,".tif",sep=""),format="GTiff", overwrite = TRUE)
     #return rasters
     #return(rs_euc_norm)

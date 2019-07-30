@@ -42,6 +42,18 @@ cost_dist_function <-  function( outDir, friction, mask, occDir, arcgis = FALSE,
     
     cost_dist <- accCost(t, Occ) 
     cost_dist[which(cost_dist[] == Inf)] <- NA
+    
+    #Normalize cost distance rater to be in 0-1 scale
+    
+    #mask cost distance raster with SDM raster
+    sdm <- raster(paste0(model_outDir, "/", occName, "_prj_median.tif"))
+    cost_dist <- raster::mask(cost_dist, sdm)
+    #idenfy outliers using IQR 
+    qls <- raster::quantile(cost_dist, na.rm = T)
+    up_limit <- qls[4] + (1.5* (qls[4] - qls[2]))
+    cost_dist <- cost_dist/up_limit
+    cost_dist[which(cost_dist[] > 1 )] <- 1
+    
     rm(t); gc() 
     
   }

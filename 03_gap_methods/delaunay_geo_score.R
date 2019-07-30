@@ -285,7 +285,7 @@ calc_delaunay_score <- function(baseDir, area, group, crop, lvl, ncores = NULL, 
   ### merge everything
   cat("Calculating gap score \n \n ")
   
-  cat("+++ Merging raster (This process will take several minutes. Be patient) \n \n")
+  cat("+++ Merging rasters \n \n")
   
   out_dela_score <- do.call(merge, delaDist_list)
 
@@ -323,7 +323,7 @@ calc_delaunay_score <- function(baseDir, area, group, crop, lvl, ncores = NULL, 
   vertex <- SpatialPoints(data.frame(x = vertex[,1], y = vertex[,2]), proj4string = coord_sys)
   
   out <- raster::mask(x = SDM, mask = dela_bound, inverse = T)
-  rm(SDM);gc()
+ 
   
   out2 <- out
   out2[!is.na(out2[])] <- 1
@@ -339,6 +339,12 @@ calc_delaunay_score <- function(baseDir, area, group, crop, lvl, ncores = NULL, 
   
   gap_score <- merge(dist_out_norm, out_dela_score)
    
+  gap_score <- raster::mask(gap_score, SDM)
+  #idenfy outliers using IQR 
+  qls <- raster::quantile(gap_score, na.rm = T)
+  up_limit <- qls[4] + (1.5* (qls[4] - qls[2]))
+  gap_score <- gap_score/up_limit
+  gap_score[which(gap_score[] > 1 )] <- 1
   
   cat(paste("Writing raster in route:", paste0(outDir, "/delaunay.tif"), "\n \n"))
   writeRaster(gap_score, paste0(outDir, "/delaunay.tif"), format = "GTiff", overwrite = T)
