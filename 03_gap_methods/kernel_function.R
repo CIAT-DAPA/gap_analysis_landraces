@@ -8,15 +8,16 @@
 
 ###############
 
-raster_kernel <- function(mask, occurrences, out_dir, kernel_method, scale){
+raster_kernel <- function(mask, occDir, out_dir, kernel_method, scale){
   
-  cat("Reading mask and occurrences\n")
-  
+
+if(!file.exists(paste0(gap_outDir, "/kernel.tif")) ){
+  cat("Reading mask and occurrences shapefile \n")
   mask <- raster(mask)
   
   ### Reading occurrences 
-  sp::coordinates(occurrences) <- ~lon+lat
-  crs(occurrences) <- crs(mask)
+  
+  occurrences <- shapefile(paste0(occDir, "/Occ.shp"))
   
   #####
   if(kernel_method==1){
@@ -118,12 +119,28 @@ raster_kernel <- function(mask, occurrences, out_dir, kernel_method, scale){
   kernel <- raster::crop(kernel, mask)
   kernel <- kernel * mask
   
+  cat("Creating kernel classes raster.. \n")
+  
+  kernel[kernel[] == 0] <- NA
+  kernel <- kernel * 10000
+  qVal_1 <- raster::quantile(x = kernel[], probs = c(.9, 1), na.rm = T)
+  knl_temp <- kernel
+  knl_temp[which(knl_temp[] <= qVal_1[1])] <- NA
+  qVal_2 <- raster::quantile(x = knl_temp, probs = c(.6, .95), na.rm = TRUE)
+  kernel_class <- raster::reclassify(kernel, c(-Inf,qVal_1[1],1, qVal_1[1],qVal_2[2],2, qVal_2[2],Inf,3))
+  
   ### Saving raster object
-  cat("Saving raster object to be used","\n")
+  cat("Saving raster objects","\n")
   raster::writeRaster(kernel, paste0(out_dir, "/kernel.tif"))
+  raster::writeRaster(kernel_class, paste0(gap_outDir, "/kernel_classes.tif"), format = "GTiff")
   
   return(kernel)
   
+}else{
+  cat("kernel raster is already created... /n")
+  return(NULL)
+}  
+ 
   
   cat("     ","\n")
   cat("DONE!","\n")
