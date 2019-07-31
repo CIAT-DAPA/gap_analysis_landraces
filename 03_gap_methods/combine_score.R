@@ -35,7 +35,7 @@ calc_gap_score <- function(lv_name, clus_method = "hclust_mahalanobis", gap_meth
       geo_score <- occ_access
       geo_score <- mask(geo_score, sdm_prj)
       geo_score[which(is.na(geo_score[]) & !is.na(sdm_prj[]))] <- max(geo_score[],na.rm=T)
-      geo_score <- geo_score / max(geo_score[], na.rm=T)
+      #geo_score <- geo_score / max(geo_score[], na.rm=T)
       
     } else if (gap_method == "kernel") {
       #method kernel, load kernel
