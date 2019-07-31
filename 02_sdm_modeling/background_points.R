@@ -43,7 +43,9 @@ NAFiltered <- function(crop = "potato", occName = "ajanhuiri"){
 # Profiling function
 OCSVMprofiling2 <- function(xy, varstack, nu = 0.5){
   
-  background <- raster::as.data.frame(varstack[[1]], xy = T, na.rm = T)[,1:2]
+  background <- raster::as.data.frame(varstack[[1]], xy = T) %>% 
+    drop_na() %>% 
+    dplyr::select(1:2)
   bioclim    <- varstack
   coo        <- background
   mat        <- cbind(xy, rep(1, nrow(xy)))
