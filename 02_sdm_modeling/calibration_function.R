@@ -160,13 +160,13 @@ Calibration_function <- function(spData, sp_Dir, ommit, use.maxnet = TRUE){
       
       },
     error = function(e){
-      cat("Calibration process failed \n")
+      cat("Calibration process failed", "\n")
       
       return("Done\n")  
     })
     
     # Testing if the calibration was made
-    if(exists("calibration")){
+    if("calibration" %in% ls()){
       calibration <- calibration
       feat <- CreateMXArgs(calibration, use.maxnet)
       beta <- feat[(grepl("betamultiplier=", feat))]
