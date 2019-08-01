@@ -50,33 +50,18 @@ create_occ_shp(file_path   = paste0(gap_valDir, "/buffer_100km/", densities[dens
                file_output = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/01_selected_points","/Occ.shp"),
                validation  = TRUE)
 
-if(!file.exists(paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/03_gap_models/cost_dist.tif"))){
-  cat(">>> Creating cost distance raster ... \n")
-  cost_dist_function(
-    outDir       = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"),
-    friction     = friction,
-    mask         = mask,
-    occDir       = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/01_selected_points"),
-    arcgis       = use.Arcgis,
-    code         = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/01_selected_points/cost_dist.py")
-  )
-}
 
 cat(">>> Load same variables for SDM ... \n")
 vars <- read.csv(paste0(sp_Dir, "/sdm_variables_selected.csv"))
 vars <- as.character(vars$x)
 
 cat(">>> Load calibrated feature parameters for SDM ... \n")
-if(!file.exists(paste0(sp_Dir, "/calibration.csv"))){
-  beta <- 1
-  feat <- "lpqh"
-} else {
-  calibration <- read.csv(paste0(sp_Dir, "/calibration.csv"))
-  feat <- CreateMXArgs(calibration,  use.maxnet = use.maxnet)
-  beta <- feat[(grepl("betamultiplier=", feat))]; beta <- as.numeric(gsub("betamultiplier=", "", beta))
-  feat <- feat[(!grepl("betamultiplier=", feat))]
-  rm(calibration)
-}
+
+params_tunned <- Calibration_function(spData = spData,
+                                      sp_Dir = sp_Dir, 
+                                      ommit = F, 
+                                      use.maxnet = TRUE)
+
 
 occSDM <- read.csv(paste0(sp_Dir_input, "/swd/swd_", occName, ".csv"))
 occSDM <- occSDM[,3:ncol(occSDM)]
@@ -85,21 +70,7 @@ id_sdm   <- raster::extract(x = radius, y = occSDM[occSDM[,1] == 1, c("lon", "la
 sdm_excl <- occSDM[which(id_sdm == 1),]
 occSDM_upt <- occSDM[base::setdiff(1:nrow(occSDM), which(id_sdm == 1)),]; rm(id_sdm, sdm_excl)
 
-clim_vars <-  paste0(var_names, ".tif")  %in% list.files(climDir) 
-generic_vars <- paste0(var_names, ".tif") %in% list.files(clim_spReg)
-clim_layer <- lapply(paste0(climDir, "/", var_names[clim_vars], ".tif"), raster)
 
-if(!any(generic_vars)){
-  clim_layer  <- raster::stack(clim_layer)
-} else {
-  generic_layer <- lapply(paste0(clim_spReg,"/", var_names[generic_vars],".tif"), raster)
-  clim_layer  <- raster::stack(c(clim_layer, generic_layer))
-}
-
-
-
-if(use.maxnet){
-  
   cat("Running sdm modelling approach using Maxnet \n")
   cat("      This process can take several minutes...... Be patient \n \n ")
   if(!file.exists(paste0(paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models/",occName,"_prj_median.tif")))){
@@ -108,104 +79,16 @@ if(use.maxnet){
                                  var_names    = vars,
                                  model_outDir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models"),
                                  sp_Dir       = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models"),
-                                 clim_layer   = clim_layer,
                                  nFolds       = 5,
-                                 beta         = beta,
-                                 feat         = feat,
+                                 beta         = params_tunned$beta,
+                                 feat         = params_tunned$features,
                                  doSDraster   = FALSE,
                                  varImp       = FALSE,
                                  validation   = FALSE)
     
-  }
-  
-}else{
-  
-  cat(">>> Running maxent model approach, evaluate and project ...\n")
-  m2 <- sdm_approach_function(occName = occName,
-                              spData = occSDM_upt,
-                              model_outDir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results"),
-                              var_names = vars,
-                              nCores = 5,
-                              nFolds = 5,
-                              beta = beta,
-                              feat = feat)
-  
-  m2_eval <- evaluation_function(m2,
-                                 eval_sp_Dir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/evaluation"),
-                                 spData = occSDM_upt)
-  model_outDir_rep <- paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models/replicates")
-  
-  if(!file.exists(paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models/", occName, "_prj_median.tif"))){
-    
-    # clim_table <- raster::as.data.frame(clim_layer, xy = T)
-    # clim_table <- clim_table[complete.cases(clim_table),]
-    # model <- .GlobalEnv$projecting_function(m2,
-    #                                         m2_eval,
-    #                                         clim_table,
-    #                                         mask,
-    #                                         model_outDir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models"),
-    #                                         nCores = 5,
-    #                                         obj.size = 3,
-    #                                         s.dev = FALSE)
-    # rm(clim_table); g <- gc(); rm(g)
-    # 
-    # 
-    
-    svPth <- paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models")
-    
-    models <- lapply(X = 1:5, FUN = function(i){
-      cat("Projectin model", i, " to a raster object \n")
-      p <- raster::predict(m2@models[[1]]$maxent[[i]]@object, clim_layer, type = "cloglog", progress='text')
-      p_tst <- p
-      p_tst[p_tst[] <= m2_eval$threshold[i]] <- NA
-      writeRaster(p, paste0(svPth, "/replicates/", occName, "_prj_rep-", i, ".tif"))
-      writeRaster(p_tst, paste0(svPth, "/replicates/", occName, "_prj_th_rep-", i, ".tif"))
-      
-    })
-    
-    prj_stk <- raster::stack(models)
-    
-    cat("Calculating mean, median and sd for replicates \n")
-    mean(prj_stk, na.rm = TRUE) %>% writeRaster(., paste0(svPth,"/", occName, "_prj_mean.tif" ), overwrite = TRUE)
-    cat("Mean raster calculated \n")
-    raster::calc(prj_stk, fun = function(x) {median(x, na.rm = T)}) %>% writeRaster(., paste0(svPth,"/", occName, "_prj_median.tif" ), overwrite = TRUE)
-    cat("Median raster calculated \n")
-    raster::calc(prj_stk, fun = function(x) {sd(x, na.rm = T)}) %>% writeRaster(., paste0(svPth,"/", occName, "_prj_std.tif" ), overwrite = TRUE)
-    cat("Sd raster calculated \n")
-    
-  } else {
-    cat("SDM model has already been created ... \n")
-  }
-  
-  
-  
 }
 
 
-if(!file.exists(paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/03_gap_models/kernel.tif"))){
-  cat(">>> Creating a new kernel density ...\n")
-  kernel <- raster_kernel(mask = mask,
-                          occurrences = spData_upt, # spData_upt[spData_upt[,1] == 1,],
-                          out_dir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"),
-                          kernel_method = 2,
-                          scale = T)
-} else {
-  cat("Kernel raster has already been created ... \n")
-}
-
-if(!file.exists(paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/03_gap_models/env_score_hclust_mahalanobis.tif"))){
-  cat(">>> Creating a new environmental distance ...\n")
-  calc_env_score(lv_name = occName,
-                 clus_method = "hclust_mahalanobis",
-                 sdm_dir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results"),
-                 gap_dir = gap_outDir,
-                 occ_dir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/01_selected_points"),
-                 env_dir = climDir,
-                 out_dir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"),
-                 var_names = var_names)
-} else {
-  cat("Environmental score has already been created ... \n")
-}
 
 if(!file.exists(paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/03_gap_models/delaunay.tif"))){
   cat(">>> Creating a new Delanuay triangulation ...\n")
@@ -221,8 +104,35 @@ if(!file.exists(paste0(gap_valDir, "/buffer_100km/", densities[density_pattern],
 } else {
   cat("Delanuay triangulation score has already been created ... \n")
 }
+  
+  if(!file.exists(paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/03_gap_models/cost_dist.tif"))){
+    cat(">>> Creating cost distance raster ... \n")
+    cost_dist_function(
+      outDir       = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"),
+      friction     = friction,
+      mask         = mask,
+      occDir       = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/01_selected_points"),
+      arcgis       = use.Arcgis,
+      code         = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/01_selected_points/cost_dist.py")
+    )
+  }
+  
+  if(!file.exists(paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/03_gap_models/env_score_hclust_mahalanobis.tif"))){
+    cat(">>> Creating a new environmental distance ...\n")
+    calc_env_score(lv_name = occName,
+                   clus_method = "hclust_mahalanobis",
+                   sdm_dir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results"),
+                   gap_dir = gap_outDir,
+                   occ_dir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/01_selected_points"),
+                   env_dir = climDir,
+                   out_dir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"),
+                   var_names = var_names)
+  } else {
+    cat("Environmental score has already been created ... \n")
+  }
+  
 
-lapply(geo_score, function(x){
+lapply(list("delaunay", "cost_dist"), function(x){
   
   if(!file.exists(paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/03_gap_models/gap_score_", x, ".tif"))){
     cat(">>> Calculating gap indicator ...\n")
@@ -239,6 +149,17 @@ lapply(geo_score, function(x){
   
   
 })
+
+if(!file.exists(paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/03_gap_models/kernel.tif"))){
+  cat(">>> Creating a new kernel density ...\n")
+  kernel <- raster_kernel(mask = mask,
+                          occDir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/01_selected_points","/Occ.shp"), # spData_upt[spData_upt[,1] == 1,],
+                          out_dir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"),
+                          kernel_method = 2,
+                          scale = T)
+} else {
+  cat("Kernel raster has already been created ... \n")
+}
 
 
 
