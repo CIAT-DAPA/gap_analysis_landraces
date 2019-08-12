@@ -153,7 +153,7 @@ lapply(list("delaunay", "cost_dist"), function(x){
 if(!file.exists(paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/03_gap_models/kernel.tif"))){
   cat(">>> Creating a new kernel density ...\n")
   kernel <- raster_kernel(mask = mask,
-                          occDir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/01_selected_points","/Occ.shp"), # spData_upt[spData_upt[,1] == 1,],
+                          occDir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/01_selected_points"), # spData_upt[spData_upt[,1] == 1,],
                           out_dir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"),
                           kernel_method = 2,
                           scale = T)
