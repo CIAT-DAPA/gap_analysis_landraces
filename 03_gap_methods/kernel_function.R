@@ -11,7 +11,7 @@
 raster_kernel <- function(mask, occDir, out_dir, kernel_method, scale){
   
 
-if(!file.exists(paste0(gap_outDir, "/kernel.tif")) ){
+if(!file.exists(paste0(out_dir, "/kernel.tif")) ){
   cat("Reading mask and occurrences shapefile \n")
   mask <- raster(mask)
   
@@ -132,7 +132,7 @@ if(!file.exists(paste0(gap_outDir, "/kernel.tif")) ){
   ### Saving raster object
   cat("Saving raster objects","\n")
   raster::writeRaster(kernel, paste0(out_dir, "/kernel.tif"))
-  raster::writeRaster(kernel_class, paste0(gap_outDir, "/kernel_classes.tif"), format = "GTiff")
+  raster::writeRaster(kernel_class, paste0(out_dir, "/kernel_classes.tif"), format = "GTiff")
   
   return(kernel)
   
