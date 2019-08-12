@@ -114,7 +114,7 @@ calc_delaunay_score <- function(baseDir, area, group, crop, lvl, ncores = NULL, 
   not_all <- c()
   
   bad <- unlist(lapply(1:length(i$geometry), function(x){
-    if(is(i$geometry[x])[1] == "sfc_GEOMETRYCOLLECTION"| is(i$geometry[x])[1] == "sfc_LINESTRING" |is(i$geometry[x])[1] == "sfc_POINT" | length(i$geometry[[x]]) == 0){
+    if(is(i$geometry[x])[1] == "sfc_GEOMETRYCOLLECTION"|is(i$geometry[x])[1] == "sfc_MULTILINESTRING" |is(i$geometry[x])[1] == "sfc_LINESTRING" |is(i$geometry[x])[1] == "sfc_POINT" | length(i$geometry[[x]]) == 0){
       return(x)
     } else {
       return(NA)
