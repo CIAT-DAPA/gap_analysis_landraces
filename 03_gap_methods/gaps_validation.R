@@ -2,12 +2,12 @@
 ##### FUNCTION TO CREATE ALL DELANUAY  TRIANGULATIONS FOR ALL OCCURRENCES
 
 
-validation_metrics <- function(n.sample = 100, bf_rad = 50, baseDir, area, group, crop, lvl, pnt = NULL, ncores = NULL, dens.level = "high_density" ,filename ){
+validation_metrics <- function(n.sample = 100, bf_rad = 50, baseDir, area, group, crop, lvl, pnt = NULL, dens.level = "high_density" ,filename ){
   
   
   
   if(is.null(pnt)){stop("You should set a value for pnt. E.j ('pnt1' or 'pnt2'... )")}
-  if(bf_rad >= 101){stop("Buffer radius must be less than 100 km")}
+  
   
   
   coreDir <-  paste0("/", crop, "/", lvl, "/", group, "/", area)
@@ -28,6 +28,7 @@ validation_metrics <- function(n.sample = 100, bf_rad = 50, baseDir, area, group
   
   cat(">>> Initializing validation process  \n \n")
   # gap score
+  
   gp_m <- raster(paste0(outDir, "/", filename)) 
   SDM <- raster(sdmDir)
   coord_sys <- crs(SDM)
@@ -62,15 +63,6 @@ validation_metrics <- function(n.sample = 100, bf_rad = 50, baseDir, area, group
   }
   # End find buffer centroid
   
-  #buffer_prime <- buffer(SpatialPoints(t(as.data.frame(cent)), proj4string =  crs(SDM)), width=100000)
-  #occur <- shapefile(occDir)
-  width =  bf_rad*1000
-  buff_50 <- raster::buffer(SpatialPoints(t(as.data.frame(cent)), proj4string =  coord_sys), width = width)
-  
-  scr <- raster::extract(gp_m, buff_50)
-  scr <- unlist(scr)
-  scr <- scr[complete.cases(scr)]
-  
   # importing kernel density raster to extrac the point in the higgest densities areas
   cat("Importing kernel density raster to extract points in the higgest densities areas \n \n")
   
@@ -94,90 +86,42 @@ validation_metrics <- function(n.sample = 100, bf_rad = 50, baseDir, area, group
   
   if(n.sample > nrow(cords_dummy)){cat("The number of n.sample is greater than the total coords in the selected density area \n")
     n.sample <- nrow(cords_dummy) - 10
-    }
+  }
   
-  n_cords <- base::sample(nrow(cords_dummy), n.sample, replace = F  )
   
-  if(!is.null(ncores)){
+  #buffer_prime <- buffer(SpatialPoints(t(as.data.frame(cent)), proj4string =  crs(SDM)), width=100000)
+  #occur <- shapefile(occDir)
+  res_per_buff <- lapply(radius, function(bf_rad){
     
-    cl <- makeSOCKcluster(ncores)
-    registerDoSNOW(cl)
+    if(bf_rad >= 101){stop("Buffer radius must be less than 100 km")}
+    # creando el buffer de tamano radius para el buffer prime
+    width =  bf_rad*1000
+    buff_50 <- raster::buffer(SpatialPoints(t(as.data.frame(cent)), proj4string =  coord_sys), width = width)
     
-    pb <- tkProgressBar(max=n.sample)
-    progress <- function(n) setTkProgressBar(pb, n)
-    opts <- list(progress=progress)
+    scr <- raster::extract(gp_m, buff_50)
+    scr <- unlist(scr)
+    scr <- scr[complete.cases(scr)]
     
-    cat(paste(">>> Initializing process to calculate the performance parameters for the score in:", pnt, "whit a buffer of", bf_rad, "Km \n \n "))
-    results <- foreach( i = 1:n.sample, .combine = "rbind", .packages = c("raster", "pROC", "dplyr", "sdm"), .options.snow=opts)  %dopar% {
-      
-      #library(dplyr)
-      cord <- cords_dummy[n_cords[i], ]
-      width = bf_rad*1000
-      buf_cord <- raster::buffer(SpatialPoints(cord, proj4string =  coord_sys), width=width)
-      #dummy_buff <- buffer(buf_cord, width = bf_rad)
-      
-      #cat(paste("Extrayendo datos del buffer(it can take a long time): " ,i, "\n \n"))
-      
-      no_gap <- raster::extract(gp_m2, buf_cord)
-      no_gap <- unlist(no_gap)
-      no_gap <- no_gap[complete.cases(no_gap)]
-      
-      if(length(no_gap)!=0 ){
-        ng <- data.frame( score = no_gap, observe = rep(0, length(no_gap) ))
-        gap <- data.frame(score = scr, observe = rep(1, length(scr)))
-        
-        #remove cero values
-        bd <- dplyr::bind_rows(ng, gap, .id = NULL) %>% dplyr::filter(., score != 0) %>% round(., 3)
-        
-        rm(ng, gap)
-        
-        if(length(levels(factor(bd$observe))) > 1){
-          #val <- pROC::roc(response = factor(bd$observe), predictor = bd$score )
-          sm <- sdm::evaluates(factor(bd$observe), bd$score )
-          
-          auc <- sm@statistics$AUC
-          m <- which(sm@threshold_based$criteria == "minROCdist")
-          value <- sm@threshold_based$threshold[m]
-          se <- sm@threshold_based$sensitivity[m]
-          es <- sm@threshold_based$specificity[m]
-          tss <- sm@threshold_based$TSS[m] 
-          
-        }else{
-          value <- NA
-          auc <- NA
-          se <- NA
-          es <- NA
-          tss <- NA
-        }
-       
-      }else{
-        
-        value <- NA
-        auc <- NA
-        se <- NA
-        es <- NA
-        tss <- NA
-      }
-      return(c(value, auc, se, es, tss))
-      
-      
-    }
-    stopCluster(cl)
-  }else{
+    #genera las coordeanadas aleatorias en donde generar los buffers
+    n_cords <- base::sample(nrow(cords_dummy), n.sample, replace = F  )
     
-    cat(paste(">>> Initializing process to calculate the performance parameters for the score in:", pnt, "whit a buffer of", bf_rad, "Km \n \n "))
+    cat(paste(">>> Calculating performance metrics for the gap score in:", pnt, "whit a buffer of", bf_rad, "Km \n "))
     
-    results <- lapply(1:n.sample, function(i){
+    
+    width = bf_rad*1000
+    
+    #dummy_buff <- buffer(buf_cord, width = bf_rad)
+    
+    cord <- cords_dummy[n_cords, ]
+    presences <- sp::SpatialPoints(cord)
+    crs(presences) <- coord_sys
+    all_buffs <- raster::buffer(presences, width=width, dissolve = F)
+    
+    no_gap_ls <- raster::extract(gp_m2, all_buffs)
+    
+    results <- lapply(no_gap_ls, function(no_gap){
       
-      cord <- cords_dummy[n_cords[i], ]
-      width = bf_rad*1000
-      buf_cord <- raster::buffer(SpatialPoints(cord, proj4string =  coord_sys), width=width)
-      #dummy_buff <- buffer(buf_cord, width = bf_rad)
-      
-
-      no_gap <- raster::extract(gp_m2, buf_cord)
-      no_gap <- unlist(no_gap)
-      no_gap <- no_gap[complete.cases(no_gap)]
+      no_gap <- no_gap[!is.na(no_gap)]
       
       if(length(no_gap)!=0){
         
@@ -185,51 +129,58 @@ validation_metrics <- function(n.sample = 100, bf_rad = 50, baseDir, area, group
         gap <- data.frame(score = scr, observe = rep(1, length(scr)))
         
         bd <- dplyr::bind_rows(ng, gap, .id = NULL)
+        
         if(length(levels(factor(bd$observe))) > 1){
           #val <- pROC::roc(response = factor(bd$observe), predictor = bd$score )
-          sm <- sdm::evaluates(factor(bd$observe), bd$score )
+          croc <- suppressMessages( pROC::roc(response = bd$observe, predictor = bd$score))
+          croc_summ <- data.frame (sensi = croc$sensitivities, speci = croc$specificities, threshold =  croc$thresholds) %>% 
+            round(., 3) %>% 
+            dplyr::mutate(., max.TSS = sensi + speci - 1) %>% 
+            dplyr::mutate(., minROCdist = sqrt((1- sensi)^2 + (speci -1)^2))
           
-          auc <- sm@statistics$AUC
-          m <- which(sm@threshold_based$criteria == "minROCdist")
-          value <- sm@threshold_based$threshold[m]
-          se <- sm@threshold_based$sensitivity[m]
-          es <- sm@threshold_based$specificity[m]
-          tss <- sm@threshold_based$TSS[m] 
+          max.tss <- croc_summ %>% dplyr::filter(., max.TSS == max(max.TSS)) %>% 
+            dplyr::mutate(., method = rep("max(TSS)", nrow(.)))
+          
+          minRoc <- croc_summ %>% 
+            dplyr::filter(., minROCdist == min(minROCdist))%>% 
+            dplyr::mutate(., method = rep("minROCdist", nrow(.)))
+          
+          croc_summ <- rbind(max.tss, minRoc) %>% 
+            dplyr::filter(., speci == max(speci))  %>% 
+            dplyr::sample_n(., 1) %>%
+            dplyr::mutate(auc = round(croc$auc,3)) %>%
+            dplyr::select(threshold, auc, sensi, speci, max.TSS)
+          
           
         }else{
-          value <- NA
-          auc <- NA
-          se <- NA
-          es <- NA
-          tss <- NA
+          croc_summ <- data.frame(threshold = NA, auc = NA, sensi = NA, speci = NA, max.TSS = NA)
           
         }
-       
+        
       }else{
         
-        value <- NA
-        auc <- NA
-        se <- NA
-        es <- NA
-        tss <- NA
+        croc_summ <- data.frame(threshold = NA, auc = NA, sensi = NA, speci = NA, max.TSS = NA)
+        
       }
-      return(c(value, auc, se, es, tss))
       
+      return(croc_summ)
       
     })
     
-    
-    results <- do.call(rbind, results)
-    
-  }#  end if  
+    validation_results <- do.call(rbind, results) %>% as.data.frame()
+    names(validation_results) <- c("score", "auc", "se", "es", "tss")
+    return(validation_results)
+  })
   
-  results <- as_tibble(results)
-  names(results) <- c("score", "auc", "se", "es", "tss")
+  names(res_per_buff) <- paste0(radius, "km")
+
+  
+   
   
   #cat(paste(">>> Saving results in:",paste0(outDir, "/validation_metrics_", substr(filename, 11, 14),".rds"), "\n" ))
   cat(">>>Process finished :) \n")
   #saveRDS(results, file = paste0(outDir, "/validation_metrics_", substr(filename, 11, 14),".rds"))
-  return(results)
+  return(res_per_buff)
 }# end function
 
 

@@ -244,49 +244,30 @@ lapply(c("delaunay", "cost_dist"), function(x){
 # Output file: e.g. ./results/african_maize/lvl_1/3/africa/gap_models/gap_score_delaunay.tif
 
 
-
-
-
-
-
+#################################################################################
+#   calculate kernel density Raster  ###########################################
+###############################################################################
 
 # Function to create the kernel density map for the acccession
 # Input file: e.g. ./input_data/by_crop/african_maize/lvl_1/3/africa/occurrences/Occ.shp
 cat("Calculating kernel Density \n")
-if(!file.exists(paste0(gap_outDir, "/kernel.tif"))){
-  spData <- readOGR(dsn = occDir, layer = "Occ")
-  spData <- unique(as.data.frame(spData))
-  rownames(spData) <- 1:nrow(spData)
-  names(spData)[2:3] <- c("lon", "lat")
-  spData[,1] <- 1
-  kernel <- raster_kernel(mask          = mask,
-                          occurrences   = spData[spData[,1] == 1,],
-                          out_dir       = gap_outDir,
-                          kernel_method = 2,
-                          scale         = T)
-} else {
-  kernel <- raster(paste0(gap_outDir, "/kernel.tif")) 
-}
-# Output file: e.g. ./results/african_maize/lvl_1/3/africa/gap_models/kernel.tif
 
-# Function to create density categories
-# Input file: e.g. ./results/african_maize/lvl_1/3/africa/gap_models/kernel.tif
-if(!file.exists(paste0(gap_outDir, "/kernel_classes.tif"))){
-  kernel <- raster(paste0(gap_outDir, "/kernel.tif"))
-  kernel[kernel[] == 0] <- NA
-  kernel <- kernel * 10000
-  qVal_1 <- raster::quantile(x = kernel[], probs = c(.9, 1), na.rm = T)
-  knl_temp <- kernel
-  knl_temp[which(knl_temp[] <= qVal_1[1])] <- NA
-  qVal_2 <- raster::quantile(x = knl_temp, probs = c(.6, .95), na.rm = TRUE)
-  kernel_class <- raster::reclassify(kernel, c(-Inf,qVal_1[1],1, qVal_1[1],qVal_2[2],2, qVal_2[2],Inf,3))
-  
-  writeRaster(kernel_class, paste0(gap_outDir, "/kernel_classes.tif"), format = "GTiff")
-  rm(kernel, kernel_class, knl_temp, qVal_1, qVal_2); gc()
-}
+raster_kernel(mask          = mask,
+              occDir        = occDir,
+              out_dir       = gap_outDir,
+              kernel_method = 2,
+              scale         = T)
+
+# Output file: e.g. ./results/african_maize/lvl_1/3/africa/gap_models/kernel.tif
 # Output file: e.g. ./results/african_maize/lvl_1/3/africa/gap_models/kernel_classes.tif
 
+#*******************************************************************************************************************************
+#***********************  SECTION: GAPS SCORE VALIDATION **********************************************************************
+#*****************************************************************************************************************************
 
+###############################################################################################
+## function to create all necesary files for validation ######################################
+#############################################################################################
 
 # Function to do validation process creating 5 artificial gaps
 # It creates by itself the occurrence data removing some points in high density area randomly
@@ -298,8 +279,8 @@ validation_process(occName         = occName,
                    geo_score       = c("cost_dist", "delaunay"),
                    use.Arcgis      = FALSE,
                    n.points        = 5,
-                   doPar           = FALSE, # Whether or not parallelize
-                   use.maxnet      = use.maxnet)
+                   doPar           = FALSE) # Whether or not parallelize
+                   
 # Output file: e.g. ./results/african_maize/lvl_1/3/africa/gap_validation/buffer_100km (all the results are stored there)
 
 # Function to summarize all validation results in order to estimate the proper threshold for

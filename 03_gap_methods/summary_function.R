@@ -10,60 +10,63 @@ summary_function <- function(area, group, crop, lvl, pnt, filename, radius,baseD
 
 #CALCULATE ALL METRICS FOR GAP_SCORES IN EACH PNT
 cat(">>>Calculating performance measure for all radius \n \n ")
-  
-apply(expand.grid(pnt, 1:2), 1, function(x){
-  cat("********* Processing pnt:", x[1], "\n")
-l <- as.numeric(x[2])
-    if(!file.exists(paste0(baseDir, "/results/", crop,"/", lvl, "/", group ,"/", area, "/gap_validation/buffer_100km/", dens.level, "/", x[1], "/03_gap_models/validation_metrics_",substr(filename[ l ], 11, 14),"_all_radius.rds") )){
-      
-    cat("             Calculating metrics for:", filename[l], "\n" )
+ 
   cl <- makeSOCKcluster(ncores)
   registerDoSNOW(cl)
   #on.exit(stopCluster(cl))
-  pb <- tkProgressBar( max = length(radius))
+  pb <- tkProgressBar( max = length(pnt))
   progress <- function(n) setTkProgressBar(pb, n)
   opts <- list(progress=progress)
-  validation_results <- foreach( i = 1:length(radius), 
+  validation_results <- foreach( i = 1:length(pnt), 
                                  .packages = c("raster", "pROC", "dplyr", "sdm"), 
                                  .options.snow=opts,  
                                  .export = c("validation_metrics", "area", "group", "crop", "lvl", "pnt", "filename", "radius","baseDir", "dens.level")) %dopar% {
-    
-    validation_metrics(n.sample = 100, 
-                       bf_rad = radius[i], 
-                       baseDir = baseDir,
-                       area = area, 
-                       group = group, 
-                       crop = crop, 
-                       lvl = "lvl_1", 
-                       pnt = x[1], 
-                       ncores = NULL, 
-                       dens.level = dens.level ,
-                       filename = filename[l]
-                       )
-   
-    
+                                   
+                                   
+                                   lapply(filename, function(l){
+                                     
+                                     point <- pnt[i]
+                                     
+                                     if(!file.exists(paste0(baseDir, "/results/", crop,"/", lvl, "/", group ,"/", area, "/gap_validation/buffer_100km/", dens.level, "/", point, "/03_gap_models/validation_metrics_",substr(l, 11, 14),"_all_radius.rds") )){
+                                       
+                                       validation_results<-  validation_metrics(n.sample   = 100, 
+                                                                                bf_rad     = radius, 
+                                                                                baseDir    = baseDir,
+                                                                                area       = area, 
+                                                                                group      = group, 
+                                                                                crop       = crop, 
+                                                                                lvl        = "lvl_1", 
+                                                                                pnt        = point, 
+                                                                                dens.level = dens.level ,
+                                                                                filename   = l)
+                                       
+                                       
+                                       saveRDS(validation_results, paste0(baseDir, "/results/", crop,"/", lvl, "/", group ,"/", area, "/gap_validation/buffer_100km/", dens.level, "/", point, "/03_gap_models/validation_metrics_",substr(l, 11, 14),"_all_radius.rds") )
+                                       
+                                     }else{
+                                       cat("              Metrics already calculated for:", filename[l], "\n" )
+                                     }#end if 
+                                   })
+                                   
   }
   stopCluster(cl)
-  names(validation_results) <- paste0(radius, "km")
   
-  saveRDS(validation_results, paste0(baseDir, "/results/", crop,"/", lvl, "/", group ,"/", area, "/gap_validation/buffer_100km/", dens.level, "/", x[1], "/03_gap_models/validation_metrics_",substr(filename[l], 11, 14),"_all_radius.rds") )
-
+  
   gc()
-    }else{
-      
-      cat("              Metrics already calculated for:", filename[l], "\n" )
-    }#end if 
- 
+    
 
-})#end lapply
+
 
 cat ("Making boxplots \n \n")
 #### save plots
-apply( expand.grid(pnt, 1:2), 1, function(x){
+apply( expand.grid(pnt, 1:length(filename)), 1, function(x){
   l <- as.numeric(x[2])
    #cat(paste0(baseDir, "/results/", crop,"/", lvl, "/", group ,"/", area, "/gap_validation/buffer_100km/", dens.level, "/", x[1], "/03_gap_models/validation_metrics_",substr(filename[ l ], 11, 14),"_all_radius.rds"),"\n")
     validation_results <- readRDS( paste0(baseDir, "/results/", crop,"/", lvl, "/", group ,"/", area, "/gap_validation/buffer_100km/", dens.level, "/", x[1], "/03_gap_models/validation_metrics_",substr(filename[l], 11, 14),"_all_radius.rds") )
-    all <-  validation_results %>% mapply(function(x, y){ add_column(x, radius = rep(factor(y), nrow(x)) ) }, x = ., y = names(.), SIMPLIFY = FALSE)  %>% do.call(rbind, .) %>%  as_tibble() 
+    all <-  validation_results %>% 
+      mapply(function(x, y){ add_column(x, radius = rep(factor(y), nrow(x)) ) }, x = ., y = names(.), SIMPLIFY = FALSE)  %>% 
+      do.call(rbind, .) %>% 
+      as_tibble() 
     
     jpeg(paste0(baseDir, "/results/", crop,"/", lvl, "/", group ,"/", area, "/gap_validation/buffer_100km/", dens.level, "/", x[1], "/03_gap_models/validation_metrics_",substr(filename[l], 11, 14),"_all_radius.jpg"),  width = 800, height = 600)
     plot(all$auc ~ all$radius, ylab = "AUC", xlab = " Buffer Radius (Km)", main = filename[l])
@@ -76,18 +79,16 @@ apply( expand.grid(pnt, 1:2), 1, function(x){
 
 
 #*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+ TRESHOLDING PROCESS *+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+**+*+*+*+*+*+
-currRow <- 2
-wb <- xlsx::createWorkbook() #library(openxlsx)
-sheet <- xlsx::createSheet(wb,"summary")
-
 #import rds files with all radius metrics and merging them to one single file
-for(l in 1:2){
+for(l in 1:length(filename)){
 
 km_metrics <- lapply(pnt, function(x){ 
   cat( " Initializing Tresholding process for", x," ",  filename[l],"\n \n")
+  
 readRDS(paste0(baseDir, "/results/", crop,"/", lvl, "/", group ,"/", area, "/gap_validation/buffer_100km/", dens.level, "/", x, "/03_gap_models/validation_metrics_",substr(filename[l], 11, 14),"_all_radius.rds")) %>%
     .[ which(names(.) %in% paste0(60:80, "km") )] %>% 
-    mapply(function(x,y){ add_column(x, km = rep(factor(y), nrow(x)) ) }, 
+    mapply(function(x,y){ 
+      add_column(x, km = rep(factor(y), nrow(x)) ) }, 
            x = ., 
            y = names(.), 
            SIMPLIFY = FALSE) %>%
@@ -121,34 +122,20 @@ summary_gap <- all_rs %>% dplyr::group_by(., pnt) %>% summarise(.,auc.median = r
                                                            , threshold = round(score_mean(x = data.frame(score, auc, se, es), li = lower.ic, ls = upper.ic)[1], 3)
                                                            , se.mean = round(score_mean(x = data.frame(score, auc, se, es), li = lower.ic, ls = upper.ic)[2],3)
                                                            , es.mean = round(score_mean(x = data.frame(score, auc, se, es), li = lower.ic, ls = upper.ic)[3] ,3)
-                                                              ) 
+                                                              )  %>%
+  dplyr::mutate(pnt = as.character(pnt))
 
 
 means <- colMeans(summary_gap %>% dplyr::select(., -pnt), na.rm = TRUE)
-summary_gap[nrow(summary_gap)+1,] <- c(as.factor("Mean"), means)
+summary_gap[nrow(summary_gap)+1,] <- c("Mean", means)
 
-cat("     Writing  summary metrics in:,", paste0(baseDir, "/results/", crop,"/", lvl, "/", group ,"/", area, "/gap_validation/buffer_100km/validation_results.xlsx") ," \n ")
+cat("     Writing  summary metrics in:,", paste0(baseDir, "/results/", crop,"/", lvl, "/", group ,"/", area, "/gap_validation/buffer_100km/validation_results.csv") ," \n ")
 #write a excel file with the results
-
-cs <- CellStyle(wb) + Font(wb, isBold=TRUE) + Border(position=c("BOTTOM", "LEFT", "TOP", "RIGHT"))
-addDataFrame(data.frame( x= filename[l]  ),
-             sheet,
-             row.names = FALSE,
-             col.names = FALSE,
-             startRow = currRow - 1,
-             colnamesStyle = cs)
-
-addDataFrame(as.data.frame(summary_gap), 
-             sheet, 
-             row.names = FALSE,
-             startRow = currRow,
-             colnamesStyle=cs)
-currRow <- currRow + nrow(summary_gap) + 4 
+write.csv(summary_gap, 
+          paste0(baseDir, "/results/", crop,"/", lvl, "/", group ,"/", area, "/gap_validation/buffer_100km/",substr(filename[l], 11, 14) ,"_validation_results.csv"), row.names = F )
 
  
-
 }#END lapply
-xlsx::saveWorkbook(wb,file = paste0(baseDir, "/results/", crop,"/", lvl, "/", group ,"/", area, "/gap_validation/buffer_100km/validation_results.xlsx"))
 
 cat( "PROCESS DONE \n")
 }#END SUMMARY FUNCTION
