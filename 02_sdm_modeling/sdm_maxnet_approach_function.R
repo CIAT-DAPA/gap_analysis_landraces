@@ -107,7 +107,7 @@ sdm_maxnet_approach_function <- function(occName      = occName,
                                               
                                               minRoc <- croc_summ %>% 
                                                 dplyr::filter(., minROCdist == min(minROCdist))%>% 
-                                                dplyr::mutate(., method = rep("minROCdist", nrow(.)))
+                                                dplyr::mutate(., method = rep(1,"minROCdist", nrow(.)))
                                               
                                               croc_summ <- rbind(max.tss, minRoc) %>% 
                                                 dplyr::filter(., speci == max(speci))  %>% 
