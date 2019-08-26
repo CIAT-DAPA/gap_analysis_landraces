@@ -232,7 +232,7 @@ calc_env_score(lv_name     = occName,
 # Input file: e.g. ./results/african_maize/lvl_1/3/africa/gap_models/env_score_hclust_mahalanobis.tif (Environmental score)
 # Input file: e.g. ./results/african_maize/lvl_1/3/africa/gap_models/cost_dist.tif (Geo score: cost distance)
 # Input file: e.g. ./results/african_maize/lvl_1/3/africa/gap_models/delaunay.tif (Geo score: Delaunay)
-lapply(c("delaunay", "cost_dist"), function(x){
+lapply(c("delaunay", "cost_dist", "environ"), function(x){
   calc_gap_score(lv_name     = occName,
                  clus_method = "hclust_mahalanobis",
                  gap_method  = x, # Can be: "cost_dist", "kernel", "delaunay"
@@ -290,7 +290,7 @@ summary_function(area       = region,
                  crop       = crop,
                  lvl        = "lvl_1",
                  pnt        = paste0("pnt", 1:5),
-                 filename   = c("gap_score_cost_dist.tif"   ,"gap_score_delaunay.tif"),
+                 filename   = c("gap_score_cost_dist_new.tif"   ,"gap_score_delaunay_new.tif", "gap_score_environ_new.tif"),
                  radius     = seq(55,85, 5), #number of radius size to evaluate
                  baseDir    = baseDir,
                  dens.level = "high_density",
@@ -314,3 +314,7 @@ create_png_maps( summ_filepath= paste0(gap_valDir, "/buffer_100km/validation_res
 # Output file: e.g. ./results/african_maize/lvl_1/3/africa/gap_models/gap_class_cost_dist.tif (Thresholded gap map cost distance approach)
 # Output file: e.g. ./results/african_maize/lvl_1/3/africa/gap_models/gap_class_delaunay.tif (Thresholded gap map Delaunay approach)
 # Output file: e.g. ./results/african_maize/lvl_1/3/africa/gap_models/gap_class_final.tif (Final outcome)
+rs_gaps <- raster(paste0(results_dir, "/", crop, "/", level, "/", occName, "/", region, "/gap_models/gap_class_final.tif"))
+covg_ul <- 100 - length(which(rs_gaps[]==2))/length(which(!is.na(rs_gaps[])))*100
+covg_ll <- 100 - length(which(rs_gaps[]>=1))/length(which(!is.na(rs_gaps[])))*100
+cat("coverage of",occName,"is UL=",round(covg_ul,1),"% and LL=",round(covg_ll,1),"% \n")
