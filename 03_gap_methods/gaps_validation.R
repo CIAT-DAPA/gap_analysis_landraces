@@ -84,8 +84,10 @@ validation_metrics <- function(n.sample = 100, bf_rad = 50, baseDir, area, group
   b_occr <- b_occr[complete.cases(b_occr),]
   cords_dummy <- b_occr[,1:2] 
   
-  if(n.sample > nrow(cords_dummy)){cat("The number of n.sample is greater than the total coords in the selected density area \n")
-    n.sample <- nrow(cords_dummy) - 10
+  if(n.sample > nrow(cords_dummy)){
+    
+    stop("The number of n.sample is greater than the total coords in the selected density area \n")
+    #n.sample <- nrow(cords_dummy) - 10
   }
   
   

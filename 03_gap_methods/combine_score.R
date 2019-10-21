@@ -90,7 +90,7 @@ calc_gap_score <- function(lv_name, clus_method = "hclust_mahalanobis", gap_meth
     
     #return stack with rasters
    # rstk <- stack(c(gap_score,gap_class))
-    return(gap_score)
+    return(NULL)
     
   }
   
