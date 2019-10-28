@@ -298,22 +298,14 @@ summary_function(area       = region,
 # Ouput file: e.g. ./results/african_maize/lvl_1/2/africa/gap_validation/buffer_100km/validation_results.xlsx (thresholds and metrics)
 
 
-# Function to create png graphs for all rasters and also calculate the thresholded maps and the final gap map
-# Input file: e.g. ./results/african_maize/lvl_1/2/africa/gap_validation/buffer_100km/validation_results.xlsx
-# Input file: e.g. ./results/african_maize/lvl_1/3/africa/gap_models/gap_score_cost_dist.tif
-# Input file: e.g. ./results/african_maize/lvl_1/3/africa/gap_models/gap_score_delaunay.tif
-create_png_maps( summ_filepath= paste0(gap_valDir, "/buffer_100km/validation_results.xlsx"), 
-                 rast_dirPath = paste0(results_dir, "/", crop, "/", level, "/", occName, "/", region, "/gap_models"),
-                 grph_dir     = paste0(results_dir, "/", crop, "/lvl_1/", occName, "/", region, "/graphics"),
-                 occName      = occName,
-                 sdm_filepath = paste0(model_outDir, "/", occName, "_prj_median.tif"),
-                 occ_filepath = paste0(occDir, "/Occ.shp"), 
-                 colors       = list(two_cols =  c('grey70', 'red2') , three_cols = c('grey70', 'goldenrod3', 'red2')), 
-                 new_ext        = NULL)
-# Output file: e.g. ./results/african_maize/lvl_1/3/africa/graphics
-# Output file: e.g. ./results/african_maize/lvl_1/3/africa/gap_models/gap_class_cost_dist.tif (Thresholded gap map cost distance approach)
-# Output file: e.g. ./results/african_maize/lvl_1/3/africa/gap_models/gap_class_delaunay.tif (Thresholded gap map Delaunay approach)
-# Output file: e.g. ./results/african_maize/lvl_1/3/africa/gap_models/gap_class_final.tif (Final outcome)
+# Function to recalssify gaps score rasters and calculate the final gap map
+gap_class_maps(gap_valDir,
+               gap_outDir)
+  # Output file: e.g. ./results/african_maize/lvl_1/3/africa/gap_models/gap_class_cost_dist.tif
+  # Output file: e.g. ./results/african_maize/lvl_1/3/africa/gap_models/gap_class_delaunay.tif
+  # Output file: e.g. ./results/african_maize/lvl_1/3/africa/gap_models/gap_class_environ.tif
+
+
 rs_gaps <- raster(paste0(results_dir, "/", crop, "/", level, "/", occName, "/", region, "/gap_models/gap_class_final.tif"))
 covg_ul <- 100 - length(which(rs_gaps[]==2))/length(which(!is.na(rs_gaps[])))*100
 covg_ll <- 100 - length(which(rs_gaps[]>=1))/length(which(!is.na(rs_gaps[])))*100
