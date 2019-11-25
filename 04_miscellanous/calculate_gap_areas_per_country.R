@@ -35,8 +35,8 @@ calculate_gap_areas_per_country <- function(crop, classes, level, region, mask_d
   # Load final gap maps
   final_gap_rast <- lapply(1:length(classes), function(i){
     final_gap_rast1 <- raster(paste0(results_dir, "/", crop, "/", level, "/", classes[i], "/", region, "/gap_models/gap_class_final_new.tif"))
-    final_gap_rast1[which(final_gap_rast1[] != 2)] <- 0
-    final_gap_rast1[which(final_gap_rast1[] == 2)] <- 1
+    final_gap_rast1[which(final_gap_rast1[] != 3)] <- 0
+    final_gap_rast1[which(final_gap_rast1[] == 3)] <- 1
     final_gap_rast1[which(is.na(final_gap_rast1[]))] <- 0
     return(final_gap_rast1)
   })
@@ -98,11 +98,11 @@ calculate_gap_areas_per_country <- function(crop, classes, level, region, mask_d
   
 }
 
-# Update: 22/10/2019
+# Update: 12/11/2019
 # Potato Spooner
 calculate_gap_areas_per_country(crop     = "potato",
                                 classes  = c("tuberosum_andigenum","tuberosum_chilotanum"),
-                                level    = "lvl_1",
+                                level    = "New_formula/Spooner_classification",
                                 region   = "americas",
                                 mask_dir = "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/input_data/mask")
 # Potato Hawkes
@@ -123,20 +123,31 @@ calculate_gap_areas_per_country(crop     = "african_maize",
                                 level    = "lvl_1",
                                 region   = "africa",
                                 mask_dir = "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/input_data/mask")
-
-
-# Durum wheat
+# Durum wheat: genetic
+calculate_gap_areas_per_country(crop     = "wheat_durum",
+                                classes  = c("g1", "g2", "g3", "g4"),
+                                level    = "lvl_1",
+                                region   = "wheat_custom",
+                                mask_dir = "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/input_data/mask")
+# Durum wheat: environmental
 calculate_gap_areas_per_country(crop     = "wheat_durum",
                                 classes  = c("g1", "g2"),
-                                level    = "runs_2019_07_environmental_groups",
+                                level    = "New_formula/environmental_groups",
                                 region   = "wheat_custom",
                                 mask_dir = "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/input_data/mask")
-# Bread wheat
+# Bread wheat: environmental
 calculate_gap_areas_per_country(crop     = "wheat_bread",
                                 classes  = c("g1", "g2","g3"),
-                                level    = "runs_2019_07_environmental_groups",
+                                level    = "New_formula/environmental_groups",
                                 region   = "wheat_custom",
                                 mask_dir = "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/input_data/mask")
+# Bread wheat: genetic
+calculate_gap_areas_per_country(crop     = "wheat_bread",
+                                classes  = c("4", "7"),
+                                level    = "lvl_1",
+                                region   = "wheat_custom",
+                                mask_dir = "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/input_data/mask")
+
 
 # Banana
 calculate_gap_areas_per_country(crop     = "banana",
@@ -150,14 +161,12 @@ calculate_gap_areas_per_country(crop     = "sorghum",
                                 level    = "lvl_1",
                                 region   = "sgh_custom",
                                 mask_dir = "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/input_data/mask")
-
 # Barley
 calculate_gap_areas_per_country(crop     = "barley",
                                 classes  = c("spring","winter"),
                                 level    = "lvl_1",
                                 region   = "world",
                                 mask_dir = "//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/input_data/mask")
-
 # African rice
 calculate_gap_areas_per_country(crop     = "rice_african",
                                 classes  = c("K2","K4","K5"),

@@ -31,15 +31,15 @@ rm(OSys)
 # Define code's folder
 srcDir <- paste(baseDir, "/scripts", sep = "")
 # Define region of study
-region <- "rice_custom"
+region <- "chickpea_custom"
 
 # Configuring crop directories
 source(paste0(srcDir, "/00_config/config_crop.R"))
 
 # Define crop
-crop <- "rice_asia"
+crop <- "chickpea"
 # Define level of analysis
-level_1 <-  c("indica", "japonica", "aus", "aromatic")
+level_1 <-  c("kabuli", "desi")
 level   <- "lvl_1"
 # Define occurrence name: it is necessary to specify the group, e.g. Group = "3"
 occName <- level_1[1]
@@ -304,7 +304,6 @@ gap_class_maps(gap_valDir,
   # Output file: e.g. ./results/african_maize/lvl_1/3/africa/gap_models/gap_class_cost_dist.tif
   # Output file: e.g. ./results/african_maize/lvl_1/3/africa/gap_models/gap_class_delaunay.tif
   # Output file: e.g. ./results/african_maize/lvl_1/3/africa/gap_models/gap_class_environ.tif
-
 
 rs_gaps <- raster(paste0(results_dir, "/", crop, "/", level, "/", occName, "/", region, "/gap_models/gap_class_final.tif"))
 covg_ul <- 100 - length(which(rs_gaps[]==2))/length(which(!is.na(rs_gaps[])))*100

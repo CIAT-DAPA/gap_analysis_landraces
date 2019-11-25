@@ -1,6 +1,6 @@
 
 
-sdm_approach_function <- function(occName, spData, model_outDir, var_names, nCores, nFolds, beta, feat){
+sdm_approach_function <- function(occName, spData, model_outDir, var_names, factor_vars, nCores, nFolds, beta, feat){
   
   # Specify dataset for model
   frm <- as.formula(paste(occName, "~", paste(var_names, sep = "+", collapse = "+"), "+coords(lon+lat)", sep = ""))
@@ -17,7 +17,7 @@ sdm_approach_function <- function(occName, spData, model_outDir, var_names, nCor
                    test.percent = 20,
                    cv.folds = nFolds,
                    n = 1, # Replicates
-                   modelSettings = list(maxent = list(feat = feat, beta = beta)),
+                   modelSettings = list(maxent = list(feat = feat, beta = beta, togglelayertype = factor_vars)),
                    var.selection = F,
                    overwrite = F)
     

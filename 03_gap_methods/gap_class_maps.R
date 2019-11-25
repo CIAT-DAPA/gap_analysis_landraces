@@ -14,6 +14,10 @@ gap_class_maps <- function(gap_valDir,
   thresh_cost_dist <- summ_table$cost[nrow(summ_table$cost), 7]
   thresh_delaunay  <- summ_table$dela[nrow(summ_table$dela), 7]
   thresh_envi      <- summ_table$env[nrow(summ_table$env), 7]
+  
+  auc_cost <- summ_table$cost[nrow(summ_table$cost), 2]
+  auc_dela <- summ_table$dela[nrow(summ_table$cost), 2]
+  auc_envi <- summ_table$env[nrow(summ_table$cost), 2]
   #import gap score rasters
   cost_dist_rast <- raster(paste0(gap_outDir,"/gap_score_cost_dist_new.tif"))
   dela_rast      <- raster(paste0(gap_outDir,"/gap_score_delaunay_new.tif"))
@@ -47,7 +51,7 @@ gap_class_maps <- function(gap_valDir,
   covg_ul <- 100 - length(which(rs_gaps[]==3))/length(which(!is.na(rs_gaps[])))*100
   covg_ll <- 100 - length(which(rs_gaps[]>=2))/length(which(!is.na(rs_gaps[])))*100
   cat("coverage of",occName,"is UL=",round(covg_ul,1),"% and LL=",round(covg_ll,1),"% \n")
-  auc_avg <- (0.9968  + 0.8292 + 0.8588)/3 
+  auc_avg <- (auc_cost  + auc_dela + auc_envi)/3 
   cat("AUC_avg:", auc_avg, "\n")
   
 }
