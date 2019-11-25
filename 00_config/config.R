@@ -27,7 +27,7 @@ source(paste0(srcDir, "/03_gap_methods/delaunay_geo_score.R"))
 source(paste0(srcDir, "/03_gap_methods/gaps_validation.R"))
 source(paste0(srcDir, "/03_gap_methods/summary_function.R"))
 source(paste0(srcDir, "/03_gap_methods/validation_function.R"))
-source(paste0(srcDir, "/03_gap_methods/create_png_maps.R"))
+source(paste0(srcDir, "/03_gap_methods/gap_class_maps.R"))
 
 # Working directories
 cat("Loading working directories\n")
