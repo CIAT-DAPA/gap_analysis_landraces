@@ -13,6 +13,7 @@ source(paste0(srcDir, "/02_sdm_modeling/tuning_maxNet.R"))
 #source(paste0(srcDir, "/02_sdm_modeling/evaluation_function.R"))
 #source(paste0(srcDir, "/02_sdm_modeling/sdm_approach_function.R"))
 source(paste0(srcDir, "/02_sdm_modeling/sdm_maxnet_approach_function.R"))
+source(paste0(srcDir, "/02_sdm_modeling/sdm_maxent_java_approach_function.R"))
 #source(paste0(srcDir, "/02_sdm_modeling/do_projections.R"))
 #source(paste0(srcDir, "/02_sdm_modeling/projecting_function.R"))
 #source(paste0(srcDir, "/02_sdm_modeling/miscellanous/kernel_indicator.R")) --- removed
