@@ -35,7 +35,7 @@ cat(">>>Calculating performance measure for all radius \n \n ")
                                                                                 area       = area, 
                                                                                 group      = group, 
                                                                                 crop       = crop, 
-                                                                                lvl        = "lvl_1", 
+                                                                                lvl        = lvl, 
                                                                                 pnt        = point, 
                                                                                 dens.level = dens.level ,
                                                                                 filename   = l)

@@ -80,7 +80,7 @@ prepare_input_data(data_path = choose.files( caption = "Select a valid .csv file
 # Input file: e.g. ./results/african_maize/lvl_1/3/africa/input_data/african_maize_lvl_1_bd.csv
 
 
-create_occ_shp(file_path   = paste0(classResults, "/", crop, "_lvl_1_bd.csv"),
+create_occ_shp(file_path   = paste0(classResults, "/", crop, "_", level, "_bd.csv"),
                file_output = paste0(occDir,"/Occ.shp"),
                validation  = FALSE)
 # Output file: e.g. ./results/african_maize/lvl_1/3/africa/input_data/Occ.csv
@@ -288,7 +288,7 @@ validation_process(occName         = occName,
 summary_function(area       = region,
                  group      = occName,
                  crop       = crop,
-                 lvl        = "lvl_1",
+                 lvl        = level,
                  pnt        = paste0("pnt", 1:5),
                  filename   = c("gap_score_cost_dist_new.tif"   ,"gap_score_delaunay_new.tif", "gap_score_environ_new.tif"),
                  radius     = seq(55,85, 5), #number of radius size to evaluate
