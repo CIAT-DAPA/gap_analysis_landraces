@@ -32,7 +32,14 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
   if("status" %in% names(data)){
     status <- data %>% dplyr::select(., matches("status", ignore.case = T))  
   }else{status <- NULL}
-   
+  #check wheter exists ID variables
+  if("source_db" %in% names(data)){
+    source_db <- data %>% dplyr::select(., "source_db") 
+  }else{source_db <- NULL}
+  if("database_id" %in% names(data)){
+    database_id <- data %>% dplyr::select(., "database_id")
+  }else{database_id <- NULL}
+  
   #select only the response variable and lat / long and create an ID column
   data <- data %>% dplyr::select(., as.integer(col_number), 
                              matches("declat|latitude", ignore.case = T), 
@@ -142,19 +149,27 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
       
       #fill NA cells using ensemble model predictions
       
-      full_data2[which(is.na(full_data2$Y)), "Y"] <- clas_res$External_data_predictions %>% dplyr::select(., ensemble)
+      full_data2[which(is.na(full_data2$Y)), "Y"] <- clas_res$External_data_predictions %>% 
+        dplyr::select(., ensemble)
       names(full_data)[1] <- "ensemble"
       names(full_data2)[1] <- "ensemble"
       #add status column if it exists
       if(!is.null(status)){
         full_data2$status <- status[rows_id, ]
       }
-      
+      if(!is.null(database_id)){
+        full_data2$database_id <- database_id[rows_id, ]
+      }
+      if(!is.null(source_db)){
+        full_data2$source_db <- source_db[rows_id, ]
+      }
       #saving results
       saveRDS(clas_res, file = paste0(classResults, "/", crop, "_descriptive_results.rds") )
       saveRDS(clas_res, file = paste0(input_data_aux_dir, "/", crop, "_descriptive_results.rds") )
       
-      write.csv(full_data2, paste0(classResults, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
+      write.csv(full_data2 %>% 
+                  dplyr::select(-matches("database_id", ignore.case = T), -matches("source_db", ignore.case = T)), paste0(classResults, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
+      write.csv(full_data2, paste0(classResults, "/", crop, "_", "bd_indetifiers.csv"), row.names=FALSE)
       write.csv(full_data2, paste0(input_data_aux_dir, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
       
     }else{
@@ -174,9 +189,16 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
       if(!is.null(status)){
         full_data2$status <- status[rows_id, ]
       }
+      if(!is.null(database_id)){
+        full_data2$database_id <- database_id[rows_id, ]
+      }
+      if(!is.null(source_db)){
+        full_data2$source_db <- source_db[rows_id, ]
+      }
       names(full_data2)[1] <- "ensemble"
-      
-      write.csv(full_data2, paste0(classResults, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
+      write.csv(full_data2 %>% 
+                  dplyr::select(-matches("database_id", ignore.case = T), -matches("source_db", ignore.case = T)), paste0(classResults, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
+      write.csv(full_data2, paste0(classResults, "/", crop, "_", "bd_indetifiers.csv"), row.names=FALSE)
       write.csv(full_data2, paste0(input_data_aux_dir, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
       
       
@@ -190,9 +212,16 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
     if(!is.null(status)){
       full_data2$status <- status[rows_id, ]
     }
+    if(!is.null(database_id)){
+      full_data2$database_id <- database_id[rows_id, ]
+    }
+    if(!is.null(source_db)){
+      full_data2$source_db <- source_db[rows_id, ]
+    }
     names(full_data2)[1] <- "ensemble"
-    
-    write.csv(full_data2, paste0(classResults, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
+    write.csv(full_data2 %>% 
+                dplyr::select(-matches("database_id", ignore.case = T), -matches("source_db", ignore.case = T)), paste0(classResults, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
+    write.csv(full_data2, paste0(classResults, "/", crop, "_", "bd_indetifiers.csv"), row.names=FALSE)
     write.csv(full_data2, paste0(input_data_aux_dir, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
     
   }
