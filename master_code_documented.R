@@ -31,15 +31,15 @@ rm(OSys)
 # Define code's folder
 srcDir <- paste(baseDir, "/scripts", sep = "")
 # Define region of study
-region <- "chickpea_custom"
+region <- "africa"
 
 # Configuring crop directories
 source(paste0(srcDir, "/00_config/config_crop.R"))
 
 # Define crop
-crop <- "chickpea"
+crop <- "rice_african"
 # Define level of analysis
-level_1 <-  c("kabuli", "desi")
+level_1 <-  c("K1", "desi")
 level   <- "lvl_1"
 # Define occurrence name: it is necessary to specify the group, e.g. Group = "3"
 occName <- level_1[1]

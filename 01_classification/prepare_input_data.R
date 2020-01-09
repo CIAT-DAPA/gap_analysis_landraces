@@ -169,7 +169,7 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
       
       write.csv(full_data2 %>% 
                   dplyr::select(-matches("database_id", ignore.case = T), -matches("source_db", ignore.case = T)), paste0(classResults, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
-      write.csv(full_data2, paste0(classResults, "/", crop, "_", "bd_indetifiers.csv"), row.names=FALSE)
+      write.csv(full_data2, paste0(classResults, "/", crop, "_", "bd_identifiers.csv"), row.names=FALSE)
       write.csv(full_data2, paste0(input_data_aux_dir, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
       
     }else{
@@ -198,7 +198,7 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
       names(full_data2)[1] <- "ensemble"
       write.csv(full_data2 %>% 
                   dplyr::select(-matches("database_id", ignore.case = T), -matches("source_db", ignore.case = T)), paste0(classResults, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
-      write.csv(full_data2, paste0(classResults, "/", crop, "_", "bd_indetifiers.csv"), row.names=FALSE)
+      write.csv(full_data2, paste0(classResults, "/", crop, "_", "bd_identifiers.csv"), row.names=FALSE)
       write.csv(full_data2, paste0(input_data_aux_dir, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
       
       
@@ -221,7 +221,7 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
     names(full_data2)[1] <- "ensemble"
     write.csv(full_data2 %>% 
                 dplyr::select(-matches("database_id", ignore.case = T), -matches("source_db", ignore.case = T)), paste0(classResults, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
-    write.csv(full_data2, paste0(classResults, "/", crop, "_", "bd_indetifiers.csv"), row.names=FALSE)
+    write.csv(full_data2, paste0(classResults, "/", crop, "_", "bd_identifiers.csv"), row.names=FALSE)
     write.csv(full_data2, paste0(input_data_aux_dir, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
     
   }
