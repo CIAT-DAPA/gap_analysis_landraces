@@ -118,6 +118,10 @@ pseudoAbsences_generator <- function(file_path, clsModel, overwrite = F, correla
   current_clim_layer_sp      <- lapply(list.files(paste0(baseDir, "/input_data/by_crop/", crop, "/raster/", region), pattern = ".tif$", full.names = T), raster)
   current_clim_layer         <- stack(c(current_clim_layer_generic, current_clim_layer_sp))
   
+  # remove undesirable layers
+  layers_in <- names(current_clim_layer)[ !tolower(names(current_clim_layer)) %in% c("yield", "production", "harvested.area", "ethnicity", "monthCountByTemp10") ]
+  current_clim_layer <- current_clim_layer[[layers_in]]
+  
   # Background samples file name
   outBackName         <- paste0(backDir, "/bg_", occName, ".csv")
   outOccName          <- paste0(occDir, "/occ_", occName, ".csv")
@@ -159,8 +163,8 @@ pseudoAbsences_generator <- function(file_path, clsModel, overwrite = F, correla
       
       climLayers <- raster::crop(current_clim_layer, raster::extent(ntv_area))
       climLayers <- raster::mask(climLayers, ntv_area)
-      #Remove variables that are causing problems
-      climLayers <- climLayers[[ !grepl(paste0(tolower(c("Yield", "Production", "Harvested")), collapse = "|"), tolower(names(climLayers))) ]] 
+      
+     
       
       unsuit_bg <- OCSVMprofiling2(xy = unique(spData[,c("Longitude","Latitude")]), varstack = climLayers)
       random_bg <- pseudoAbsences2(xy = unique(spData[,c("Longitude","Latitude")]), background = unsuit_bg$Absences, exclusion.buffer = 0.083*5, tms = 10, coord.sys = crs(current_clim_layer))
@@ -185,8 +189,8 @@ pseudoAbsences_generator <- function(file_path, clsModel, overwrite = F, correla
       
       climLayers <- raster::crop(current_clim_layer, elu)
       climLayers <- raster::mask(climLayers, elu)
-      #Remove variables that are causing problems
-      climLayers <- climLayers[[ !grepl(paste0(tolower(c("Yield", "Production", "Harvested")), collapse = "|"), tolower(names(climLayers))) ]] 
+      
+      
       
       unsuit_bg <- OCSVMprofiling2(xy = unique(spData[,c("Longitude","Latitude")]), varstack = climLayers)
       random_bg <- pseudoAbsences2(xy = unique(spData[,c("Longitude","Latitude")]), background = unsuit_bg$Absences, exclusion.buffer = 0.083*5, tms = 10, coord.sys = crs(current_clim_layer))
@@ -204,8 +208,7 @@ pseudoAbsences_generator <- function(file_path, clsModel, overwrite = F, correla
     if(pa_method == "all_area"){
       
       climLayers <- current_clim_layer
-      #Remove variables that are causing problems
-      climLayers <- climLayers[[ !grepl(paste0(tolower(c("Yield", "Production", "Harvested")), collapse = "|"), tolower(names(climLayers))) ]] 
+     
       
       unsuit_bg <- OCSVMprofiling2(xy = unique(spData[,c("Longitude","Latitude")]), varstack = climLayers)
       random_bg <- pseudoAbsences2(xy = unique(spData[,c("Longitude","Latitude")]), background = unsuit_bg$Absences, exclusion.buffer = 0.083*5, tms = 10, coord.sys = crs(current_clim_layer))
