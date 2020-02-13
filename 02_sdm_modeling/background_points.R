@@ -160,7 +160,7 @@ pseudoAbsences_generator <- function(file_path, clsModel, overwrite = F, correla
       climLayers <- raster::crop(current_clim_layer, raster::extent(ntv_area))
       climLayers <- raster::mask(climLayers, ntv_area)
       #Remove variables that are causing problems
-      climLayers <- climLayers[[ -grep(paste0(tolower(c("Yield", "Production", "Harvested"), collapse = "|")), tolower(names(climLayers))) ]] 
+      climLayers <- climLayers[[ !grepl(paste0(tolower(c("Yield", "Production", "Harvested")), collapse = "|"), tolower(names(climLayers))) ]] 
       
       unsuit_bg <- OCSVMprofiling2(xy = unique(spData[,c("Longitude","Latitude")]), varstack = climLayers)
       random_bg <- pseudoAbsences2(xy = unique(spData[,c("Longitude","Latitude")]), background = unsuit_bg$Absences, exclusion.buffer = 0.083*5, tms = 10, coord.sys = crs(current_clim_layer))
@@ -186,7 +186,7 @@ pseudoAbsences_generator <- function(file_path, clsModel, overwrite = F, correla
       climLayers <- raster::crop(current_clim_layer, elu)
       climLayers <- raster::mask(climLayers, elu)
       #Remove variables that are causing problems
-      climLayers <- climLayers[[ -grep(paste0(tolower(c("Yield", "Production", "Harvested")), collapse = "|"), tolower(names(climLayers))) ]] 
+      climLayers <- climLayers[[ !grepl(paste0(tolower(c("Yield", "Production", "Harvested")), collapse = "|"), tolower(names(climLayers))) ]] 
       
       unsuit_bg <- OCSVMprofiling2(xy = unique(spData[,c("Longitude","Latitude")]), varstack = climLayers)
       random_bg <- pseudoAbsences2(xy = unique(spData[,c("Longitude","Latitude")]), background = unsuit_bg$Absences, exclusion.buffer = 0.083*5, tms = 10, coord.sys = crs(current_clim_layer))
@@ -205,7 +205,7 @@ pseudoAbsences_generator <- function(file_path, clsModel, overwrite = F, correla
       
       climLayers <- current_clim_layer
       #Remove variables that are causing problems
-      climLayers <- climLayers[[ -grep(paste0(tolower(c("Yield", "Production", "Harvested")), collapse = "|"), tolower(names(climLayers))) ]] 
+      climLayers <- climLayers[[ !grepl(paste0(tolower(c("Yield", "Production", "Harvested")), collapse = "|"), tolower(names(climLayers))) ]] 
       
       unsuit_bg <- OCSVMprofiling2(xy = unique(spData[,c("Longitude","Latitude")]), varstack = climLayers)
       random_bg <- pseudoAbsences2(xy = unique(spData[,c("Longitude","Latitude")]), background = unsuit_bg$Absences, exclusion.buffer = 0.083*5, tms = 10, coord.sys = crs(current_clim_layer))

@@ -74,7 +74,7 @@ occSDM_upt <- occSDM[base::setdiff(1:nrow(occSDM), which(id_sdm == 1)),]; rm(id_
   cat("Running sdm modelling approach using Maxnet \n")
   cat("      This process can take several minutes...... Be patient \n \n ")
   if(!file.exists(paste0(paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models/",occName,"_prj_median.tif")))){
-    sdm_maxnet_approach_function(occName      = occName,
+    sdm_maxent_approach_function(occName      = occName,
                                  spData       = occSDM_upt,
                                  var_names    = vars,
                                  model_outDir = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models"),
@@ -110,6 +110,7 @@ if(!file.exists(paste0(gap_valDir, "/buffer_100km/", densities[density_pattern],
     cost_dist_function(
       outDir       = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/03_gap_models"),
       friction     = friction,
+      sdm_dir      = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/02_sdm_results/prj_models"),
       mask         = mask,
       occDir       = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/01_selected_points"),
       arcgis       = use.Arcgis,

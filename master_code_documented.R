@@ -39,7 +39,7 @@ source(paste0(srcDir, "/00_config/config_crop.R"))
 # Define crop
 crop <- "rice_african"
 # Define level of analysis
-level_1 <-  c("K1", "desi")
+level_1 <-  c("K2", "K4", "K5")
 level   <- "lvl_1"
 # Define occurrence name: it is necessary to specify the group, e.g. Group = "3"
 occName <- level_1[1]
@@ -143,7 +143,7 @@ params_tunned <- Calibration_function(spData = spData,
 # Input file: e.g. ./results/african_maize/lvl_1/3/africa/sdm_variables_selected.csv (Selected variables to do SDM)
 # Input file: clim_layer (environmental information)
 
-sdm_maxnet_approach_function(occName      = occName,
+sdm_maxent_approach_function(occName      = occName,
                              spData       = spData,
                              var_names    = var_names,
                              model_outDir = model_outDir,
@@ -196,6 +196,7 @@ calc_delaunay_score(baseDir    = baseDir,
 
 cost_dist_function(outDir   = gap_outDir,
                    friction = friction,
+                   sdm_dir  = model_outDir,
                    mask     = mask,
                    occDir   = occDir,
                    arcgis   = FALSE,

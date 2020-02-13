@@ -14,9 +14,10 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
                                mask = mask){
   
   msk <- raster(mask)
-  data <- read.csv(data_path, header = T)
+  data <- read.csv(data_path, header = T, stringsAsFactors = F)
   cat("Preview Data base \n")
   print(head(data))
+  
   
   #in case of col_number empty request a value from the user
   if(is.null(col_number)){
@@ -39,7 +40,7 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
   if("database_id" %in% names(data)){
     database_id <- data %>% dplyr::select(., "database_id")
   }else{database_id <- NULL}
-  
+ 
   #select only the response variable and lat / long and create an ID column
   data <- data %>% dplyr::select(., as.integer(col_number), 
                              matches("declat|latitude", ignore.case = T), 
@@ -57,7 +58,7 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
   cat("Cleaning zero lat/lon \n")
   
   data <- data %>% 
-    dplyr::mutate(ID = 1:nrow(.)) %>%
+    dplyr::mutate(Y = as.character(Y), ID = 1:nrow(.)) %>%
     dplyr::filter(., Latitude != 0 | Longitude != 0) %>% 
     dplyr::filter(., !is.na(Latitude) | !is.na(Longitude))
   
@@ -133,12 +134,20 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
     if(!add.longitude){
         to_train <- to_train %>% dplyr::select(., -Longitude)
         }
+    #remove etnicity variable if it exists
+    if("ethnicity" %in% names(to_train)){
+      to_train <- to_train %>% dplyr::select(., -matches("ethnicity", ignore.case = T))
+    }
     
     if(do.predictions){
       
       #select occurrences to predict
       to_predict <- full_data[which(is.na(full_data$Y)), names(to_train)]
       
+      #remove etnicity variable if it exists
+      if("ethnicity" %in% names(to_predict)){
+        to_predict <- to_predict %>% dplyr::select(., -matches("ethnicity", ignore.case = T))
+      }
       #execute classification function predicting occurrences
       clas_res <- classification_fun(df = to_train,
                                      standardize_all = T,
@@ -168,7 +177,9 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
       saveRDS(clas_res, file = paste0(input_data_aux_dir, "/", crop, "_descriptive_results.rds") )
       
       write.csv(full_data2 %>% 
-                  dplyr::select(-matches("database_id", ignore.case = T), -matches("source_db", ignore.case = T)), paste0(classResults, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
+                  dplyr::select(-matches("database_id", ignore.case = T), -matches("source_db", ignore.case = T)),
+                paste0(classResults, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
+      
       write.csv(full_data2, paste0(classResults, "/", crop, "_", "bd_identifiers.csv"), row.names=FALSE)
       write.csv(full_data2, paste0(input_data_aux_dir, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
       
