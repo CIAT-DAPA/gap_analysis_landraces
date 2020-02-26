@@ -20,6 +20,10 @@ sdm_maxent_approach_function <- function(occName      = occName,
   }else{
     clim_layer  <- raster::stack(clim_layer)
   }
+  #if validation == TRUE then import kernel raster
+  if(validation){
+    knl <- raster(paste0(.GlobalEnv$gap_outDir, "/kernel.tif"))
+  }
   
   cat("Initializing MAXENT model fitting throught cross validation. \n ")
   
@@ -185,7 +189,10 @@ sdm_maxent_approach_function <- function(occName      = occName,
                                              #thresholding raster 
                                              if(!validation){
                                                r[which(r[] < .z$threshold)] <- NA 
+                                             }else{
+                                               r <- raster::mask(x = r, mask = knl)
                                              }
+                                             
                                              writeRaster(r, paste(model_outDir,"/replicates/",occName,"_prj_th_rep-", .y,".tif",sep=""), format="GTiff", overwrite = TRUE)
                                              return(r)
                                            })

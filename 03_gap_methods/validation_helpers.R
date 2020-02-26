@@ -84,7 +84,7 @@ occSDM_upt <- occSDM[base::setdiff(1:nrow(occSDM), which(id_sdm == 1)),]; rm(id_
                                  feat         = params_tunned$features,
                                  doSDraster   = FALSE,
                                  varImp       = FALSE,
-                                 validation   = FALSE)
+                                 validation   = TRUE)
     
 }
 
