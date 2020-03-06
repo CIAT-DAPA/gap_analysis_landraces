@@ -1,7 +1,7 @@
 #*****************************************************************************
-########  script to classify germplasm and herbarium institutes from GBIF data
+########  script to match germplasm and herbarium institutes from GBIF data
 ######## Autor: ANDRES CAMILO MENDEZ
-####### This script comes with absolutely no warranty, feel free to redistribute it
+####### This script comes with absolutely no warranty, feel free to redistribute and use it
 
 pacman::p_load(stringr, stringi,tidyverse, purrr, stringdist)
 
@@ -70,9 +70,6 @@ if(!is.na(text)){
   return(any(vec))
   
 }
-#match_herbairums(text = "8", h_inst = h_inst)
-
-#match_germplasm(text = "institut de recherche gronomique", g_inst = g_inst)
 
 
 h_inst <- read.csv("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/input_data/institution_names/H_institutions.csv",header = T) %>% 
@@ -90,13 +87,15 @@ g_inst <- read.csv("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/in
   dplyr::mutate_all(., .funs = function(i)ifelse(i=="", NA, as.character(i))) %>% 
   as_tibble()
 
+#write gbif database path
 pth <- ""
 gbif_data <- read_csv(pth)
 
-to_exclude <- c("africarice",
+#Write names to exclude from GBIF database
+to_exclude <- c("CGIAR NAME(LOWERCASE PLS)",
                 "singer",
                 "wild", 
-                "USDA", 
+                "usda", 
                 "united states department of agriculture",  
                 "system wide information network on genetic resources",
                 "the system-wide information network for genetic resources") %>%
@@ -141,7 +140,8 @@ status <- gbif_data_cleaned %>%
 
 
 gbif_data_cleaned$status <- status
-  
+
+#Write output file path, pls set a filename like "CROPNAME_gbif_cleaned.csv"
 output_path <- ""
 write.csv(x = gbif_data_cleaned, file = output_path, row.names = F)  
 
