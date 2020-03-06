@@ -7,19 +7,21 @@ create_occ_shp <- function(file_path, file_output, validation ){
   
   cat("Importing data base \n")
   msk <- raster(mask)
-  
-  Occ <- read.csv(file_path, header  = TRUE)
+  db_path <- paste0(file_path, "/", crop, "_", level, "_bd.csv")
+
+  Occ <- read.csv(db_path, header  = TRUE, stringsAsFactors = F)
+  Occ$ID <- 1:nrow(Occ)
 
   if("status" %in% names(Occ)){
-    Occ <- Occ %>% dplyr::filter(., status == "G") %>% dplyr::select(., "Longitude", "Latitude", one_of(c("Y", "ensemble")))  
+    Occ <- Occ %>% dplyr::filter(., status == "G") %>% dplyr::select(., "Longitude", "Latitude", one_of(c("Y", "ensemble")), ID)  
   } else{
-    Occ <- Occ  %>% dplyr::select(., "Longitude", "Latitude", one_of(c("Y", "ensemble")))
+    Occ <- Occ  %>% dplyr::select(., "Longitude", "Latitude", one_of(c("Y", "ensemble")), ID)
   }
   
   
   
-  names(Occ) <- c("Longitude", "Latitude", "ensemble")
-  #Occ$ensemble <- tolower(Occ$ensemble)
+  names(Occ) <- c("Longitude", "Latitude", "ensemble", "ID")
+  Occ$ensemble <- as.character(Occ$ensemble)
   Occ <- Occ[which(Occ$ensemble == occName),]
   
   cat("Removing coordiantes on the ocean/sea \n")
@@ -36,10 +38,25 @@ create_occ_shp <- function(file_path, file_output, validation ){
   #spData <- spData[-rep, ]
   
   Occ$cellID <-NA
-  Occ$cellID <-raster::extract(msk,SpatialPoints(cbind(Occ$Longitude, Occ$Latitude)),cellnumbers=TRUE) 
-  Occ <-Occ[!duplicated(Occ$cellID),- which(names(Occ) %in% c("cellID"))]
+  Occ$cellID <-raster::extract(msk,SpatialPoints(cbind(Occ$Longitude, Occ$Latitude)), cellnumbers=TRUE) 
+  Occ <-Occ[!duplicated(Occ$cellID),-which(names(Occ) %in% c("cellID"))]
   
   
+  #add column to identifiers bd and fill it based on valid occurrences
+  ids_path <- paste0(file_path, "/", crop, "_bd_identifiers.csv")
+  if(file.exists(ids_path)){
+    ids_db <- read.csv(ids_path, header = T, stringsAsFactors = F)
+    
+    if(is.null(ids_db$used)){
+      ids_db$used <- FALSE
+    }
+    ids_db$used[Occ$ID] <- TRUE
+    
+    write.csv(ids_db, ids_path, row.names = F)
+    rm(ids_db)
+  }
+  
+Occ$ID <- NULL
   
   #save occurrences in csv format
   write.csv(Occ, paste0(occDir, "/Occ.csv"), row.names = FALSE)

@@ -31,14 +31,14 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
   }
   
   if("status" %in% names(data)){
-    status <- data %>% dplyr::select(., matches("status", ignore.case = T))  
+    status <- data %>% dplyr::pull(., "status")  
   }else{status <- NULL}
   #check wheter exists ID variables
   if("source_db" %in% names(data)){
-    source_db <- data %>% dplyr::select(., "source_db") 
+    source_db <- data %>% dplyr::pull(., "source_db") 
   }else{source_db <- NULL}
   if("database_id" %in% names(data)){
-    database_id <- data %>% dplyr::select(., "database_id")
+    database_id <- data %>% dplyr::pull(., "database_id")
   }else{database_id <- NULL}
  
   #select only the response variable and lat / long and create an ID column
@@ -58,7 +58,7 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
   cat("Cleaning zero lat/lon \n")
   
   data <- data %>% 
-    dplyr::mutate(Y = as.character(Y), ID = 1:nrow(.)) %>%
+    dplyr::mutate(Y = as.character(Y), ID = 1:nrow(.), predictable = ifelse(!is.na(Y), FALSE, TRUE) ) %>%
     dplyr::filter(., Latitude != 0 | Longitude != 0) %>% 
     dplyr::filter(., !is.na(Latitude) | !is.na(Longitude))
   
@@ -97,7 +97,7 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
       raster::extract(current_clim_layer, .)
   
   full_data <- data %>% 
-      dplyr::select(-ID) %>% 
+      dplyr::select(-ID, -predictable) %>% 
         data.frame(., clim_table) 
   
   full_data <- full_data[complete.cases(full_data[, c(-1, -2, -3)]), ]
@@ -115,6 +115,8 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
   
   rows_id <- full_data2$ID
   full_data2$ID <- NULL 
+  predictable <- full_data2$predictable
+  full_data2$predictable <- NULL
   
   if(do.ensemble.models){
     cat("fitting an ensemble model using selected varaibles \n")
@@ -164,20 +166,23 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
       names(full_data2)[1] <- "ensemble"
       #add status column if it exists
       if(!is.null(status)){
-        full_data2$status <- status[rows_id, ]
+        full_data2$status <- status[rows_id]
       }
       if(!is.null(database_id)){
-        full_data2$database_id <- database_id[rows_id, ]
+        full_data2$database_id <- database_id[rows_id]
       }
       if(!is.null(source_db)){
-        full_data2$source_db <- source_db[rows_id, ]
+        full_data2$source_db <- source_db[rows_id]
+      }
+      if(!is.null(predictable)){
+        full_data2$predictable <- predictable[rows_id]
       }
       #saving results
       saveRDS(clas_res, file = paste0(classResults, "/", crop, "_descriptive_results.rds") )
       saveRDS(clas_res, file = paste0(input_data_aux_dir, "/", crop, "_descriptive_results.rds") )
       
       write.csv(full_data2 %>% 
-                  dplyr::select(-matches("database_id", ignore.case = T), -matches("source_db", ignore.case = T)),
+                  dplyr::select(-matches("database_id", ignore.case = T), -matches("source_db", ignore.case = T), -matches("predictable", ignore.case = T)),
                 paste0(classResults, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
       
       write.csv(full_data2, paste0(classResults, "/", crop, "_", "bd_identifiers.csv"), row.names=FALSE)
@@ -198,17 +203,22 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
       
       #add status column if it exists
       if(!is.null(status)){
-        full_data2$status <- status[rows_id, ]
+        full_data2$status <- status[rows_id]
       }
       if(!is.null(database_id)){
-        full_data2$database_id <- database_id[rows_id, ]
+        full_data2$database_id <- database_id[rows_id]
       }
       if(!is.null(source_db)){
-        full_data2$source_db <- source_db[rows_id, ]
+        full_data2$source_db <- source_db[rows_id]
+      }
+      if(!is.null(predictable)){
+        full_data2$predictable <- predictable[rows_id]
       }
       names(full_data2)[1] <- "ensemble"
       write.csv(full_data2 %>% 
-                  dplyr::select(-matches("database_id", ignore.case = T), -matches("source_db", ignore.case = T)), paste0(classResults, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
+                  dplyr::select(-matches("database_id", ignore.case = T), -matches("source_db", ignore.case = T),-matches("predictable", ignore.case = T)), 
+                paste0(classResults, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
+      
       write.csv(full_data2, paste0(classResults, "/", crop, "_", "bd_identifiers.csv"), row.names=FALSE)
       write.csv(full_data2, paste0(input_data_aux_dir, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
       
@@ -221,17 +231,22 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
     #add status column if it exists
     
     if(!is.null(status)){
-      full_data2$status <- status[rows_id, ]
+      full_data2$status <- status[rows_id]
     }
     if(!is.null(database_id)){
-      full_data2$database_id <- database_id[rows_id, ]
+      full_data2$database_id <- database_id[rows_id]
     }
     if(!is.null(source_db)){
-      full_data2$source_db <- source_db[rows_id, ]
+      full_data2$source_db <- source_db[rows_id]
+    }
+    if(!is.null(predictable)){
+      full_data2$predictable <- predictable[rows_id]
     }
     names(full_data2)[1] <- "ensemble"
     write.csv(full_data2 %>% 
-                dplyr::select(-matches("database_id", ignore.case = T), -matches("source_db", ignore.case = T)), paste0(classResults, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
+                dplyr::select(-matches("database_id", ignore.case = T), -matches("source_db", ignore.case = T), -matches("predictable", ignore.case = T)),
+              paste0(classResults, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
+    
     write.csv(full_data2, paste0(classResults, "/", crop, "_", "bd_identifiers.csv"), row.names=FALSE)
     write.csv(full_data2, paste0(input_data_aux_dir, "/", crop, "_", level, "_bd.csv"), row.names=FALSE)
     
