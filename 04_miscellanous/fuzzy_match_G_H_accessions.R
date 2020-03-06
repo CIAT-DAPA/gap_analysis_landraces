@@ -6,7 +6,7 @@
 pacman::p_load(stringr, stringi,tidyverse, purrr, stringdist)
 
 match_herbairums <- function(text, h_inst){
- 
+  
   if(!all(c("organization", "code") %in% names(h_inst))){
     stop("colnames not found in h_inst")
   }
@@ -25,8 +25,8 @@ if(!is.na(text)){
     }
     
   }else if(grepl("\\s", text)){
-    simd_1 <- na.omit(stringsim(a = text, b = h_inst$organization))  >= 0.85
-    simd_2 <- na.omit(stringsim(a = text, b = h_inst$code)) >= 0.85
+    simd_1 <- na.omit(stringsim(a = gsub("[[:punct:][:blank:]]+", " ", text), b = h_inst$organization))  >= 0.85
+    simd_2 <- na.omit(stringsim(a = gsub("[[:punct:][:blank:]]+", " ", text), b = h_inst$code)) >= 0.85
     vec <- any(simd_1) | any(simd_2)
   }else{
     vec <- text %in% h_inst$organization | text %in% h_inst$code
@@ -58,8 +58,8 @@ if(!is.na(text)){
     }
     
   }else if(grepl("\\s", text)){
-    simd_1 <- na.omit(stringsim(a = text, b = g_inst$ACRONYM))  >= 0.85
-    simd_2 <- na.omit(stringsim(a = text, b = g_inst$FULL_NAME)) >= 0.85
+    simd_1 <- na.omit(stringsim(a =  gsub("[[:punct:][:blank:]]+", " ", text), b = g_inst$ACRONYM))  >= 0.85
+    simd_2 <- na.omit(stringsim(a =  gsub("[[:punct:][:blank:]]+", " ", text), b = g_inst$FULL_NAME)) >= 0.85
     vec <- any(simd_1) | any(simd_2)
   }else{
     vec <- text %in% g_inst$INSTCODE | text %in% g_inst$FULL_NAME | text %in% g_inst$FULL_NAME
@@ -75,7 +75,8 @@ if(!is.na(text)){
 h_inst <- read.csv("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/input_data/institution_names/H_institutions.csv",header = T) %>% 
   dplyr::select(organization, code) %>% 
   dplyr::mutate_all(., .funs = iconv, to = "ASCII//TRANSLIT")%>% 
-  dplyr::mutate_all(., tolower) %>% 
+  dplyr::mutate_all(., tolower) %>%
+  dplyr::mutate_all(., gsub, pattern = "[[:punct:][:blank:]]+", replacement = " ") %>% 
   dplyr::mutate_all(., .funs = function(i)ifelse(i=="", NA, as.character(i))) %>% 
   as_tibble() 
 
@@ -84,6 +85,7 @@ g_inst <- read.csv("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/in
   dplyr::select(INSTCODE, ACRONYM, FULL_NAME) %>% 
   dplyr::mutate_all(., .funs = iconv, to= "ASCII//TRANSLIT") %>%
   dplyr::mutate_all(., tolower) %>%
+  dplyr::mutate_all(., gsub, pattern = "[[:punct:][:blank:]]+", replacement = " ")
   dplyr::mutate_all(., .funs = function(i)ifelse(i=="", NA, as.character(i))) %>% 
   as_tibble()
 
