@@ -44,7 +44,8 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
   #select only the response variable and lat / long and create an ID column
   data <- data %>% dplyr::select(., as.integer(col_number), 
                              matches("declat|latitude", ignore.case = T), 
-                             matches("declon|longitude", ignore.case = T) )
+                             matches("declon|longitude", ignore.case = T) ) 
+    
   if(ncol(data) > 3){
     stop("Data base has more than 1 lat/long variable")
   }
@@ -56,12 +57,16 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
   names(data) <- c("Y", "Latitude", "Longitude")
   
   cat("Cleaning zero lat/lon \n")
+ predictable <- ifelse(!is.na(data$Y), FALSE, TRUE)
   
   data <- data %>% 
-    dplyr::mutate(Y = as.character(Y), ID = 1:nrow(.), predictable = ifelse(!is.na(Y), FALSE, TRUE) ) %>%
+    dplyr::mutate(Y = as.character(Y), ID = 1:nrow(.)) %>%
     dplyr::filter(., Latitude != 0 | Longitude != 0) %>% 
     dplyr::filter(., !is.na(Latitude) | !is.na(Longitude))
   
+  
+  
+
   cat("Removing coordinates on Oceans/Seas \n")
   data <- data[which(!is.na(raster::extract(x = msk, y = data[,c("Longitude", "Latitude")]))),]
   
@@ -115,7 +120,6 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
   
   rows_id <- full_data2$ID
   full_data2$ID <- NULL 
-  predictable <- full_data2$predictable
   full_data2$predictable <- NULL
   
   if(do.ensemble.models){
@@ -160,8 +164,10 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
       
       #fill NA cells using ensemble model predictions
       
-      full_data2[which(is.na(full_data2$Y)), "Y"] <- clas_res$External_data_predictions %>% 
-        dplyr::select(., ensemble)
+      full_data2[which(is.na(full_data2$Y)), "Y"] <- clas_res$External_data_predictions %>%
+        dplyr::pull(., ensemble) %>% 
+        as.character  
+        
       names(full_data)[1] <- "ensemble"
       names(full_data2)[1] <- "ensemble"
       #add status column if it exists
