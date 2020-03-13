@@ -134,7 +134,7 @@ pseudoAbsences_generator <- function(file_path, clsModel, overwrite = F, correla
     
     cat("Processing:", paste(occName), "\n")
     db_path <- paste0(file_path, "/", crop, "_lvl_1_bd.csv")
-    spData            <- read.csv(db_path, header = T)
+    spData            <- read.csv(db_path, header = T, stringsAsFactors = F)
     spData$ID <- 1:nrow(spData)
     #spData[,clsModel] <- tolower(spData[,clsModel])
     spData            <- spData[which(spData[,clsModel]== occName),]
@@ -151,6 +151,22 @@ pseudoAbsences_generator <- function(file_path, clsModel, overwrite = F, correla
     spData$cellID <-NA
     spData$cellID <-raster::extract(mask,SpatialPoints(cbind(spData$Longitude, spData$Latitude)),cellnumbers=TRUE) 
     spData <-spData[!duplicated(spData$cellID),- which(names(spData) %in% c("cellID"))]
+    
+    #add column to identifiers bd and fill it based on valid occurrences
+    ids_path <- paste0(file_path, "/", crop, "_bd_identifiers.csv")
+    if(file.exists(ids_path)){
+      ids_db <- read.csv(ids_path, header = T, stringsAsFactors = F)
+      
+      if(is.null(ids_db$used)){
+        ids_db$used <- FALSE
+      }
+      ids_db$used[spData$ID] <- TRUE
+      
+      write.csv(ids_db, ids_path, row.names = F)
+      rm(ids_db)
+    }
+    
+    spData$ID <- NULL
     
     cat("Creating random Pseudo-absences points using: ", pa_method, "method \n")
     
@@ -234,27 +250,12 @@ pseudoAbsences_generator <- function(file_path, clsModel, overwrite = F, correla
     occ           <- z
     
     # Preparing samples
-    occSample        <- unique(spData[,c("Longitude", "Latitude", "ID")])
+    occSample        <- unique(spData[,c("Longitude", "Latitude")])
     names(occSample) <- c("lon", "lat")
     occ_env_data     <- as.data.frame(raster::extract(climLayers, occSample))
     occSample        <- cbind(id = 1:nrow(occSample), species = occName, status = 1, occSample, occ_env_data)
     occSample        <- occSample[complete.cases(occSample),]
     
-    #add column to identifiers bd and fill it based on valid occurrences
-    ids_path <- paste0(file_path, "/", crop, "_bd_identifiers.csv")
-    if(file.exists(ids_path)){
-      ids_db <- read.csv(ids_path, header = T, stringsAsFactors = F)
-      
-      if(is.null(ids_db$used)){
-        ids_db$used <- FALSE
-      }
-      ids_db$used[occSample$ID] <- TRUE
-      
-      write.csv(ids_db, ids_path, row.names = F)
-      rm(ids_db)
-    }
-    
-    occSample$ID <- NULL
     
     
     # Preparing swd
