@@ -44,7 +44,7 @@ create_occ_shp <- function(file_path, file_output, validation ){
   
   #add column to identifiers bd and fill it based on valid occurrences
   ids_path <- paste0(file_path, "/", crop, "_bd_identifiers.csv")
-  if(file.exists(ids_path)){
+  if(file.exists(ids_path) & !validation){
     ids_db <- read.csv(ids_path, header = T, stringsAsFactors = F)
     
     if(is.null(ids_db$used)){
@@ -54,7 +54,7 @@ create_occ_shp <- function(file_path, file_output, validation ){
     
     write.csv(ids_db, ids_path, row.names = F)
     rm(ids_db)
-  }
+  } 
   
 Occ$ID <- NULL
   

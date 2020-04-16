@@ -31,15 +31,15 @@ rm(OSys)
 # Define code's folder
 srcDir <- paste(baseDir, "/scripts", sep = "")
 # Define region of study
-region <- "africa"
+region <- "banana_custom"
 
 # Configuring crop directories
 source(paste0(srcDir, "/00_config/config_crop.R"))
 
 # Define crop
-crop <- "rice_african"
+crop <- "banana"
 # Define level of analysis
-level_1 <-  c("K2", "K4", "K5")
+level_1 <-  c("Musa", "kabuli")
 level   <- "lvl_1"
 # Define occurrence name: it is necessary to specify the group, e.g. Group = "3"
 occName <- level_1[1]
@@ -80,7 +80,7 @@ prepare_input_data(data_path = choose.files( caption = "Select a valid .csv file
 # Input file: e.g. ./results/african_maize/lvl_1/3/africa/input_data/african_maize_lvl_1_bd.csv
 
 
-create_occ_shp(file_path   = paste0(classResults, "/", crop, "_", level, "_bd.csv"),
+create_occ_shp(file_path   = classResults,
                file_output = paste0(occDir,"/Occ.shp"),
                validation  = FALSE)
 # Output file: e.g. ./results/african_maize/lvl_1/3/africa/input_data/Occ.csv
@@ -106,7 +106,7 @@ create_occ_shp(file_path   = paste0(classResults, "/", crop, "_", level, "_bd.cs
 # Input file: e.g. ./input_data/mask/mask_africa.tif
 # Input file: e.g. ./input_data/generic_rasters/africa (Generic rasters)
 # Input file: e.g. ./input_data/by_crop/african_maize/raster/africa (Specific rasters by crop)
-spData <- pseudoAbsences_generator(file_path = paste0(classResults, "/", crop, "_lvl_1_bd.csv"),
+spData <- pseudoAbsences_generator(file_path = classResults,
                                    correlation = 3, # 1. Correlation, 2. VIF, 3. PCA + VIF
                                    pa_method = "ecoreg",
                                    clsModel = "ensemble",
@@ -306,7 +306,3 @@ gap_class_maps(gap_valDir,
   # Output file: e.g. ./results/african_maize/lvl_1/3/africa/gap_models/gap_class_delaunay.tif
   # Output file: e.g. ./results/african_maize/lvl_1/3/africa/gap_models/gap_class_environ.tif
 
-rs_gaps <- raster(paste0(results_dir, "/", crop, "/", level, "/", occName, "/", region, "/gap_models/gap_class_final.tif"))
-covg_ul <- 100 - length(which(rs_gaps[]==2))/length(which(!is.na(rs_gaps[])))*100
-covg_ll <- 100 - length(which(rs_gaps[]>=1))/length(which(!is.na(rs_gaps[])))*100
-cat("coverage of",occName,"is UL=",round(covg_ul,1),"% and LL=",round(covg_ll,1),"% \n")

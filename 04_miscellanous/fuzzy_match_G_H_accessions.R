@@ -85,13 +85,13 @@ g_inst <- read.csv("//dapadfs/Workspace_cluster_9/gap_analysis_landraces/runs/in
   dplyr::select(INSTCODE, ACRONYM, FULL_NAME) %>% 
   dplyr::mutate_all(., .funs = iconv, to= "ASCII//TRANSLIT") %>%
   dplyr::mutate_all(., tolower) %>%
-  dplyr::mutate_all(., gsub, pattern = "[[:punct:][:blank:]]+", replacement = " ")
+  dplyr::mutate_all(., gsub, pattern = "[[:punct:][:blank:]]+", replacement = " ") %>%
   dplyr::mutate_all(., .funs = function(i)ifelse(i=="", NA, as.character(i))) %>% 
   as_tibble()
 
 #write gbif database path
 pth <- ""
-gbif_data <- read_csv(pth)
+gbif_data <- read_delim(pth, delim = '\t') # read_csv(pth)
 
 #Write names to exclude from GBIF database
 to_exclude <- c("CGIAR NAME(LOWERCASE PLS)",

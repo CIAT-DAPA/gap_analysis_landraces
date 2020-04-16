@@ -116,11 +116,11 @@ pseudoAbsences_generator <- function(file_path, clsModel, overwrite = F, correla
   cat("Loading raster files","\n")
   current_clim_layer_generic <- lapply(list.files(climDir, pattern =  ".tif$", full.names = T), raster)
   current_clim_layer_sp      <- lapply(list.files(paste0(baseDir, "/input_data/by_crop/", crop, "/raster/", region), pattern = ".tif$", full.names = T), raster)
-  current_clim_layer         <- stack(c(current_clim_layer_generic, current_clim_layer_sp))
+  all_clim_layer         <- stack(c(current_clim_layer_generic, current_clim_layer_sp))
   
   # remove undesirable layers
-  layers_in <- names(current_clim_layer)[ !tolower(names(current_clim_layer)) %in% c("yield", "production", "harvested.area", "ethnicity", "monthCountByTemp10") ]
-  current_clim_layer <- current_clim_layer[[layers_in]]
+  layers_in <- names(all_clim_layer)[ !tolower(names(all_clim_layer)) %in% c("yield", "production", "harvested.area", "ethnicity", "monthCountByTemp10") ]
+  current_clim_layer <- all_clim_layer[[layers_in]]
   
   # Background samples file name
   outBackName         <- paste0(backDir, "/bg_", occName, ".csv")
@@ -243,7 +243,8 @@ pseudoAbsences_generator <- function(file_path, clsModel, overwrite = F, correla
     }
     
     # Extract variable data
-    ex_raster_env <- as.data.frame(raster::extract(climLayers, xranSample))
+     
+    ex_raster_env <- as.data.frame(raster::extract(all_clim_layer, xranSample))
     z             <- cbind(id = 1:nrow(xranSample), species = occName, status = 0, xranSample, ex_raster_env)
     z             <- z[complete.cases(z),]
     cat(nrow(z), "pseudo-absences ready to use\n")
@@ -252,7 +253,7 @@ pseudoAbsences_generator <- function(file_path, clsModel, overwrite = F, correla
     # Preparing samples
     occSample        <- unique(spData[,c("Longitude", "Latitude")])
     names(occSample) <- c("lon", "lat")
-    occ_env_data     <- as.data.frame(raster::extract(climLayers, occSample))
+    occ_env_data     <- as.data.frame(raster::extract(all_clim_layer, occSample))
     occSample        <- cbind(id = 1:nrow(occSample), species = occName, status = 1, occSample, occ_env_data)
     occSample        <- occSample[complete.cases(occSample),]
     
@@ -273,13 +274,22 @@ pseudoAbsences_generator <- function(file_path, clsModel, overwrite = F, correla
       cat("Using Pearson correlation approach\n")
       descrCor       <- cor(swdSample[,-c(1:5)])
       highlyCorDescr <- caret::findCorrelation(descrCor, cutoff = .75)
-      swdSample      <- swdSample[,!colnames(swdSample) %in% (colnames(descrCor)[highlyCorDescr])]
+      if("ethnicity" %in% (colnames(descrCor)[highlyCorDescr])){
+        swdSample      <- swdSample[,!colnames(swdSample) %in% (colnames(descrCor)[highlyCorDescr])]
+      }else{
+        plus_eth <- c((colnames(descrCor)[highlyCorDescr]), "ethnicity")
+        swdSample      <- swdSample[,!colnames(swdSample) %in% plus_eth ]
+      }
+     
     }
     
     if(correlation == 2){
       cat("Using VIF approach\n")
       descrCor       <- usdm::vifstep(swdSample[,-c(1:5)], th = 5)
       highlyCorDescr <- descrCor@excluded
+      if("ethnicity" %in% highlyCorDescr){
+        highlyCorDescr <- highlyCorDescr[-which(highlyCorDescr == "ethnicity")]
+      }
       swdSample      <- swdSample[,!colnames(swdSample) %in% highlyCorDescr]
     }
     
@@ -294,6 +304,9 @@ pseudoAbsences_generator <- function(file_path, clsModel, overwrite = F, correla
       }))]
       descrCor       <- usdm::vifstep(swdSample[,vars], th = 10)
       highlyCorDescr <- descrCor@excluded
+      if("ethnicity" %in% highlyCorDescr){
+        highlyCorDescr <- highlyCorDescr[-which(highlyCorDescr == "ethnicity")]
+      }
       swdSample      <- swdSample[,!colnames(swdSample) %in% highlyCorDescr]
     }
     cat("Saving csv files","\n")

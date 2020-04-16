@@ -46,10 +46,13 @@ if(!file.exists(paste0(gap_valDir, "/", densities[density_pattern], "_density/pn
 
 cat(">>> Creating occurrences shapefile... \n")
 
-create_occ_shp(file_path   = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/01_selected_points", "/", crop, "_", level, "_bd.csv"),
+#create_occ_shp(file_path   = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/01_selected_points", "/", crop, "_", level, "_bd.csv"),
+#               file_output = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/01_selected_points","/Occ.shp"),
+#               validation  = TRUE)
+
+create_occ_shp(file_path   = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/01_selected_points"),
                file_output = paste0(gap_valDir, "/buffer_100km/", densities[density_pattern], "_density/pnt", i, "/01_selected_points","/Occ.shp"),
                validation  = TRUE)
-
 
 cat(">>> Load same variables for SDM ... \n")
 vars <- read.csv(paste0(sp_Dir, "/sdm_variables_selected.csv"))

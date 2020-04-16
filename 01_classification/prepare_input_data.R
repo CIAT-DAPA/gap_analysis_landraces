@@ -102,7 +102,7 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
       raster::extract(current_clim_layer, .)
   
   full_data <- data %>% 
-      dplyr::select(-ID, -predictable) %>% 
+      dplyr::select(-ID) %>% 
         data.frame(., clim_table) 
   
   full_data <- full_data[complete.cases(full_data[, c(-1, -2, -3)]), ]
