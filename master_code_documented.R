@@ -31,15 +31,15 @@ rm(OSys)
 # Define code's folder
 srcDir <- paste(baseDir, "/scripts", sep = "")
 # Define region of study
-region <- "banana_custom"
+region <- "rice_custom"
 
 # Configuring crop directories
 source(paste0(srcDir, "/00_config/config_crop.R"))
 
 # Define crop
-crop <- "banana"
+crop <- "rice_asia"
 # Define level of analysis
-level_1 <-  c("Musa", "kabuli")
+level_1 <-  c("indica", "japonica", "aus", "aromatic")
 level   <- "lvl_1"
 # Define occurrence name: it is necessary to specify the group, e.g. Group = "3"
 occName <- level_1[1]
@@ -51,7 +51,9 @@ source(paste0(srcDir, "/00_config/config.R"))
 #************************ SECTION: SET UP INPUT FILES ****************************************************************************
 #*********************************************************************************************************************************
 
+not_run <- TRUE
 
+if(!not_run){
 # Function to crop all rasters using a region mask extent (Just need to be run when you start the first group analysis)
 crop_raster(mask   = mask, 
             region = region)
@@ -72,7 +74,9 @@ prepare_input_data(data_path = choose.files( caption = "Select a valid .csv file
                    sampling_mthd      = "none", # Just for classification models: for balancing the classes
                    mask               = mask)  # Mask according with the region of analysis
 # Output file: e.g. ./results/african_maize/lvl_1/3/africa/input_data/african_maize_lvl_1_bd.csv
-
+}
+  
+  
 ##########################################################################################
 # CREATE OCCURRENCE FILE ONLY WITH GENEBANK ACCESSIONS (column 'status'=='G') ###########
 ########################################################################################
@@ -110,7 +114,8 @@ spData <- pseudoAbsences_generator(file_path = classResults,
                                    correlation = 3, # 1. Correlation, 2. VIF, 3. PCA + VIF
                                    pa_method = "ecoreg",
                                    clsModel = "ensemble",
-                                   overwrite = F)
+                                   overwrite = F,
+                                   rm_bg_region = NULL)
 names(spData)[1] <- occName
 var_names <- read.csv(paste0(sp_Dir, "/sdm_variables_selected.csv"), stringsAsFactors = F) %>% dplyr::pull(x)
 
