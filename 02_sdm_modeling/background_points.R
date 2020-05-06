@@ -41,13 +41,25 @@ NAFiltered <- function(crop = "potato", occName = "ajanhuiri"){
 }
 
 # Profiling function
-OCSVMprofiling2 <- function(xy, varstack, nu = 0.5){
+OCSVMprofiling2 <- function(xy, varstack, nu = 0.5, rm_bg_region = rm_bg_region){
   
-  background <- raster::as.data.frame(varstack[[1]], xy = T) %>% 
+  
+  if(!is.null(rm_bg_region)){
+    cat("Removing pseudo-absences in countries (ISO_3):", rm_bg_region, "\n" )
+    shp_toremove <- raster::shapefile(paste0(input_data_dir,"/shapefiles/new_world_shapefile/ne_50m_admin_0_countries.shp"))
+    shp_toremove <- shp_toremove[shp_toremove@data$ISO_A3 %in% toupper(rm_bg_region), ] 
+    
+    msk <- raster::mask(varstack[[1]], shp_toremove, inverse = TRUE)
+    rm(shp_toremove)
+  }else{
+    msk <- varstack[[1]]
+  }
+
+  coo <- raster::as.data.frame( msk, xy = T) %>% 
     drop_na() %>% 
     dplyr::select(1:2)
+  
   bioclim    <- varstack
-  coo        <- background
   mat        <- cbind(xy, rep(1, nrow(xy)))
   mat        <- as.data.frame(cbind(1, raster::extract(bioclim, mat[,1:2])))
   
@@ -67,22 +79,6 @@ pseudoAbsences2 <- function(xy, background, exclusion.buffer = 0.0166, tms = 10,
   crs(presences) <- coord.sys
   spol <- rgeos::gBuffer(presences, width = exclusion.buffer)
   
-  #very HARD WAY TO CREATE THE BUFFERS
-  # polybuffs <- list()
-  # r         <- exclusion.buffer
-  # pr        <- xy
-  # polys     <- list()
-  # for (i in 1:nrow(pr)) {
-  #   discbuff <- spatstat::disc(radius = r, centre = c(pr[i, 1], pr[i, 2]))
-  #   discpoly <- sp::Polygon(rbind(cbind(discbuff$bdry[[1]]$x, y = discbuff$bdry[[1]]$y), c(discbuff$bdry[[1]]$x[1], y = discbuff$bdry[[1]]$y[1])))
-  #   polys    <- c(polys, discpoly)
-  # }
-  # spolys <- list()
-  # for (i in 1:length(polys)) {
-  #   spolybuff <- sp::Polygons(list(polys[[i]]), ID = i)
-  #   spolys    <- c(spolys, spolybuff)
-  #   spol      <- sp::SpatialPolygons(spolys)
-  # }
   
   coords.l  <- background
   coords    <- coords.l
@@ -109,7 +105,7 @@ pseudoAbsences2 <- function(xy, background, exclusion.buffer = 0.0166, tms = 10,
 # "ntv_area_ecoreg": Native Area cropped by EcoRegion
 # "ecoreg": EcoRegion
 # "all_area": Full extent of mask
-pseudoAbsences_generator <- function(file_path, clsModel, overwrite = F, correlation = 0, pa_method = "ntv_area_ecoreg"){
+pseudoAbsences_generator <- function(file_path, clsModel, overwrite = F, correlation = 0, pa_method = "ntv_area_ecoreg", rm_bg_region = NULL ){
   
  
   
@@ -184,7 +180,7 @@ pseudoAbsences_generator <- function(file_path, clsModel, overwrite = F, correla
       
      
       
-      unsuit_bg <- OCSVMprofiling2(xy = unique(spData[,c("Longitude","Latitude")]), varstack = climLayers)
+      unsuit_bg <- OCSVMprofiling2(xy = unique(spData[,c("Longitude","Latitude")]), varstack = climLayers, rm_bg_region = rm_bg_region)
       random_bg <- pseudoAbsences2(xy = unique(spData[,c("Longitude","Latitude")]), background = unsuit_bg$Absences, exclusion.buffer = 0.083*5, tms = 10, coord.sys = crs(current_clim_layer))
       
       bg_spPoints  <- SpatialPoints(coords = random_bg[random_bg$Status == 0, c("Longitude", "Latitude")])
@@ -210,7 +206,7 @@ pseudoAbsences_generator <- function(file_path, clsModel, overwrite = F, correla
       
       
       
-      unsuit_bg <- OCSVMprofiling2(xy = unique(spData[,c("Longitude","Latitude")]), varstack = climLayers)
+      unsuit_bg <- OCSVMprofiling2(xy = unique(spData[,c("Longitude","Latitude")]), varstack = climLayers, rm_bg_region = rm_bg_region)
       random_bg <- pseudoAbsences2(xy = unique(spData[,c("Longitude","Latitude")]), background = unsuit_bg$Absences, exclusion.buffer = 0.083*5, tms = 10, coord.sys = crs(current_clim_layer))
       
       bg_spPoints  <- SpatialPoints(coords = random_bg[random_bg$Status == 0, c("Longitude", "Latitude")])
@@ -228,7 +224,7 @@ pseudoAbsences_generator <- function(file_path, clsModel, overwrite = F, correla
       climLayers <- current_clim_layer
      
       
-      unsuit_bg <- OCSVMprofiling2(xy = unique(spData[,c("Longitude","Latitude")]), varstack = climLayers)
+      unsuit_bg <- OCSVMprofiling2(xy = unique(spData[,c("Longitude","Latitude")]), varstack = climLayers, rm_bg_region = rm_bg_region)
       random_bg <- pseudoAbsences2(xy = unique(spData[,c("Longitude","Latitude")]), background = unsuit_bg$Absences, exclusion.buffer = 0.083*5, tms = 10, coord.sys = crs(current_clim_layer))
       
       bg_spPoints  <- SpatialPoints(coords = random_bg[random_bg$Status == 0, c("Longitude", "Latitude")])
@@ -309,6 +305,10 @@ pseudoAbsences_generator <- function(file_path, clsModel, overwrite = F, correla
       }
       swdSample      <- swdSample[,!colnames(swdSample) %in% highlyCorDescr]
     }
+    
+  
+    
+    
     cat("Saving csv files","\n")
     
     write.csv(swdSample_Complete, outSWDComplete_Name, quote = F, row.names = F)
