@@ -113,7 +113,7 @@ w <- mean(  x$es[which(x$auc >= li & x$auc <= ls)], na.rm = TRUE)
 
 cat("     Calculating  summary metrics \n ")
 #calculate summary measures for gap scores
-summary_gap <- all_rs %>% dplyr::group_by(., pnt) %>% summarise(.,auc.median = round(median(auc, na.rm = T),3)
+summary_gap <- all_rs %>% dplyr::group_by(., pnt) %>% dplyr::summarise(.,auc.median = round(median(auc, na.rm = T),3)
                                                            , auc.mean = round(mean(auc, na.rm = T), 3)
                                                            #, skewness = round(skew(auc), 3)
                                                            , auc.sd = round(sd(auc, na.rm = TRUE), 3)

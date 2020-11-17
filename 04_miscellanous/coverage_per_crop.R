@@ -65,8 +65,9 @@ cov_mtrs <- apply(crops_paths,1, function(i){
     rich[rich[] == 0] <- NA
     # writeRaster(rich, paste0("Z:/gap_analysis_landraces/runs/LGA_documents/gaps_richness_per_crop/", i[2], ".tif"), overwrite = T, NAflag = 0)
     
-    path <- paste0(as.character(i[1]), "/gap_richness_", i[2], ".tif")
+    
     if(save.raster){
+      path <- paste0(as.character(i[1]), "/gap_richness_", i[2], ".tif")
       writeRaster(rich, path, overwrite = T, NAflag = 0)
     }
     
@@ -80,7 +81,7 @@ cov_mtrs <- apply(crops_paths,1, function(i){
     return(status)
   })
   
-  return(cbind( name = i[c], x))
+  return(cbind( name = i[2], x))
   
 })
 
