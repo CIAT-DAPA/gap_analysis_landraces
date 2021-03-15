@@ -1,0 +1,13 @@
+name: LGA_dashboard
+title: LGA_dashboard
+username:
+account: surveylandraces
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1995405
+bundleId: 4300813
+url: https://surveylandraces.shinyapps.io/LGA_dashboard/
+when: 1614874123.06167
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: .RData|LICENSE|README.md

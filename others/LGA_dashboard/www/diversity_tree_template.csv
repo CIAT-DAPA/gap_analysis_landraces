@@ -1,0 +1,27 @@
+start,ends
+P. Vulgaris,Andean Genepool
+P. Vulgaris,Mesoamerican Genepool
+Andean Genepool,Chile
+Andean Genepool,Nueva granada
+Andean Genepool,Peru
+Mesoamerican Genepool,Durango-Jalisco
+Mesoamerican Genepool,Guatemala
+Mesoamerican Genepool,Mesoamerica
+Chile,race_1
+Chile,race_2
+Chile,race_3
+Nueva granada,race_1
+Nueva granada,race_2
+Nueva granada,race_3
+Peru,race_1
+Peru,race_2
+Peru,race_3
+Durango-Jalisco,race_1
+Durango-Jalisco,race_2
+Durango-Jalisco,race_3
+Guatemala,race_1
+Guatemala,race_2
+Guatemala,race_3
+Mesoamerica,race_1
+Mesoamerica,race_2
+Mesoamerica,race_3
