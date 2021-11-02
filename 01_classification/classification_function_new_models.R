@@ -89,7 +89,8 @@ classification_fun <- function(df              = all_data3,
                                  p               = 0.7,
                                  number          = 10,
                                  savePredictions = "final",
-                                 verboseIter     = T)
+                                 verboseIter     = T,
+                                 allowParallel = F)
     
   }
   
@@ -114,10 +115,10 @@ classification_fun <- function(df              = all_data3,
   # results$Training_predictions <- training_preds
   
   results$Training_CM <- training_preds %>%
-    purrr::map(function(x) suppressWarnings(caret::confusionMatrix(data = x, reference = training$Y)))
+    purrr::map(function(x) suppressWarnings(caret::confusionMatrix(data = factor(x), reference = factor(training$Y))))
   
   results$Training_MCC <- training_preds %>%
-    purrr::map(function(x) suppressWarnings(mltools::mcc(preds = x, actuals = training$Y))) %>%
+    purrr::map(function(x) suppressWarnings(mltools::mcc(preds = factor(x), actuals = factor(training$Y)))) %>%
     unlist
   
   cat(">>> Calculating contingency table and metrics for testing data ...\n")
@@ -126,10 +127,10 @@ classification_fun <- function(df              = all_data3,
   # results$Testing_predictions <- testing_preds
   
   results$Testing_CM <- testing_preds %>%
-    purrr::map(function(x) suppressWarnings(caret::confusionMatrix(data = x, reference = testing$Y)))
+    purrr::map(function(x) suppressWarnings(caret::confusionMatrix(data = factor(x), reference = factor(testing$Y))))
   
   results$Testing_MCC <- testing_preds %>%
-    purrr::map(function(x) suppressWarnings(mltools::mcc(preds = x, actuals = testing$Y))) %>%
+    purrr::map(function(x) suppressWarnings(mltools::mcc(preds = factor(x), actuals = factor(testing$Y)))) %>%
     unlist
   
   cat(">>> Calculating variable importance for individual models ...\n")

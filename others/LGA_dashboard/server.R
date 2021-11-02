@@ -51,6 +51,18 @@ source("www/google_directions_custom.R")
 load("www/results_all_crops.RData")
 app_credentials <- readRDS("www/credentials.rds")
 shp <- shapefile("www/world_shape_simplified/all_countries_simplified.shp")
+ctrs <-   shp@data %>% 
+  dplyr::select(ADMIN, ISO_A2, FIPS_10_) %>% 
+  dplyr::mutate(ISO_A2 = ifelse(ISO_A2 == "-99", NA_character_, ISO_A2),
+                FIPS_10_ = ifelse(FIPS_10_ == "-99", NA_character_, FIPS_10_),
+                A2 = case_when(
+                  !is.na(ISO_A2)& !is.na(FIPS_10_) ~ ISO_A2,
+                  is.na(ISO_A2) & !is.na(FIPS_10_) ~ FIPS_10_,
+                  !is.na(ISO_A2)& is.na(FIPS_10_) ~ ISO_A2,
+                  TRUE ~ NA_character_
+                ) ) %>%
+  dplyr::arrange(., ADMIN) %>%
+  dplyr::filter(!is.na(A2))
 
 map_key <- app_credentials$map_key  
 hc_add_event_series2 <- function (hc, series = "series", event = "click") {
@@ -106,18 +118,28 @@ icons_names <- list.files("www/crops_icons", pattern = ".png$")
 icons_names <- stringr::str_extract(icons_names, "[a-zA-Z]+")
 icons_paths <- data.frame(icons_names, paths = list.files("www/crops_icons", pattern = ".png$", full.names = T))
 
-crops_names <- consolidado@crop %>% 
-  dplyr::filter(final_map_paths != "Not_found") %>% 
-  dplyr::select(name) %>%
-  dplyr::mutate(base_name = str_extract(name, "[a-zA-Z]+")) %>% 
-  dplyr::left_join(., icons_paths, by = c("base_name" = "icons_names") ) %>% 
-  dplyr::mutate(paths = case_when(
-    name == "african_maize" ~ "crops_icons/maize.png",
-    TRUE ~ paths
-    
-  ),
-  paths     = stringr::str_replace(paths, "^www/", ""))
+crops_names <- tibble(name = list.dirs("www/crops_data/", full.names = F, recursive = F)) %>% 
+  dplyr::mutate(base_name = str_extract(name, "[a-zA-Z]+"),
+                base_name = case_when(
+                  name == "african_maize" ~ "maize",
+                  #name == "common_bean" ~ "common_bean",
+                  #name == "pearl_millet" ~  "pearl_millet",
+                  #name == "sweet_potato"  ~ "sweet_potato",
+                  TRUE ~ base_name
+                )) %>%
+  dplyr::left_join(., icons_paths, by = c("base_name" = "icons_names") ) %>%  
+  dplyr::mutate(paths = stringr::str_replace(paths, "^www/", ""))
 
+crops_names_ck <- read.csv("www/crops_names_CK.csv")
+crops_names_group <- crops_names_ck %>% 
+  dplyr::select(name, Further.app.needs) %>% 
+  drop_na %>% 
+  pull(name)
+  
+
+crops_names <- crops_names %>% 
+  left_join(., crops_names_ck %>% dplyr::select(name, App.name)) %>% 
+  dplyr::arrange(App.name) 
 
 # Define server logic required 
 server<- function(input, output, session) {
@@ -125,8 +147,9 @@ server<- function(input, output, session) {
   ## definir valores Reactivos
   rv_list     <- shiny::reactiveValues()
   rv_list$occ <- data.frame()
-  rv_list$flags <- sprintf("https://cdn.rawgit.com/lipis/flag-icon-css/master/flags/4x3/%s.svg", shp@data %>% pull(ISO_A2) %>% tolower())
-  rv_list$countries <- shp@data %>% pull(SOVEREIGNT)
+  rv_list$groups_vis <- FALSE
+  rv_list$flags <- sprintf("https://cdn.rawgit.com/lipis/flag-icon-css/master/flags/4x3/%s.svg", ctrs %>% pull(A2) %>% tolower())
+  rv_list$countries <- ctrs %>% pull(ADMIN) %>% stringr::str_sort(., decreasing  = F)
   #rv_list$gap_richness_shp <- list()
   
   # reactive list to store collecting mission routes
@@ -140,6 +163,7 @@ server<- function(input, output, session) {
   route$elevation <- list()
   route$Incoords <- list()
   route$url_route <- list()
+  route$restore_session <- list(points_inf = list(), crops_inf = list(), places_inf= list(), valid_file = "valid")
   #route$path <- list()
   ##### calculate values for main dashoard page
   
@@ -434,16 +458,53 @@ server<- function(input, output, session) {
     
     observeEvent(input$add_field, {
       Sys.sleep(1)
+      
+      google_map_update("Gmap") %>%  
+        clear_polylines(layer_id = "route") 
+      
       counter$n <- counter$n + 1
       prevcount$n <- counter$n - 1
       })
     
     observeEvent(input$rm_field, {
       Sys.sleep(1.5)
+      
       if (counter$n > 0) {
         counter$n <- counter$n - 1 
         prevcount$n <- counter$n + 1
       }
+      
+      try({
+        
+        marks <- lapply(1:(counter$n+5), function(i){
+          ret <- route$Incoords[[i]]
+          return(ret)
+        }) %>% 
+          bind_rows() %>% 
+          mutate(id_c = 1:nrow(.),
+                 id_c = as.character(id_c),
+                 col = case_when(id_c == as.character(counter$n+5) ~ "red", 
+                                 TRUE ~ "blue"
+                 ))
+        
+        google_map_update("Gmap") %>% 
+          clear_markers(layer_id = "location") %>% 
+          clear_markers(layer_id = "places") %>%
+          clear_polylines(layer_id = "route") %>% 
+          clear_markers(layer_id = "markers_route") %>% 
+          googleway::add_markers(data = marks,
+                                 lat = "lat",
+                                 lon = "lng",
+                                 title = "id_c",
+                                 label = "id_c",
+                                 colour = "col",
+                                 update_map_view = F, 
+                                 load_interval = 100,
+                                 layer_id = "location")
+      })
+      
+      
+      
 
     })
     
@@ -737,15 +798,16 @@ server<- function(input, output, session) {
           if(nrow(to_plot) > 1)
           google_map_update("Gmap") %>%  
             clear_markers(layer_id = "location") %>% 
-            clear_markers(layer_id = "places") %>% 
+            clear_markers(layer_id = "places") %>%
+            clear_polylines(layer_id = "route") %>% 
+            clear_markers(layer_id = "markers_route") %>% 
             googleway::add_markers(data = to_plot, 
                                    title = 'type',
                                    mouse_over = "over",
                                    marker_icon = "marker_icon",
                                    update_map_view = F, 
-                                   load_interval = 200,
-                                   layer_id = "places"
-            )
+                                   load_interval = 100,
+                                   layer_id = "places")
           
           
         }else if(!any(is.na(loc))){
@@ -761,10 +823,11 @@ server<- function(input, output, session) {
                                    TRUE ~ "blue"
                                    ))
           
-          print(marks)
           google_map_update("Gmap") %>% 
             clear_markers(layer_id = "location") %>% 
-            clear_markers(layer_id = "places") %>% 
+            clear_markers(layer_id = "places") %>%
+            clear_polylines(layer_id = "route") %>% 
+            clear_markers(layer_id = "markers_route") %>% 
             googleway::add_markers(data = marks,
                                    lat = "lat",
                                    lon = "lng",
@@ -772,9 +835,8 @@ server<- function(input, output, session) {
                                    label = "id_c",
                                    colour = "col",
                                    update_map_view = F, 
-                                   load_interval = 1000,
-                                   layer_id = "location"
-            )
+                                   load_interval = 100,
+                                   layer_id = "location")
           
          
         }
@@ -897,6 +959,7 @@ server<- function(input, output, session) {
           tags$hr(),
           highchartOutput("distance_graph", height="400px", width="100%"),
           highchartOutput("altitude_graph", height="400px", width="100%"),
+          tags$hr(),
           fluidRow(
             verbatimTextOutput("url_text")
             # actionBttn(inputId = "copy_url", style = "bordered",
@@ -919,7 +982,7 @@ server<- function(input, output, session) {
     })
     
     output$total_time <- renderText({
-      res <-  route$path
+     res <-  route$path
     
      x <-  res$data %>%
         mutate(duration = gsub("\\W", "", duration ),
@@ -928,7 +991,9 @@ server<- function(input, output, session) {
                                  ifelse(grepl("min|mins", duration),paste0("00:",  gsub("[a-zA-Z]+", ":" ,duration),"00" ), duration)),
                duration = lubridate::hms(duration)) 
     
-      suma <- purrr::reduce(x$duration, `+`)
+      suma <- purrr::reduce(x$duration, `+`) %>% 
+        lubridate::period_to_seconds(.) %>% 
+        lubridate::seconds_to_period(.)
       splitted <- stringr::str_split(suma,pattern = '[A-Z]' ) %>% unlist
       horas <- gsub("\\W", "", splitted[1]) %>% as.numeric
       minutos <- gsub("\\W", "", splitted[2]) %>% as.numeric
@@ -951,7 +1016,8 @@ server<- function(input, output, session) {
     })
     
     output$route_covg <- renderText({
-      req(route$path, rv_list$crop_layer)
+      
+      req(route$path, rv_list$gap_richness_shp)
       
       
       resul <- route$path
@@ -970,7 +1036,7 @@ server<- function(input, output, session) {
       
       coordinates(route_sf) <- ~lon+lat
       
-      pol <- rv_list$crop_layer
+      pol <- rv_list$gap_richness_shp
       
   
       route_sf <- route_sf %>% 
@@ -978,9 +1044,12 @@ server<- function(input, output, session) {
       
       st_crs(route_sf)  <- st_crs(pol)
       
+      print(class(route_sf))
+      print(class(pol))
+      
       ov <- sf::st_join(route_sf, pol)
       
-    print(head(ov))
+      
      
       ov_num <- ov %>% 
        dplyr::filter(!is.na(Gaps_layer)) %>% 
@@ -991,7 +1060,7 @@ server<- function(input, output, session) {
       
       to_print <- round(ov_num/tot*100,3)
       
-      
+     
      
       paste0(format(to_print, nsmall = 2), "% of route are covered by gap areas")
      
@@ -999,21 +1068,62 @@ server<- function(input, output, session) {
     })
     
     output$distance_graph <- renderHighchart({
+     
+      Incoords <- bind_rows(route$Incoords) %>% 
+        dplyr::mutate(id = 1:nrow(.)) %>% 
+        dplyr::select(id, everything())
       
-      res <-  route$path
+      df_cords <- Incoords %>% 
+        dplyr::select(lat, lng)
       
-      res_t <- res$data
-      res_t$seq <-  1:nrow(res_t)
+      res <- google_distance(origins = df_cords  ,
+                      destinations =  df_cords , mode = "driving",key = app_credentials$map_key  )
+
+      vals <- res$rows
+     
       
+      dist_m <- lapply(vals$elements, function(i){
+        (round(i[[1]][,2] /1000))
+      }) %>% 
+        do.call(rbind,.)
+      
+      dists <- c()
+      labs <- c()
+      for(i in 1:(nrow(dist_m)-1)){
+        dists [i] <- print(dist_m[i, i+1])
+        labs[i] <- paste0(i, "-", i+1)
+      }
+      
+      dists <- c( dists)
+      labs  <- c( labs)
+     
+      res_t <- data.frame(seq = 1:(nrow(df_cords)-1),
+                          total_dist = dists,
+                          c_sum = cumsum(dists),
+                          label = labs)
       
       highchart() %>% 
-      hc_add_series(res_t,
-                    type = "line",
-             hcaes(x = seq, 
-                   y = cumsum(total_dist/1000)),
-             name = "Travel distance",
-             tooltip = list(valueDecimals = 0, valuePrefix = "", valueSuffix = "Km"),
-             color = "orange") %>% 
+        hc_xAxis(
+          categories = res_t$label,
+          title = list(text = "Points ID"),
+          opposite = FALSE
+        ) %>% 
+        hc_add_series(
+          res_t,
+          type = "line",
+          hcaes(x = label, 
+                y = c_sum),
+          name = "Cumulative distance",
+          tooltip = list(pointFormat = "Distance btw points ID <b> {point.key} </b>: <b> {point.y} </b>",valueDecimals = 0, valuePrefix = "", valueSuffix = "Km"),
+          color = "green"
+        ) %>%
+        hc_add_series(res_t,
+                      type = "line",
+                      hcaes(x = label, 
+                            y = total_dist),
+                      name = "Travel dist bwt. points",
+                      tooltip = list(valueDecimals = 0, valuePrefix = "", valueSuffix = "Km"),
+                      color = "orange") %>% 
         hc_title(text = "Travel Distance Graph",
                  style = list(fontWeight = "bold", fontSize = "30px"),
                  align = "center") %>% 
@@ -1021,25 +1131,43 @@ server<- function(input, output, session) {
           title = list(text = "Distance in Km"),
           opposite = FALSE,
           labels = list(format= '{value} km')
-        ) %>% 
-        hc_xAxis(
-          title = list(text = "Route travel distance"),
-          opposite = FALSE
-        )%>%  
+        ) %>%  
         hc_add_theme(hc_theme_google ())
     })
     
     
     output$altitude_graph <- renderHighchart({
       
-      res_t <-  route$elevation
       
-      res <-  bind_rows(res_t) %>% 
-        drop_na()
-      res$seq <- 1:nrow(res)
+      Incoords <- bind_rows(route$Incoords) %>% 
+        dplyr::mutate(id = 1:nrow(.)) %>% 
+        dplyr::select(id, everything())
+      
+      df_cords <- Incoords %>% 
+        dplyr::select(lat, lon = lng)
+      
+      elevs <- lapply(1:(nrow(df_cords)-1), function(i){
+        df_in <- df_cords[i:(i+1),]
+        res <- google_elevation(df_locations = df_in,
+                                location_type = "path",
+                                samples = 10,
+                                simplify = TRUE,
+                                key = app_credentials$map_key  )
+        res <- res$results %>% 
+          mutate(ID = i)
+        return(res)
+        Sys.sleep(0.2)
+      }) %>% 
+        dplyr::bind_rows()
+     
+      df_cords$pos <-c(seq(1, (nrow(df_cords)-1)*10,  by = 10), (nrow(df_cords)-1)*10)
+    
+      res_t <- elevs %>% 
+        dplyr::select(elevation, ID) %>% 
+        dplyr::mutate(seq = 1:nrow(.))
      
       highchart() %>% 
-      hc_add_series(res, 
+      hc_add_series(res_t, 
              type = "line", 
              hcaes(x = seq, 
                    y = elevation),
@@ -1053,12 +1181,21 @@ server<- function(input, output, session) {
           title = list(text = "elevation in Mts"),
           opposite = FALSE,
           labels = list(format= '{value} Mts')
+         
         ) %>% 
         hc_xAxis(
-          title = list(text = "Route travel distance"),
-          opposite = FALSE
+          title = list(text = "Route travel points"),
+          opposite = FALSE,
+          plotLines = lapply(1:nrow(df_cords), function(i){
+            
+            list(label = list(text = paste("Point ID", i)),
+                 color = "#FF0000",
+                 width =2,
+                 value = df_cords$pos[i])
+          })
         ) %>%  
         hc_add_theme(hc_theme_google ())
+      
       
     })
     
@@ -1073,7 +1210,7 @@ server<- function(input, output, session) {
    
     
     observe({
-
+     
       n <- counter$n + 5
 
       lat_vals <- c()
@@ -1081,6 +1218,7 @@ server<- function(input, output, session) {
       addres_vals <- c()
       icn <- c()
       
+     
       for(i in 1:n){
 
         #req(input[[paste0("Lat", i)]], input[[paste0("Lng", i)]], input[[paste0("addres", i)]])
@@ -1094,6 +1232,9 @@ server<- function(input, output, session) {
           
           route$ties[[i]]<- data.frame(lat = lat_vals[i], lng = lng_vals[i])
           
+          route$restore_session$places_inf[[i]] <- data.frame(places = ifelse(is.null(input[[paste0("pick_plac", i)]]), NA, input[[paste0("pick_plac", i)]]), id = i)
+          
+          route$restore_session$points_inf[[i]] <- data.frame(lat = lat_vals[i], lng = lng_vals[i], add = addres_vals[i], id = i )
           #prepare error messages
           if(any(is.na(c(lat_vals[i], lng_vals[i]))) & addres_vals[i] == "" ){
             route$status[i]<-  "Invalid Latitude and Longitude or address"
@@ -1129,11 +1270,20 @@ server<- function(input, output, session) {
 
       }#end for
 
-      # google_elevation(df_locations = df_lc,
-      #                  location_type = "individual",
-      #                  key = map_key)
+     if( length(na.omit(lat_vals)) == n & length(na.omit(lng_vals)) == n  ){
+       shinyjs::enable("get_route")
+     }else{
+       shinyjs::disable("get_route")
+     }
 
     })
+    
+    
+    observe(({
+      req(input$select_crops2, input$country_picker )
+      route$restore_session$crops_inf <- data.frame(selected_crops = input$select_crops2, selected_country = input$country_picker)
+      route$restore_session$groups_in <- data.frame(selected_groups = input$select_groups)
+    }))
     
     #guardar resultados
     
@@ -1214,6 +1364,17 @@ server<- function(input, output, session) {
 
    )
    
+   output$save_session <- downloadHandler(
+     filename = function(){
+       paste0("LGA_route_restore_file.rds")
+     },
+     content = function(con){
+       
+       saveRDS(route$restore_session , con)
+     }
+     
+   )
+   
    observeEvent(input$clear_all,{
      n <- counter$n + 5
     
@@ -1279,6 +1440,7 @@ server<- function(input, output, session) {
     })
     
     
+    
     observeEvent(input$add_to_map ,{
       
       if(is.null(input$select_crops2)){
@@ -1287,178 +1449,348 @@ server<- function(input, output, session) {
                                      type = "error")
       }else{
         
+        
+        updateMaterialSwitch(session, "hide_layer", value = FALSE)
+        
         withBusyIndicatorServer("add_to_map",{
           
-          
+          crops <- input$select_crops2
           try(expr = {
-            dwnloaded <- lapply(input$select_crops2, function(i){
-              Sys.sleep(0.5)
-              crop_name <- i
-              dest_file_shp <- paste0("www/crops_data/",crop_name,"/", crop_name, "_used_occ_shp.rds")
-              dest_file_gp <- paste0('www/crops_data/', crop_name, "/gap_richness_", crop_name, ".rds")
-              occ_df <- readRDS(dest_file_shp)
-              r <- readRDS(dest_file_gp)
+            
+            if(length(crops) == 1 & rv_list$groups_vis & !is.null(input$select_groups)){
               
-              ret <- list(shp = r, occ_shp = occ_df)
-              return(ret)
-              # download_sftp_files(crop_name = i, 
-              #                     user = app_credentials$sftp_user, 
-              #                     pass = app_credentials$sftp_pass )
-            })
+              groups <- input$select_groups
+              
+              occ_file <- readRDS(paste0("www/crops_data/", crops, "/groups/used_occ_shp_groups.rds"))
+              
+              dwnloaded <- lapply(groups, function(k){
+                dest_file_rich_groups <- paste0("www/crops_data/", crops, "/groups/gap_richness_group_", k, ".rds")
+                
+                occ_file <- occ_file %>% 
+                  dplyr::filter(ensemble == k)
+                
+                ret <- list(shp = readRDS(dest_file_rich_groups), occ_shp = occ_file)
+                return(ret)
+              })
+              
+              rv_list$map_layer_labels <- groups
+              
+             
+            }else{
+              
+              rv_list$map_layer_labels <- crops
+              
+              dwnloaded <- lapply(crops, function(i){
+                
+                crop_name <- i
+                dest_file_shp <- paste0("www/crops_data/",crop_name,"/", crop_name, "_used_occ_shp.rds")
+                dest_file_gp <- paste0('www/crops_data/', crop_name, "/gap_richness_", crop_name, ".rds")
+                
+               
+                dest_file_shp <-  paste0("www/crops_data/",crop_name,"/", crop_name, "_used_occ_shp.rds")
+                
+                
+                if(file.exists(dest_file_shp) & file.exists(dest_file_gp)){
+                  
+                  occ_df <- readRDS(dest_file_shp)
+                  r <- readRDS(dest_file_gp)
+                  
+                  ret <- list(shp = r, occ_shp = occ_df)
+                  
+                }else{
+                  safeError("Download failed !!!")
+                  ret <- NULL
+                }
+                
+                return(ret)
+                # download_sftp_files(crop_name = i, 
+                #                     user = app_credentials$sftp_user, 
+                #                     pass = app_credentials$sftp_pass )
+              })
+            }
+            
             
           })
-          if(exists("dwnloaded")){
+          if(exists("dwnloaded") ){
             
-           
+         
             pol <- lapply(dwnloaded, function(i){
               if("Spatial" %in% is(i$shp)){
+                
                 pol <- i$shp
                 names(pol) <- "value"
+               
               }else{
                 pol <- NA
               }
               return(pol)
             }) %>% do.call(rbind,.)
             
+            labels_nms <- rv_list$map_layer_labels
+            
             pol@data <- data.frame(value = 1:(nrow(pol@data)))
-           
+            print(labels_nms)
             pol <- sf::st_as_sf(pol) %>% 
-              mutate(Gaps_layer = input$select_crops2)
-            
-            
-            occ <- lapply(dwnloaded, function(i){
-              pol <- i$occ_shp
-              names(pol) <- "value"
-              return(pol)
-            }) %>% do.call(rbind,.)
-            
-            occ_pol <- sf::st_as_sf(occ)%>% 
-              mutate(Occurrence_layer = "Occurrences")
+              st_set_crs("+proj=longlat +datum=WGS84 +no_defs") %>% 
+              dplyr::mutate(Gaps_layer = labels_nms)
+        
           
+            occ <- lapply(dwnloaded, function(i){
+              #if("Spatial" %in% is(i$occ_shp)){
+              pol <- i$occ_shp
+              #names(pol) <- "value"
+              #}else{
+                #pol <- NA
+              #}
+              return(pol)
+            }) %>% bind_rows(.) 
+              #do.call(rbind,.)
+             if("list" %in% class(occ)){
+               occ <- occ[[1]]
+             }
+            
+            occ_pol <- sf::st_as_sf(occ, coords = c("Longitude", "Latitude")) %>% 
+              st_set_crs("+proj=longlat +datum=WGS84 +no_defs") 
+            
+         
             if(!is.null(input$country_picker)){
               
               country_name <- input$country_picker
-              country_shp <- shp[shp@data$NAME == country_name,]
-              country_shp <- sf::st_as_sf(country_shp)
+              
+              country_shp <- shp[shp@data$ADMIN == country_name,]
+              country_shp <- sf::st_as_sf(country_shp) %>% 
+                st_set_crs("+proj=longlat +datum=WGS84 +no_defs")
              
               occ_pol <- sf::st_intersection(occ_pol, country_shp)
               pol  <- sf::st_intersection(pol, country_shp)
+             
+              if(rv_list$groups_vis & !is.null(input$select_groups)){
+                
+                
+                occ_marks <- data.frame(Group =  occ_pol$ensemble,
+                                        Group_html = paste(tags$strong("Landracre Group: "), occ_pol$ensemble),
+                                        Longitude = st_coordinates(occ_pol)[,1],
+                                        Latitude = st_coordinates(occ_pol)[,2],
+                                        m_icon = "http://maps.google.com/mapfiles/kml/shapes/placemark_circle.png"
+                )
+              }else{
+                occ_marks <- data.frame(Group =  occ_pol$org,
+                                        Group_html = paste(tags$strong("Type of accession: "), occ_pol$org),
+                                        Longitude = st_coordinates(occ_pol)[,1],
+                                        Latitude = st_coordinates(occ_pol)[,2],
+                                        m_icon = "http://maps.google.com/mapfiles/kml/shapes/placemark_circle.png"
+                )
+                
+              }
+              
               
             }
             
-            rv_list$occ <- occ_pol
+
+           
+            rv_list$occ <- occ_marks
             rv_list$gap_richness_shp <- pol
             
           }
           
+        
           
         })#end bussy indicator
         
       }#end else
       
-      pol <- rv_list$gap_richness_shp
-  
-      occ_pol <- rv_list$occ
-      
-      pal_colors <- brewer.pal(length(input$select_crops2), "Set1")
-      pal <- colorRampPalette(colors = pal_colors)
-      pal2 <- colorRampPalette(colors = c("#070707"))
-      
-      rv_list$crop_layer <- pol
-      rv_list$occ_layer <- occ_pol
-     
-      google_map_update("Gmap") %>% 
-        #google_map(key = map_key) %>%
-        clear_polygons( layer_id    = "pols") %>% 
-        clear_polygons(layer_id = "occ") %>% 
-        add_polygons(pol,
-                     stroke_colour = "Gaps_layer",
-                     stroke_weight = "2",
-                     stroke_opacity = "0.2",
-                     fill_colour = "Gaps_layer",
-                     fill_opacity = "0.7",
-                     update_map_view = F, 
-                     legend = T, 
-                     palette = pal,
-                     layer_id = "pols") %>% 
-      add_polygons(occ_pol,
-                   stroke_colour = "Occurrence_layer",
-                   stroke_weight = "2",
-                   stroke_opacity = "0.2",
-                   fill_colour = "Occurrence_layer",
-                   fill_opacity = "0.7",
-                   update_map_view = F, 
-                   legend = T, 
-                   pal = pal2,
-                   layer_id = "occ") 
-    
-    
-      output$selected_crops <- renderText({ paste("Viewing:", paste(input$select_crops2, collapse =  ","))})
-      
+      output$selected_crops <- renderText({ paste("Viewing:", paste(crops, collapse =  ","))})
+      updateMaterialSwitch(session, "hide_layer", value = TRUE)
     })
     
     
     ##### make selectable menu to select crops for google maps 
     
     output$multiselect1 <- renderUI({
-      
+     
       shinyWidgets::multiInput(
         inputId = "select_crops2",
         label = "Select Major crops :", 
         choices = NULL,
+        width = "100%",
         choiceNames = lapply(seq_along(1:nrow(crops_names)), 
                              function(i) htmltools::tagList(tags$img(src = crops_names$paths[i],
-                                                          width = 20, 
-                                                          height = 15), crops_names$name[i] )),
-        choiceValues = crops_names$name) %>%  
-        short_info(input = ., place = "top",title = "Select maximun three crops to download data.")
+                                                          width = 30, 
+                                                          height = 20), crops_names$App.name[i] )),
+        choiceValues = crops_names$name)# %>%  
+        #short_info(input = ., place = "top",title = "Select maximun three crops to download data.")
 
       
     })
     
+    
+    output$multiselect2 <- renderUI({
+      req(input$select_crops2)
+      crop <- input$select_crops2
+      
+      if(length(crop) == 1 ){
+        
+        if( crop %in% crops_names_group ){
+          
+          rv_list$groups_vis <- TRUE
+          
+          rv_list$dest_file_gp_groups <- list.files(paste0('www/crops_data/', crop, "/groups/"), pattern = "gap_richness_group", full.names = T)
+          
+          rv_list$groups_names <- gsub("([A-Za-z0-9_/]+)(group_)|(.rds)", "", rv_list$dest_file_gp_groups)
+          
+          
+          shinyWidgets::multiInput(
+            inputId = "select_groups",
+            label = "Select Landrace Groups :", 
+            choices = NULL,
+            width = "100%",
+            choiceNames = rv_list$groups_names,
+            choiceValues = rv_list$groups_names)
+        }
+        
+        
+      }
+      
+      
+    })
   
     
     observeEvent(input$hide_layer,{
-      req(rv_list$crop_layer)
-     if(input$hide_layer){
-       
-       pol <-  rv_list$crop_layer
-       occ_pol <- rv_list$occ_layer
-       
-       
-       pal_colors <- brewer.pal(length(input$select_crops2), "Set1")
-       pal <- colorRampPalette(colors = pal_colors)
-       pal2 <- colorRampPalette(colors = c("#070707"))
       
-       google_map_update("Gmap") %>% 
-         #google_map(key = map_key) %>%
-         clear_polygons( layer_id    = "pols") %>% 
-         clear_polygons(layer_id     = "occ") %>% 
-         add_polygons(pol,
-                      stroke_colour = "Gaps_layer",
-                      stroke_weight = "2",
-                      stroke_opacity = "0.2",
-                      fill_colour = "Gaps_layer",
-                      fill_opacity = "0.7",
-                      update_map_view = F, 
-                      legend = T, 
-                      palette = pal,
-                      layer_id = "pols") %>% 
-         add_polygons(occ_pol,
-                      stroke_colour = "Occurrence_layer",
-                      stroke_weight = "2",
-                      stroke_opacity = "0.2",
-                      fill_colour = "Occurrence_layer",
-                      fill_opacity = "0.7",
-                      update_map_view = F, 
-                      legend = T, 
-                      pal = pal2,
-                      layer_id = "occ") 
-     }else{
-       google_map_update("Gmap") %>% 
-         #google_map(key = map_key) %>%
-         clear_polygons( layer_id    = "pols")
-     }
+      req(rv_list$gap_richness_shp)
+      
+      
+      crops <- rv_list$map_layer_labels
+      pol <- rv_list$gap_richness_shp
+      occ_pol <- rv_list$occ
+      # occ_pol <- occ_pol %>% 
+      #   dplyr::mutate(Occurrence_layer = ifelse(value == 1, "Herbarium", "Germplasm"))
+      
+      
+      if(length(crops) > 1){
+        pal_colors <- brewer.pal(length(crops), "Set1")
+        pal <- colorRampPalette(colors = pal_colors)
+      }else{
+        pal <- colorRampPalette(colors = c("#F90B0B"))
+      }
+      
+      pal2 <- colorRampPalette(colors = c( "#070707", "#726E6E"))
+      
+    
+      
+      if(input$hide_layer){
+        
+        
+        if(nrow(occ_pol) == 0 & nrow(pol) == 0){
+          shinyWidgets::sendSweetAlert(session, title = "warning", 
+                                       text = "There are Not occurences and gaps area in selected country",
+                                       type = "warning")
+          google_map_update("Gmap") %>% 
+            #google_map(key = map_key) %>%
+            clear_polygons( layer_id    = "pols") %>% 
+            clear_markers(layer_id = "occ")
+          
+        }else if(nrow(occ_pol) == 0 & nrow(pol) != 0){
+          
+          shinyWidgets::sendSweetAlert(session, title = "warning", 
+                                       text = "There are not occurences in selected country",
+                                       type = "warning")
+          
+          google_map_update("Gmap") %>% 
+            #google_map(key = map_key) %>%
+            clear_polygons( layer_id    = "pols") %>% 
+            clear_markers(layer_id = "occ") %>% 
+            add_polygons(pol,
+                         #stroke_colour = "Gaps_layer",
+                         stroke_weight = "2",
+                         stroke_opacity = "0",
+                         fill_colour = "Gaps_layer",
+                         fill_opacity = "0.3",
+                         update_map_view = F, 
+                         legend = T, 
+                         palette = pal,
+                         layer_id = "pols")
+        }else if(nrow(pol) == 0 & nrow(occ_pol) != 0){
+          shinyWidgets::sendSweetAlert(session, title = "warning", 
+                                       text = "There are not gaps area in selected country",
+                                       type = "warning")
+          
+          google_map_update("Gmap") %>% 
+            #google_map(key = map_key) %>%
+            clear_polygons( layer_id    = "pols") %>% 
+            clear_markers(layer_id = "occ") %>%
+            add_markers(
+              data = occ_pol,
+              lat = "Latitude",
+              lon = "Longitude",
+              #colour= "col",
+              marker_icon = "m_icon",
+              mouse_over = "Group_html",
+              #info_window = "Group_html",
+              close_info_window = T,
+              update_map_view = F,
+              #label = "Group",
+              focus_layer = F,
+              layer_id = "occ"
+            )
+            # add_polygons(occ_pol,
+            #              #stroke_colour = "Occurrence_layer",
+            #              stroke_weight = "2",
+            #              stroke_opacity = "0",
+            #              fill_colour = "Occurrence_layer",
+            #              fill_opacity = "0.7",
+            #              update_map_view = F, 
+            #              legend = T, 
+            #              pal = pal2,
+            #              layer_id = "occ") 
+        }else{
+          
+          google_map_update("Gmap") %>% 
+            #google_map(key = map_key) %>%
+            clear_polygons( layer_id    = "pols") %>% 
+            clear_markers(layer_id = "occ") %>% 
+            add_polygons(pol,
+                         #stroke_colour = "Gaps_layer",
+                         stroke_weight = "2",
+                         stroke_opacity = "0",
+                         fill_colour = "Gaps_layer",
+                         fill_opacity = "0.3",
+                         update_map_view = F, 
+                         legend = T, 
+                         palette = pal,
+                         layer_id = "pols") %>%
+            add_markers( data = occ_pol,
+              lat = "Latitude",
+              lon = "Longitude",
+              #colour= "col",
+              marker_icon = "m_icon",
+              mouse_over = "Group_html",
+              update_map_view = F,
+              #info_window = "Group_html",
+              close_info_window = T,
+              #label = "Group",
+              focus_layer = F,
+              layer_id = "occ"
+            )
+            # add_polygons(occ_pol,
+            #              #stroke_colour = "Occurrence_layer",
+            #              stroke_weight = "2",
+            #              stroke_opacity = "0",
+            #              fill_colour = "Occurrence_layer",
+            #              fill_opacity = "0.7",
+            #              update_map_view = F, 
+            #              legend = T, 
+            #              pal = pal2,
+            #              layer_id = "occ") 
+          
+        }
+      }else{
+        google_map_update("Gmap") %>% 
+          #google_map(key = map_key) %>%
+          clear_polygons( layer_id    = "pols") %>% 
+          clear_markers( layer_id    = "occ")
+      }#end else hide layer  
+      
      
       #js$geocodeAddr()
     })
@@ -1485,8 +1817,131 @@ server<- function(input, output, session) {
       
     })
      
+    
+   ### RESTORES SESSION 
+    
      
-     
+    output$restoreSession <- renderMenu({
+      msgs2 <- list(notificationItem(
+        text = "Restore session",
+        icon = icon("fas fa-undo-alt") 
+      ) %>%
+        tagAppendAttributes(., id = "restore"))
+      
+      dropdownMenu(type = "notifications", .list = msgs2, icon = icon("fas fa-user-cog") )
+    })
    
+    shinyjs::onclick("restore", expr = function(){
+     
+      output$modal1 <- renderUI({
+        showModal(modalDialog(
+          title = tags$strong("Restore Session"),
+          tags$div(
+            tags$div(style = "float:left;", tags$img(src = 'restore-icon.jpg', eigth = "45px", width = "45px")),
+            tags$div(style = "margin-left: 50px;",tags$h5("
+            Did your last Session closed unexpectedly or would you like to continue from you left? You can restore the variables and results from a previous session, or start a
+            new session."))
+          ),
+          tags$hr(),
+          fileInput("restorePath", "Select  Rsession.rds file:"),
+          actionBttn(
+            inputId = "accept_restore",
+            label = "Restore",
+            style = "jelly", 
+            color = "primary"),
+          easyClose = FALSE,
+          footer = modalButton("Ok")
+        ))
+      })
+    })
+    
+    
+    
+    observeEvent(input$accept_restore,{
+     tryCatch({
+       
+       rsession_path <- input$restorePath$datapath
+       
+       if(nchar(rsession_path != 0)){
+         
+         rsd <- readRDS(rsession_path)
+         print(rsd)
+         #check if the rds file was generated by this app
+         if(!is.null(rsd$valid_file)){
+           
+           points <- rsd$points_inf %>% 
+             bind_rows %>% 
+             filter(!(is.na(lat) & is.na(lng) & add == ""))
+           
+           places <- rsd$places_inf %>% 
+             bind_rows() %>% 
+             filter(!is.na(places))
+           
+           id_places <- places %>% 
+             pull(id) %>% 
+             unique()
+           #content to restore here
+           n <- nrow(points)
+  
+           counter$n <-  ifelse(n <= 5, 0, n-5)
+           
+           Sys.sleep(0.3)
+           
+           updatePickerInput(session, 
+                             inputId = "country_picker", 
+                             selected = rsd$crops_inf %>% pull(selected_country) %>% unique() )
+           
+           updateMultiInput(session,
+             inputId =  "select_crops2",
+             selected = rsd$crops_inf %>% pull(selected_crops),
+             choices = NULL
+           )
+           
+           Sys.sleep(0.5)
+           
+           updateMultiInput(session,
+                            inputId = "select_groups",
+                            selected = rsd$groups_in %>%  dplyr::pull(selected_groups),
+                            choices = NULL)
+          
+          
+           for(i in 1:n ){
+             
+             #input[[paste0("pick_plac", id)]]
+             if(i %in% places$id){
+               updatePickerInput(session, inputId = paste0("pick_plac", i), selected = places$places)
+             }
+             
+             
+             updateTextInput(session, inputId = paste0("Lat", i), value =  ifelse(is.na(points$lat[i]), "", as.character(points$lat[i])))
+             updateTextInput(session, inputId = paste0("Lng", i), value =  ifelse(is.na(points$lng[i]), "", as.character(points$lng[i])) )
+             updateTextInput(session, inputId = paste0("addres", i), value =  ifelse(is.na(points$add[i]), "", as.character(points$add[i])))
+             
+           }
+           
+           
+         }else{
+           safeError("Wrong .RDS file selected.")
+         }
+         
+         
+         print("Reactive values were uploaded.")
+         
+       }else{
+         safeError("Not a valid file detected.")
+       }
+       
+       
+     },
+              error = function(e){
+                sendSweetAlert(
+                  session = session,
+                  title = "Error !!",
+                  text = paste("Your Session could not be restored.  \n", e),
+                  type = "error"
+                )
+              })
+    })
+    
     
 }## END server

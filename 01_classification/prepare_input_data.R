@@ -14,7 +14,7 @@ prepare_input_data <- function(data_path = choose.files( caption = "Select a val
                                mask = mask){
   
   msk <- raster(mask)
-  data <- read_csv(data_path) %>% data.frame()
+  data <- read.csv(data_path) %>% data.frame()
   cat("Preview Data base \n")
   print(head(data))
   

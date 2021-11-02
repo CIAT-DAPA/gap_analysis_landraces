@@ -25,7 +25,7 @@ coverage_metrics<-function(crop, occName , level ,  region , mask_dir = mask){
       
     sdm_model<- raster(paste0(results_dir, "/", crop[i], "/", level, "/", occName[i], "/", region[i], "/prj_models/", occName[i],"_prj_median.tif"))
     
-    final_gap_rast <- raster(paste0(results_dir, "/", crop[i], "/", level, "/", occName[i], "/", region[i], "/gap_models/gap_class_final.tif"))
+    final_gap_rast <- raster(paste0(results_dir, "/", crop[i], "/", level, "/", occName[i], "/", region[i], "/gap_models/gap_class_final_new.tif"))
     
     
     rast_area <- raster::area(wmask) * wmask

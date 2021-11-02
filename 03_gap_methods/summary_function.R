@@ -127,6 +127,7 @@ summary_gap <- all_rs %>% dplyr::group_by(., pnt) %>% dplyr::summarise(.,auc.med
 
 
 means <- colMeans(summary_gap %>% dplyr::select(., -pnt), na.rm = TRUE)
+summary_gap <- as.data.frame(summary_gap)
 summary_gap[nrow(summary_gap)+1,] <- c("Mean", means)
 
 cat("     Writing  summary metrics in:,", paste0(baseDir, "/results/", crop,"/", lvl, "/", group ,"/", area, "/gap_validation/buffer_100km/validation_results.csv") ," \n ")
