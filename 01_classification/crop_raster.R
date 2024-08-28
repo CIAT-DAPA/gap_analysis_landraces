@@ -10,7 +10,7 @@ crop_raster <- function(mask, region){
   
   files <- data.frame(fullnames = list.files(clim_spWorld, pattern = ".tif$", full.names = TRUE),
                 names = list.files(clim_spWorld, pattern = ".tif$", full.names = FALSE))
-  
+  if(nrow(files) != 0){
   apply(files, 1,function(x){
     
   if(!file.exists(paste0(clim_spReg, "/", x[2]))) { 
@@ -20,7 +20,7 @@ crop_raster <- function(mask, region){
  }
     
   })
-   
+   }
   #crop rasters from generic_rasters
   clim_world <- paste0(input_data_dir, "/generic_rasters/world")
   files <- data.frame(fullnames = list.files(clim_world, pattern = ".tif$", full.names = TRUE),
