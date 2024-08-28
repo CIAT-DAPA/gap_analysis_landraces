@@ -111,9 +111,9 @@ pseudoAbsences_generator <- function(file_path, clsModel, overwrite = F, correla
   
   cat("Loading raster files","\n")
   current_clim_layer_generic <- lapply(list.files(climDir, pattern =  ".tif$", full.names = T), raster)
-  current_clim_layer_generic <- lapply(current_clim_layer_generic , function(aa){names(aa) <- gsub(basename(aa@file@name), ".tif$", ""); return(aa)})
+  current_clim_layer_generic <- lapply(current_clim_layer_generic , function(aa){names(aa) <- gsub( ".tif$", "", basename(aa@file@name)); return(aa)})
   current_clim_layer_sp      <- lapply(list.files(paste0(baseDir, "/input_data/by_crop/", crop, "/raster/", region), pattern = ".tif$", full.names = T), raster)
-  current_clim_layer_sp      <- lapply(current_clim_layer_sp , function(aa){names(aa) <- gsub(basename(aa@file@name), ".tif$", ""); return(aa)})
+  current_clim_layer_sp      <- lapply(current_clim_layer_sp , function(aa){names(aa) <- gsub(".tif$", "", basename(aa@file@name)); return(aa)})
   all_clim_layer             <- stack(c(current_clim_layer_generic, current_clim_layer_sp))
   
   # remove undesirable layers
