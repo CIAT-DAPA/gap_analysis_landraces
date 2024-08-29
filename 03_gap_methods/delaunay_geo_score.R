@@ -38,8 +38,8 @@ calc_delaunay_score <- function(baseDir, area, group, crop, lvl, ncores = NULL, 
                     "TRUE"  =  paste0(results_dir, validationDir,"/03_gap_models"))
   
   occDir <- switch(as.character(validation),
-                   "FALSE" = paste0(baseDir,"/input_data/by_crop", coreDir, "/occurrences/Occ"),
-                   "TRUE"  = paste0(results_dir, validationDir,"/01_selected_points/Occ"))
+                   "FALSE" = paste0(baseDir,"/input_data/by_crop", coreDir, "/occurrences/Occ.shp"),
+                   "TRUE"  = paste0(results_dir, validationDir,"/01_selected_points/Occ.shp"))
   
   cat(">>> Importing Delaunays triangulation \n \n")
   
