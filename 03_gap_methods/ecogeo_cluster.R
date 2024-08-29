@@ -130,7 +130,7 @@ environ_clust <- dplyr::bind_rows(environR_clust, to_assign)
 
 cat( "Starting rasterization and saving process \n   \n  \n")
 
-
+row.names(environ_clust) <- NULL
  SPF <- sp::SpatialPointsDataFrame( coords = environ_clust[,2:3], data = data.frame( cluster = environ_clust[,ncol(environ_clust)] ), proj4string = crs(SDM) )
 
 r <- raster()
