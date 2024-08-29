@@ -44,21 +44,21 @@ ecogeo_clustering <- function(n.sample = 10000, var_names,k.clust = 11){
                     dplyr::mutate(., ID = 1:nrow(.)) %>%
                       dplyr::select(., ncol(.) , 1:(ncol(.)-1) )
 
-  environ_list <- lapply(path, function(x){
-     raster(x) %>% raster::crop(x = ., extent(SDM)) %>% 
-      raster::mask(x = ., mask = SDM) %>%
-      raster::rasterToPoints(x = .) %>% 
-      as.data.frame(.) 
-  })
+#  environ_list <- lapply(path, function(x){
+#     raster(x) %>% raster::crop(x = ., extent(SDM)) %>% 
+#      raster::mask(x = ., mask = SDM) %>%
+#      raster::rasterToPoints(x = .) %>% 
+#      as.data.frame(.) 
+#  })
   
-  gc()
+#  gc()
   
-  environ_df <- environ_list %>% reduce(inner_join, by = c("x", "y")) %>% 
-    dplyr::mutate(., ID = 1:nrow(.)) %>%
-    dplyr::select(., ncol(.) , 1:(ncol(.)-1) )
+ # environ_df <- environ_list %>% reduce(inner_join, by = c("x", "y")) %>% 
+ #   dplyr::mutate(., ID = 1:nrow(.)) %>%
+ #   dplyr::select(., ncol(.) , 1:(ncol(.)-1) )
   
 
-  rm(pos, var_names, environ_list); g <- gc(); rm(g); removeTmpFiles()
+ # rm(pos, var_names, environ_list); g <- gc(); rm(g); removeTmpFiles()
 
 
 rownames(environ_df) <- environ_df$ID
